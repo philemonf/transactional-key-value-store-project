@@ -98,8 +98,10 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 			// Create Container Context
 			ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
 			cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
-					+ " -Xmx256M"
-					+ " ch.epfl.tkvs.TransactionManager"));
+				+ " -Xmx256M"
+				+ " ch.epfl.tkvs.TransactionManager"
+				+ " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
+				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
 			// Set Container jar
 			LocalResource jar = Records.newRecord(LocalResource.class);
