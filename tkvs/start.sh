@@ -1,15 +1,10 @@
 #!/bin/sh
 
 mkdir classes
-mkdir -p classes/client classes/am
+mkdir -p classes/
 
-javac -cp `hadoop classpath` -d classes/client `find . -name Client.java`
-javac -cp `hadoop classpath` -d classes/am `find . -name AppMaster.java`
+javac -cp `hadoop classpath` -d classes/ `find src -name *.java`
 
-jar cvf Client.jar -C classes/client .
-jar cvf AppMaster.jar -C classes/am .
+jar cvf AppMaster.jar -C classes/ .
 
-hdfs dfs -rm -f "$1"
-hdfs dfs -put AppMaster.jar "$1"
-
-hadoop jar Client.jar com.epfl.tkvs.Client "$1"
+hadoop jar `find $HADOOP_PREFIX -name *unmanaged-am-launcher*.jar|head -n 1` -appname 'transactional kv store' -cmd 'java com.epfl.tkvs.AppMaster' -classpath AppMaster.jar

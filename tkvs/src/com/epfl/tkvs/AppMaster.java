@@ -29,6 +29,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler{
 		rmClient.registerApplicationMaster(NetUtils.getHostname(), 0, "");
 		
 		Thread.sleep(1000);
+		System.out.println("Test log");
 		
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
 	}
