@@ -17,8 +17,8 @@ public class YarnHelper {
 		StringBuilder cp = new StringBuilder(
 				ApplicationConstants.Environment.APP_CLASSPATH.$());
 
-		String[] yarnCP = conf.getStrings(conf.YARN_APPLICATION_CLASSPATH,
-				conf.DEFAULT_YARN_APPLICATION_CLASSPATH);
+		String[] yarnCP = conf.getStrings(YarnConfiguration.YARN_APPLICATION_CLASSPATH,
+				YarnConfiguration.DEFAULT_YARN_APPLICATION_CLASSPATH);
 		for (String yarnClass : yarnCP) {
 			cp.append(yarnClass).append(":");
 		}
