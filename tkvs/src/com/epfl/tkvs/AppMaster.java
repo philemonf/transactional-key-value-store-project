@@ -24,31 +24,31 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 
-
-public class AppMaster implements AMRMClientAsync.CallbackHandler{
+public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
 	private YarnConfiguration conf;
 	private NMClient nmClient;
 	private int containerCount = 3;
-	
+
 	public static void main(String[] args) throws Exception {
 		new AppMaster().run();
 	}
-	
+
 	public void run() throws Exception {
 		System.out.println("TM APP MASTER: running");
 		conf = new YarnConfiguration();
-		
-		AMRMClientAsync<ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(1000, this);
+
+		AMRMClientAsync<ContainerRequest> rmClient = AMRMClientAsync
+				.createAMRMClientAsync(1000, this);
 		rmClient.init(conf);
 		rmClient.start();
-		
+
 		nmClient = NMClient.createNMClient();
 		nmClient.init(conf);
 		nmClient.start();
-		
+
 		rmClient.registerApplicationMaster("", 0, "");
-		
+
 		Thread.sleep(1000);
 		System.out.println("TM APP MASTER: Alive!");
 
@@ -60,7 +60,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler{
 		capability.setVirtualCores(1);
 
 		for (int i = 0; i < containerCount; ++i) {
-			ContainerRequest containerAsk = new ContainerRequest(capability, null, null, priority);
+			ContainerRequest containerAsk = new ContainerRequest(capability,
+					null, null, priority);
 			System.out.println("TM APP MASTER: Requesting Container " + i);
 			rmClient.addContainerRequest(containerAsk);
 		}
@@ -68,9 +69,10 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler{
 			Thread.sleep(100);
 		}
 
-		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
+		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED,
+				"", "");
 	}
-	
+
 	private boolean containersFinished() {
 		return containerCount == 0;
 	}
@@ -85,50 +87,53 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler{
 	public void onContainersAllocated(List<Container> containers) {
 		for (Container container : containers) {
 			try {
-				System.out.println("TM APP MASTER: Launching container " + container.getId());
 				nmClient.startContainer(container, getContainerLaunchContext());
 
 			} catch (Exception ex) {
-				System.err.println("TM APP MASTER: Error launching container " + container.getId());
+				System.err.println("TM APP MASTER: Error launching container "
+						+ container.getId());
 			}
 		}
 	}
-	
+
 	private ContainerLaunchContext getContainerLaunchContext() {
-		String jarName = "TransactionManagerDeamon.jar";
-		
-		Vector<String> cmds = new Vector<String>();
-		cmds.add("$JAVA_HOME/bin/java");
-		cmds.add("-Xmx256M");
-		cmds.add(TransactionManagerDeamon.class.getName());
-		cmds.add("-cp " + jarName);
-		cmds.add(" 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout");
-        cmds.add("2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr");
-        
-        String commands = "";
-        for (String cmd : cmds) {
-        	commands += cmd + " ";
-        }
-		
+		String jarName = TransactionManagerDaemon.class.getSimpleName() + ".jar";
+
+		String commands = "java -cp './package/*' "
+				+ TransactionManagerDaemon.class.getName() + " 1>"
+				+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
+				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR
+				+ "/stderr";
+
+		System.out.println("Cmd = " + commands);
+
 		Path jarPath = new Path("/tkvs/" + jarName);
+
 		try {
-			Map<String, LocalResource> localResources = Collections.singletonMap("TransactionManagerDeamon.jar",
-					YarnHelper.getLocalResourceForJar(jarPath, conf));
+			Map<String, LocalResource> localResources = Collections
+					.singletonMap("package",
+							YarnHelper.getLocalResourceForJar(jarPath, conf));
+
+			Map<String, String> env = Collections.singletonMap(
+					Environment.CLASSPATH.name(), YarnHelper.buildCP(conf));
 			
-			Map<String, String> env = Collections.singletonMap(Environment.CLASSPATH.name(), YarnHelper.buildCP(conf));
-			return ContainerLaunchContext.newInstance(localResources, env, Arrays.asList(commands), null, null, null);
+			ContainerLaunchContext lContext = Records.newRecord(ContainerLaunchContext.class);
+			lContext.setLocalResources(localResources);
+			lContext.setEnvironment(env);
+			lContext.setCommands(Collections.singletonList(commands));
+			
+			return lContext;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
-	
-	
 
 	@Override
 	public void onContainersCompleted(List<ContainerStatus> statusOfContainers) {
 		for (ContainerStatus status : statusOfContainers) {
-			System.out.println("TM APP MASTER: Completed container " + status.getContainerId());
+			System.out.println("TM APP MASTER: Completed container "
+					+ status.getContainerId());
 
 			synchronized (this) {
 				containerCount--;
@@ -139,18 +144,18 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler{
 	@Override
 	public void onError(Throwable e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onNodesUpdated(List<NodeReport> nodeReports) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void onShutdownRequest() {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

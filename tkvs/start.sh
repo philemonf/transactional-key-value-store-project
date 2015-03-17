@@ -14,11 +14,11 @@ fi
 javac -cp "$HADOOP_CP" -d classes/ `find src -name *.java`
 
 jar cvfe AppMaster.jar com.epfl.tkvs.AppMaster -C classes/ .
-jar cvfe TransactionManagerDeamon.jar com.epfl.tkvs.TransactionManagerDeamon -C classes/ .
+jar cvfe TransactionManagerDaemon.jar com.epfl.tkvs.TransactionManagerDaemon -C classes/ .
 
 hdfs dfs -mkdir -p $HDFS_PATH
-hdfs dfs -rm -f "$HDFS_PATH/TransactionManagerDeamon.jar"
-hdfs dfs -put TransactionManagerDeamon.jar "$HDFS_PATH"
+hdfs dfs -rm -f "$HDFS_PATH/TransactionManagerDaemon.jar"
+hdfs dfs -put TransactionManagerDaemon.jar "$HDFS_PATH"
 
 if [[ -z "$HADOOP_HOME" ]]
 then
