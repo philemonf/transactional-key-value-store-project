@@ -1,4 +1,4 @@
-package ch.epfl.tkvs;
+package ch.epfl.tkvs.yarn;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +46,7 @@ public class Client {
 		ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
 		amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
 				+ " -Xmx256M"
-				+ " ch.epfl.tkvs.AppMaster"
+				+ " ch.epfl.tkvs.yarn.AppMaster"
 				+ " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
 				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 

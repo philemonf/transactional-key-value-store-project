@@ -1,4 +1,4 @@
-package ch.epfl.tkvs;
+package ch.epfl.tkvs.transactionmanager;
 
 import java.net.InetAddress;
 

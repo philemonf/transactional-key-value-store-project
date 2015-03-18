@@ -1,4 +1,4 @@
-package ch.epfl.tkvs;
+package ch.epfl.tkvs.yarn;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -99,7 +99,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 			ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
 			cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
 				+ " -Xmx256M"
-				+ " ch.epfl.tkvs.TransactionManager"
+				+ " ch.epfl.tkvs.transactionmanager.TransactionManager"
 				+ " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
 				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 

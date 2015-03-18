@@ -1,4 +1,4 @@
-package ch.epfl.tkvs;
+package ch.epfl.tkvs.yarn;
 
 import java.io.IOException;
 import java.util.Map;
