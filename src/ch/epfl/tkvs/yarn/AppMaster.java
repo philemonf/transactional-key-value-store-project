@@ -63,8 +63,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		capability.setVirtualCores(1);
 
 		// Reqiest Containers from RM
+			System.out.println("TKVS AppMaster: Requesting " + containerCount + " Containers");
 		for (int i = 0; i < containerCount; ++i) {
-			System.out.println("TKVS AppMaster: Requesting Container " + i);
 			rmClient.addContainerRequest(new ContainerRequest(capability, null, null, priority));
 		}
 		
