@@ -17,10 +17,10 @@ javac -cp "$HADOOP_CP" -d build src/ch/epfl/tkvs/*/*.java
 jar cf TKVS.jar -C build .
 rm -r -f build
 
-# Puts the jar in HDFS under /apps/tkvs/.
-hadoop fs -rm -r -f /apps/tkvs
-hadoop fs -mkdir -p /apps/tkvs
-hadoop fs -copyFromLocal TKVS.jar /apps/tkvs/TKVS.jar
+# Puts the jar in HDFS under /projects/transaction-manager/.
+hadoop fs -mkdir -p /projects/transaction-manager/
+hadoop fs -rm -r -f "/projects/transaction-manager/*"
+hadoop fs -copyFromLocal TKVS.jar /projects/transaction-manager/TKVS.jar
 
 # Executes the Client.
 hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client

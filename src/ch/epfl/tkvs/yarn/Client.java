@@ -51,8 +51,8 @@ public class Client {
 
 		// Set AM jar
 		LocalResource jar = Records.newRecord(LocalResource.class);
-		Utils.setUpLocalResource(Utils.TKVS_JAR, jar, conf);
-		amCLC.setLocalResources(Collections.singletonMap("TKVS.jar", jar));
+		Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
+		amCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
 
 		// Set AM CLASSPATH
 		Map<String, String> env = new HashMap<String, String>();

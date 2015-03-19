@@ -104,8 +104,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
 			// Set Container jar
 			LocalResource jar = Records.newRecord(LocalResource.class);
-			Utils.setUpLocalResource(Utils.TKVS_JAR, jar, conf);
-			cCLC.setLocalResources(Collections.singletonMap("TKVS.jar", jar));
+			Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
+			cCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
 			
 			// Set Container CLASSPATH
 			Map<String, String> env = new HashMap<String, String>();
