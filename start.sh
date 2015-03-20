@@ -2,7 +2,7 @@
 
 # Sets the hadoop classpath.
 HADOOP_CP=`hadoop classpath`
-if [[ -z "$HADOOP_CP" ]]
+if [ -z "$HADOOP_CP" ]
 then
 	HADOOP_CP="$HADOOP_CLASSPATH"
 fi
