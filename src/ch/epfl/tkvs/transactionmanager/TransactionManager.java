@@ -1,5 +1,9 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import ch.epfl.tkvs.kvstore.Key;
+import ch.epfl.tkvs.lockingunit.LockType;
+import ch.epfl.tkvs.lockingunit.LockingUnit;
+
 import java.net.InetAddress;
 
 public class TransactionManager {
@@ -10,7 +14,7 @@ public class TransactionManager {
 		System.out.println("TKVS TransactionManager: Finalizing");
 		
 		// Dummy examples
-		LockingUnit.instance.lock(new Key(), READ_LOCK);
-		LockingUnit.instance.release(new Key(), WRITE_LOCK);
-	}
+		LockingUnit.instance.lock(new Key(), LockType.READ_LOCK);
+        LockingUnit.instance.release(new Key(), LockType.WRITE_LOCK);
+    }
 }

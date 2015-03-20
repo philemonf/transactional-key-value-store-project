@@ -1,4 +1,4 @@
-package ch.epfl.tkvs;
+package ch.epfl.tkvs.kvstore;
 
 /**
  * The Key type for the <Key, Value> store

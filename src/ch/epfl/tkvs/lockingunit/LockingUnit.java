@@ -1,4 +1,6 @@
-package ch.epfl.tkvs.transactionmanager.lockingunit;
+package ch.epfl.tkvs.lockingunit;
+
+import ch.epfl.tkvs.kvstore.Key;
 
 /**
  * Locking Unit Singleton
@@ -13,6 +15,7 @@ public enum LockingUnit {
      */
     public boolean lock(Key key, LockType lockType) {
         System.out.println("A key has been locked !");
+        return true;
     }
     
     /**
@@ -21,6 +24,7 @@ public enum LockingUnit {
      */
     public boolean release(Key key, LockType lockType) {
         System.out.println("A key has been unlocked !");
+        return true;
     }
         
     /**

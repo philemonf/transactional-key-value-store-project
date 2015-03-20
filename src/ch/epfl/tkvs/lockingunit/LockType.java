@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.transactionmanager.lockingunit;
+package ch.epfl.tkvs.lockingunit;
 
 /**
  * The lock types available for the LockingUnit 
