@@ -1,7 +1,8 @@
-package ch.epfl.tkvs.transactionmanager.versioningunit;
+package ch.epfl.tkvs.versioningunit;
 
 import ch.epfl.tkvs.kvstore.Key;
 import ch.epfl.tkvs.kvstore.Value;
+
 import java.sql.Timestamp;
 
 /**
@@ -16,21 +17,23 @@ public enum VersioningUnit {
      * and the current timestamp. 
      * @return timestamp
      */
-    public Timestamp createNewVersion(Key key, Value newValue){
+    public Timestamp createNewVersion(Key key, Value newValue) {
         System.out.println("A new version of a key has been created");
+        return null;
     }
     
     /**
      * @return the corresponding value of the key with the closest oldest timestamp
      */
-    public Value getValue(Key key, TimeStamp timestamp) {
+    public Value getValue(Key key, Timestamp timestamp) {
         System.out.println("Getting a <key, value> version");
+        return null;
     }
     
     /**
      * Commit the key at the given timestamp
      */
-    public void commit(Key key, TimeStamp timestamp){
-         System.out.println("A commit has been done");
+    public void commit(Key key, Timestamp timestamp){
+        System.out.println("A commit has been done");
     }
 }
