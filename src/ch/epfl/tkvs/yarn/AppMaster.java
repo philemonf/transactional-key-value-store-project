@@ -1,11 +1,16 @@
 package ch.epfl.tkvs.yarn;
 
 import ch.epfl.tkvs.transactionmanager.AMServer;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -25,7 +30,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
 	private YarnConfiguration conf = new YarnConfiguration();
 	private NMClient nmClient;
-	private int containerCount = 3;
+	private int containerCount = 0;
 
 	public static void main(String[] args) {
 		System.out.println("TKVS AppMaster: Initializing");
@@ -63,10 +68,20 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		capability.setVirtualCores(1);
 
 		// Reqiest Containers from RM
-			System.out.println("TKVS AppMaster: Requesting " + containerCount + " Containers");
-		for (int i = 0; i < containerCount; ++i) {
-			rmClient.addContainerRequest(new ContainerRequest(capability, null, null, priority));
+		Path hostnamesPath = new Path(Utils.TKVS_CONFIG_PATH, "hostnames");
+		FileSystem fs = hostnamesPath.getFileSystem(conf);
+		BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(hostnamesPath)));
+		
+		String hostname = reader.readLine();
+		while (hostname != null) {
+			System.out.println("TKVS AppMaster: Requesting Containers for Hostname " + hostname);
+			String[] hostnames = {hostname};
+			rmClient.addContainerRequest(new ContainerRequest(capability, hostnames, null, priority));
+			
+			++containerCount;
+			hostname = reader.readLine();
 		}
+		
 		new Thread(new AMServer()).start();
 		while (!containersFinished()) {
 			Thread.sleep(100);
