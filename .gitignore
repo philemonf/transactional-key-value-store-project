@@ -1,4 +1,4 @@
-*.class
+src/*.class
 .*
 
 # Mobile Tools for Java (J2ME)
