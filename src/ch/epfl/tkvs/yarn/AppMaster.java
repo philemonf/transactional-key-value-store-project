@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.yarn;
 
+import ch.epfl.tkvs.transactionmanager.AMServer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -70,7 +71,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		while (!containersFinished()) {
 			Thread.sleep(100);
 		}
-
+                AMServer.main(null);
 		System.out.println("TKVS AppMaster: Unregistered");
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
 	}

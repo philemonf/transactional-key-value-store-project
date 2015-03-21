@@ -8,7 +8,7 @@ then
 fi
 
 # Cleans old build.
-rm -f *.jar
+#rm -f *.jar
 rm -r -f build
 
 # Builds the jar.
