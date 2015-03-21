@@ -8,16 +8,17 @@ then
 fi
 
 # Cleans old build.
-#rm -f *.jar
+rm -f *.jar
 rm -r -f build
 
 # Builds the jar.
 mkdir build
 find -name "*.java" > sources.txt
-javac -cp "$HADOOP_CP" -d build @sources.txt
+javac -cp "lib:$HADOOP_CP" -d build @sources.txt
 rm -f sources.txt
+cp -r lib/org build/
 jar cf TKVS.jar -C build .
-rm -r -f build
+
 
 # Puts the jar in HDFS under /projects/transaction-manager/.
 hadoop fs -mkdir -p /projects/transaction-manager/

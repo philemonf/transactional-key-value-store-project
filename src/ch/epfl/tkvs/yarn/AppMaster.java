@@ -67,12 +67,11 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		for (int i = 0; i < containerCount; ++i) {
 			rmClient.addContainerRequest(new ContainerRequest(capability, null, null, priority));
 		}
-		
+		new Thread(new AMServer()).start();
 		while (!containersFinished()) {
 			Thread.sleep(100);
 		}
-                AMServer.main(null);
-		System.out.println("TKVS AppMaster: Unregistered");
+ 		System.out.println("TKVS AppMaster: Unregistered");
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
 	}
 

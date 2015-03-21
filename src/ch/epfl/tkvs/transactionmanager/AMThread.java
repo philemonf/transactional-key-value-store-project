@@ -61,7 +61,7 @@ public class AMThread extends Thread {
 		// Compute the hash of the key.
 		
 		String hostName = "localhost";
-		int portNumber = TMServer.portNumber;
+		int portNumber = TransactionManager.portNumber;
 		long transactionID = 0;
 		
 		// get the hostName and portNumber for that hash.

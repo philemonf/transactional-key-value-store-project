@@ -32,6 +32,7 @@ public class TransactionManager
             while (listening)
               {
                 new TMThread(serverSocket.accept(), serverSocket.getLocalPort()).start();
+//		listening=false;
               }
           } catch (IOException e)
           {
