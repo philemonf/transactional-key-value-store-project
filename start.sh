@@ -13,7 +13,9 @@ rm -r -f build
 
 # Builds the jar.
 mkdir build
-javac -cp "$HADOOP_CP" -d build src/ch/epfl/tkvs/*/*.java
+find -name "*.java" > sources.txt
+javac -cp "$HADOOP_CP" -d build @sources.txt
+rm -f sources.txt
 jar cf TKVS.jar -C build .
 rm -r -f build
 
