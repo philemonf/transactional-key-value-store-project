@@ -9,64 +9,66 @@ import java.net.Socket;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+
 public class AMThread extends Thread {
-	private Socket socket = null;
-	private String valueRead = null;
 
-	public AMThread(Socket socket) {
-		super("TMServerThread");
+    private Socket socket = null;
+    private String valueRead = null;
 
-		this.socket = socket;
-	}
+    public AMThread(Socket socket) {
+        super("TMServerThread");
 
-	public void run() {
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
-				PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
+        this.socket = socket;
+    }
 
-			// Read the request into a JSONObject
-			String inputStr;
+    public void run() {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
 
-			inputStr = in.readLine();
+            // Read the request into a JSONObject
+            String inputStr;
 
-			JSONObject request = new JSONObject(inputStr);
+            inputStr = in.readLine();
 
-			// Create the response
-			JSONObject response = null;
-			switch (request.getString("Type")) {
-			case "TM":
-				response = TMRequest(request);
-				break;
-			}
+            JSONObject request = new JSONObject(inputStr);
 
-			// Send the response
-			out.println(response.toString());
+            // Create the response
+            JSONObject response = null;
+            switch (request.getString("Type")) {
+            case "TM":
+                response = TMRequest(request);
+                break;
+            }
 
-			in.close();
-			out.close();
-			socket.close();
+            // Send the response
+            out.println(response.toString());
 
-		} catch (IOException | JSONException e) {
-			e.printStackTrace();
-		}
-	}
+            in.close();
+            out.close();
+            socket.close();
 
-	private JSONObject TMRequest(JSONObject request) throws JSONException {
-		String key = request.getString("Key");
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+    }
 
-		// TODO Auto-generated method stub
-		// Compute the hash of the key.
+    private JSONObject TMRequest(JSONObject request) throws JSONException {
+        String key = request.getString("Key");
 
-		String hostName = "localhost";
-		int portNumber = TransactionManager.portNumber;
-		long transactionID = 0;
+        // TODO Auto-generated method stub
+        // Compute the hash of the key.
 
-		// get the hostName and portNumber for that hash.
-		// create a unique transactionID
-		System.out.println("Begin " + transactionID);
-		JSONObject response = new JSONObject();
-		response.put("HostName", hostName);
-		response.put("PortNumber", portNumber);
-		response.put("TransactionID", transactionID);
-		return response;
-	}
+        String hostName = "localhost";
+        int portNumber = TransactionManager.portNumber;
+        long transactionID = 0;
+
+        // get the hostName and portNumber for that hash.
+        // create a unique transactionID
+        System.out.println("Begin " + transactionID);
+        JSONObject response = new JSONObject();
+        response.put("HostName", hostName);
+        response.put("PortNumber", portNumber);
+        response.put("TransactionID", transactionID);
+        return response;
+    }
 }

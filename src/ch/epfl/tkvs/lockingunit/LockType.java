@@ -5,5 +5,5 @@ package ch.epfl.tkvs.lockingunit;
  * WRITE_LOCK (exclusive lock)
  */
 public enum LockType {
-	READ_LOCK, WRITE_LOCK
+    READ_LOCK, WRITE_LOCK
 }
