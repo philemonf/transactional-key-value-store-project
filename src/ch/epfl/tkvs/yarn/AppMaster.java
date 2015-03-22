@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.yarn;
 
-import ch.epfl.tkvs.transactionmanager.AMServer;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Collections;
@@ -25,6 +23,8 @@ import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
+
+import ch.epfl.tkvs.transactionmanager.AMServer;
 
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
 

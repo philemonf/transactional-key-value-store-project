@@ -1,15 +1,14 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+
 import ch.epfl.tkvs.kvstore.Key;
 import ch.epfl.tkvs.kvstore.Value;
 import ch.epfl.tkvs.lockingunit.LockType;
 import ch.epfl.tkvs.lockingunit.LockingUnit;
-import static ch.epfl.tkvs.transactionmanager.TransactionManager.portNumber;
 import ch.epfl.tkvs.versioningunit.VersioningUnit;
-import java.io.IOException;
-
-import java.net.InetAddress;
-import java.net.ServerSocket;
 
 public class TransactionManager
   {

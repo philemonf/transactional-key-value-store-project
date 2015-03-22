@@ -1,9 +1,9 @@
 package ch.epfl.tkvs.versioningunit;
 
+import java.sql.Timestamp;
+
 import ch.epfl.tkvs.kvstore.Key;
 import ch.epfl.tkvs.kvstore.Value;
-
-import java.sql.Timestamp;
 
 /**
  * Versioning Unit Singleton
