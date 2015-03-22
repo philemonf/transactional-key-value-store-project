@@ -48,12 +48,12 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		nmClient = NMClient.createNMClient();
 		nmClient.init(conf);
 		nmClient.start();
-		
+
 		// Create AM - RM Client
 		AMRMClientAsync<ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(1000, this);
 		rmClient.init(conf);
 		rmClient.start();
-		
+
 		// Register with RM
 		rmClient.registerApplicationMaster("", 0, "");
 		System.out.println("TKVS AppMaster: Registered");
@@ -61,7 +61,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		// Priority for worker containers - priorities are intra-application
 		Priority priority = Records.newRecord(Priority.class);
 		priority.setPriority(0);
-		
+
 		// Resource requirements for worker containers
 		Resource capability = Records.newRecord(Resource.class);
 		capability.setMemory(128);
@@ -71,23 +71,22 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		Path hostnamesPath = new Path(Utils.TKVS_CONFIG_PATH, "hostnames");
 		FileSystem fs = hostnamesPath.getFileSystem(conf);
 		BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(hostnamesPath)));
-		
+
 		String hostname = reader.readLine();
 		while (hostname != null) {
 			System.out.println("TKVS AppMaster: Requesting Containers for Hostname " + hostname);
-			String[] hostnames = {hostname};
-			rmClient.addContainerRequest(new ContainerRequest(capability, hostnames, null, priority));
-			
+			rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { hostname }, null, priority));
+
 			++containerCount;
 			hostname = reader.readLine();
 		}
-		
+
 		new Thread(new AMServer()).start();
 		while (!containersFinished()) {
 			Thread.sleep(100);
 		}
-		
- 		System.out.println("TKVS AppMaster: Unregistered");
+
+		System.out.println("TKVS AppMaster: Unregistered");
 		rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
 	}
 
@@ -112,17 +111,16 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 		try {
 			// Create Container Context
 			ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-			cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
-				+ " -Xmx256M"
-				+ " ch.epfl.tkvs.transactionmanager.TransactionManager"
-				+ " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
-				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+			cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M"
+					+ " ch.epfl.tkvs.transactionmanager.TransactionManager" + " 1>"
+					+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
+					+ ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
 			// Set Container jar
 			LocalResource jar = Records.newRecord(LocalResource.class);
 			Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
 			cCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
-			
+
 			// Set Container CLASSPATH
 			Map<String, String> env = new HashMap<String, String>();
 			Utils.setUpEnv(env, conf);
@@ -146,13 +144,16 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 	}
 
 	@Override
-	public void onError(Throwable e) {}
+	public void onError(Throwable e) {
+	}
 
 	@Override
-	public void onNodesUpdated(List<NodeReport> nodeReports) {}
+	public void onNodesUpdated(List<NodeReport> nodeReports) {
+	}
 
 	@Override
-	public void onShutdownRequest() {}
+	public void onShutdownRequest() {
+	}
 
 	@Override
 	public float getProgress() {

@@ -40,7 +40,7 @@ public class Utils {
 
 	public static void setUpLocalResource(Path resPath, LocalResource res, YarnConfiguration conf) throws IOException {
 		Path qPath = FileContext.getFileContext().makeQualified(resPath);
-		
+
 		FileStatus status = FileSystem.get(conf).getFileStatus(qPath);
 		res.setResource(ConverterUtils.getYarnUrlFromPath(qPath));
 		res.setSize(status.getLen());
@@ -49,4 +49,3 @@ public class Utils {
 		res.setVisibility(LocalResourceVisibility.PUBLIC);
 	}
 }
-

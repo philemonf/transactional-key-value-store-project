@@ -21,7 +21,7 @@ public class Client {
 
 	private YarnConfiguration conf;
 
-	public static void main(String[] args){
+	public static void main(String[] args) {
 		System.out.println("TKVS Client: Initializing");
 		try {
 			new Client().run();
@@ -43,10 +43,8 @@ public class Client {
 
 		// Create AM Container
 		ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-		amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
-				+ " -Xmx256M"
-				+ " ch.epfl.tkvs.yarn.AppMaster"
-				+ " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
+		amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M"
+				+ " ch.epfl.tkvs.yarn.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
 				+ " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
 		// Set AM jar
@@ -78,8 +76,7 @@ public class Client {
 
 		ApplicationReport appReport = client.getApplicationReport(id);
 		YarnApplicationState appState = appReport.getYarnApplicationState();
-		while (appState != YarnApplicationState.FINISHED
-				&& appState != YarnApplicationState.KILLED
+		while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED
 				&& appState != YarnApplicationState.FAILED) {
 			Thread.sleep(1000);
 			appReport = client.getApplicationReport(id);
