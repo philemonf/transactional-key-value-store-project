@@ -23,7 +23,6 @@ rm -r -f build
 # Puts the jar in HDFS under /projects/transaction-manager/.
 hadoop fs -rm -r -f "/projects/transaction-manager/*"
 hadoop fs -copyFromLocal TKVS.jar /projects/transaction-manager/TKVS.jar
-hadoop fs -mkdir -p /projects/transaction-manager/config
 hadoop fs -copyFromLocal config /projects/transaction-manager/
 
 # Executes the Client.
