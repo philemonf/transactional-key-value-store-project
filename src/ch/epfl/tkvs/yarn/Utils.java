@@ -18,8 +18,8 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 public class Utils {
 
 	public static final String TKVS_JAR_NAME = "TKVS.jar";
-	public static final Path TKVS_CONFIG_PATH = new Path("/projects/transaction-manager/config/");
-	public static final Path TKVS_JAR_PATH = new Path("/projects/transaction-manager/" + TKVS_JAR_NAME);
+	public static final Path TKVS_CONFIG_PATH = new Path("hdfs:///projects/transaction-manager/config/");
+	public static final Path TKVS_JAR_PATH = new Path("hdfs:///projects/transaction-manager/" + TKVS_JAR_NAME);
 
 	public static void setUpEnv(Map<String, String> env, YarnConfiguration conf) {
 		StringBuilder classPathEnv = new StringBuilder(Environment.CLASSPATH.$$()).append(
