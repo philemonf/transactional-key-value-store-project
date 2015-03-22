@@ -11,19 +11,17 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 public class Transaction {
-	
+
 	public enum TransactionStatus {
 		live, aborted, commited
 	}
-	
+
 	private static String hostNameOfAM;
 	private static int portNumberOfAM;
 	private String hostNameOfTM = null;
 	private int portNumberOfTM;
 	private long transactionID;
 	private TransactionStatus status;
-
-
 
 	public static void initialize(String host, int port) {
 		hostNameOfAM = host;
