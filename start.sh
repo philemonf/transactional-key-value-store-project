@@ -15,7 +15,6 @@ rm -r -f build
 mkdir build
 find . -name "*.java" > .sources
 javac -cp "lib:$HADOOP_CP" -d build @.sources
-cp -r lib/org build/
 jar cf TKVS.jar -C build .
 rm -f .sources
 rm -r -f build
