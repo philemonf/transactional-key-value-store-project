@@ -54,6 +54,7 @@ public class AMThread extends Thread {
 
     private JSONObject TMRequest(JSONObject request) throws JSONException {
         String key = request.getString("Key");
+        int hash = request.getInt("Hash");
 
         // TODO Auto-generated method stub
         // Compute the hash of the key.

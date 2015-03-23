@@ -17,7 +17,7 @@ find . -name "*.java" > .sources
 javac -cp "lib:$HADOOP_CP" -d build @.sources
 jar cf TKVS.jar -C build .
 rm -f .sources
-rm -r -f build
+#rm -r -f build
 
 # Puts the jar in HDFS under /projects/transaction-manager/.
 hadoop fs -rm -r -f "/projects/transaction-manager/*"

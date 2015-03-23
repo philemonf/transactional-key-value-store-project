@@ -32,6 +32,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     private YarnConfiguration conf = new YarnConfiguration();
     private NMClient nmClient;
     private int containerCount = 0;
+    private int containersAllocated = 0;
 
     public static void main(String[] args) {
         System.out.println("TKVS AppMaster: Initializing");
@@ -82,7 +83,6 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             hostname = reader.readLine();
         }
 
-        new Thread(new AMServer()).start();
         while (!containersFinished()) {
             Thread.sleep(100);
         }
@@ -101,6 +101,12 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             try {
                 nmClient.startContainer(container, initContainer());
                 System.err.println("TKVS AppMaster: Container launched " + container.getId());
+                containersAllocated++;
+                if (containerCount == containersAllocated) {
+
+                    System.out.println("Aasdasdasd.");
+                   new AMServer().run();
+                }
             } catch (Exception ex) {
                 System.err.println("TKVS AppMaster: Container not launched " + container.getId());
                 ex.printStackTrace();

@@ -11,7 +11,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 
-public class Transaction {
+public class Transaction<K extends Key> {
 
     public enum TransactionStatus {
         live, aborted, commited
@@ -29,10 +29,11 @@ public class Transaction {
         portNumberOfAM = port;
     }
 
-    public Transaction(MyKey key) {
+    public Transaction(K key) {
         try {
             JSONObject request = new JSONObject();
             request.put("Type", "TM");
+            request.put("Hash", key.getHash());
             request.put("Key", key);
             JSONObject response = sendRequest(hostNameOfAM, portNumberOfAM, request);
             hostNameOfTM = response.getString("HostName");
@@ -77,7 +78,7 @@ public class Transaction {
         return null;
     }
 
-    public MyValue read(MyKey key) throws AbortException, JSONException {
+    public byte[] read(K key) throws AbortException, JSONException {
 
         if (status != TransactionStatus.live) {
             throw new AbortException("Transaction is no longer live");
@@ -86,6 +87,7 @@ public class Transaction {
 
         request.put("Type", "Read");
         request.put("TransactionID", transactionID);
+        request.put("Hash", key.getHash());
         request.put("Key", key.toString());
         JSONObject response = sendRequest(hostNameOfTM, portNumberOfTM, request);
 
@@ -94,10 +96,10 @@ public class Transaction {
             status = TransactionStatus.aborted;
             throw new AbortException("Abort");
         }
-        return new MyValue(response.getString("Value"));
+        return response.getString("Value").getBytes();
     }
 
-    public void write(MyKey key, MyValue value) throws AbortException, JSONException {
+    public void write(K key, byte[] value) throws AbortException, JSONException {
 
         if (status != TransactionStatus.live) {
             throw new AbortException("Transaction is no longer live");
@@ -105,8 +107,9 @@ public class Transaction {
         JSONObject request = new JSONObject();
         request.put("Type", "Write");
         request.put("TransactionID", transactionID);
+        request.put("Hash", key.getHash());
         request.put("Key", key.toString());
-        request.put("Value", value.toString());
+        request.put("Value", new String(value));
         JSONObject response = sendRequest(hostNameOfTM, portNumberOfTM, request);
         boolean isSuccess = response.getBoolean("Success");
         if (!isSuccess) {

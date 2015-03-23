@@ -8,25 +8,21 @@ import java.util.HashMap;
  */
 public class KeyValueStore {
 
-    public HashMap<Key, Value> store;
+    public HashMap<String, ByteArray> store;
 
     public KeyValueStore() {
-        store = new HashMap<Key, Value>();
+        store = new HashMap<String, ByteArray>();
     }
 
-    public void put(Key key, Value value) {
-        store.put(key, value);
+    public void put(String key, byte[] value) {
+        store.put(key, new ByteArray(value));
     }
 
-    public Value get(Key key) {
-        return store.get(key);
+    public byte[] get(String key) {
+        return store.get(key).getBytes();
     }
 
-    public void update(Key key, Value value) {
-        store.put(key, value);
-    }
-
-    public void remove(Key key) {
+    public void remove(String key) {
         store.remove(key);
     }
 }

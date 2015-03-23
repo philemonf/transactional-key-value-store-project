@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 
 public class AMServer implements Runnable {
 
-    public static int portNumber = 1090;
+    public static int portNumber = 24744;
 
     public static void main(String[] args) throws IOException {
         new AMServer().run();
@@ -25,6 +25,7 @@ public class AMServer implements Runnable {
             }
         } catch (IOException e) {
             System.err.println("Could not listen on port " + portNumber);
+            e.printStackTrace();
             System.exit(-1);
         }
     }

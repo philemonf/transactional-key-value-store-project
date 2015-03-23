@@ -1,22 +1,21 @@
 package ch.epfl.tkvs.userclient;
 
-import ch.epfl.tkvs.kvstore.Key;
-
-
 public class MyKey extends Key {
 
-    int k;
-
-    public MyKey(int i) {
-        k = i;
+    String k;
+    
+    public MyKey(String k) {
+        this.k = k;
+    }
+    
+    @Override
+    public int getHash() {
+        return 0;
     }
 
-    public int getKey() {
-        return k;
-    }
-
+    @Override
     public String toString() {
-        return String.valueOf(k);
+        return k;
     }
 
 }

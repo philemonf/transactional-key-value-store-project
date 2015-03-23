@@ -9,19 +9,21 @@ import java.net.Socket;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import ch.epfl.tkvs.kvstore.KeyValueStore;
+
 
 public class TMThread extends Thread {
 
-    static String[] kv = new String[100]; // ONLY FOR TESTING
-
     private Socket socket = null;
-    private Object valueRead = null;
+    private byte[] valueRead = null;
+    private KeyValueStore kvStore = null;
     private int portNumber;
 
-    public TMThread(Socket socket, int portNumber) {
+    public TMThread(Socket socket, int portNumber, KeyValueStore kvStore) {
         super("TMServerThread");
         this.socket = socket;
         this.portNumber = portNumber;
+        this.kvStore = kvStore;
     }
 
     public void run() {
@@ -39,17 +41,18 @@ public class TMThread extends Thread {
             JSONObject response = null;
             switch (request.getString("Type")) {
             case "Read":
-                response = readRequest(request);
+                response = jsonifyReadRequest(request);
                 break;
             case "Write":
-                response = writeRequest(request);
+                response = jsonifyWriteRequest(request);
                 break;
             case "Commit":
-                response = commitRequest(request);
+                response = jsonifyCommitRequest(request);
                 break;
             }
 
             // Send the response
+            System.out.println("Response"+response.toString());
             out.println(response.toString());
 
             in.close();
@@ -61,7 +64,7 @@ public class TMThread extends Thread {
         }
     }
 
-    private JSONObject commitRequest(JSONObject request) throws JSONException {
+    private JSONObject jsonifyCommitRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         boolean success = commit(transactionID);
 
@@ -71,14 +74,14 @@ public class TMThread extends Thread {
     }
 
     private boolean commit(long transactionID) {
-        // TODO Auto-generated method stub
         return true;
     }
 
-    private JSONObject writeRequest(JSONObject request) throws JSONException {
+    private JSONObject jsonifyWriteRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         String key = request.getString("Key");
-        String value = request.getString("Value");
+        int hash = request.getInt("Hash");
+        byte[] value = request.getString("Value").getBytes();
         boolean success = write(transactionID, key, value);
 
         JSONObject response = new JSONObject();
@@ -86,17 +89,16 @@ public class TMThread extends Thread {
         return response;
     }
 
-    private boolean write(long transactionID, String key, String value) {
-        // TODO Auto-generated method stub
-        int k = new Integer(key);
+    private boolean write(long transactionID, String key, byte[] value) {
         System.out.println("Write  " + key + "   " + value);
-        kv[k] = value;
+        kvStore.put(key, value);
         return true;
     }
 
-    private JSONObject readRequest(JSONObject request) throws JSONException {
+    private JSONObject jsonifyReadRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         String key = request.getString("Key");
+        int hash = request.getInt("Hash");
         boolean success = read(transactionID, key);
 
         JSONObject response = new JSONObject();
@@ -107,12 +109,11 @@ public class TMThread extends Thread {
     }
 
     private boolean read(long transactionID, String key) {
-        // TODO Auto-generated method stub
         // Updates valueRead
         int k = new Integer(key);
-        valueRead = kv[k];
+        valueRead = kvStore.get(key);
 
-        System.out.println("Read " + k + "   " + kv[k]);
+        System.out.println("Read " + k + "   " + valueRead);
         return true;
     }
 
