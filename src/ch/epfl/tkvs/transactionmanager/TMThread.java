@@ -6,127 +6,114 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
-public class TMThread extends Thread
-  {
+import ch.epfl.tkvs.kvstore.KeyValueStore;
 
-    static String[] kv = new String[100]; //ONLY FOR TESTING
+
+public class TMThread extends Thread {
 
     private Socket socket = null;
-    private Object valueRead = null;
+    private byte[] valueRead = null;
+    private KeyValueStore kvStore = null;
     private int portNumber;
 
-    public TMThread(Socket socket, int portNumber)
-      {
+    public TMThread(Socket socket, int portNumber, KeyValueStore kvStore) {
         super("TMServerThread");
         this.socket = socket;
         this.portNumber = portNumber;
-      }
+        this.kvStore = kvStore;
+    }
 
-    public void run()
-      {
-        try (BufferedReader in = new BufferedReader(
-                new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(
-                        socket.getOutputStream(), true);)
-          {
+    public void run() {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
 
-            //Read the request into a JSONObject
-         
+            // Read the request into a JSONObject
+
             String inputStr;
             inputStr = in.readLine();
 
             JSONObject request = new JSONObject(inputStr);
 
-            //Create the response
+            // Create the response
             JSONObject response = null;
-            switch (request.getString("Type"))
-              {
-                case "Read":
-                    response = readRequest(request);
-                    break;
-                case "Write":
-                    response = writeRequest(request);
-                    break;
-                case "Commit":
-                    response = commitRequest(request);
-                    break;
-              }
+            switch (request.getString("Type")) {
+            case "Read":
+                response = jsonifyReadRequest(request);
+                break;
+            case "Write":
+                response = jsonifyWriteRequest(request);
+                break;
+            case "Commit":
+                response = jsonifyCommitRequest(request);
+                break;
+            }
 
-            //Send the response
+            // Send the response
+            System.out.println("Response"+response.toString());
             out.println(response.toString());
 
             in.close();
             out.close();
             socket.close();
 
-          } catch (IOException | JSONException e)
-          {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
-          }
-      }
+        }
+    }
 
-    private JSONObject commitRequest(JSONObject request) throws JSONException
-      {
+    private JSONObject jsonifyCommitRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         boolean success = commit(transactionID);
 
         JSONObject response = new JSONObject();
         response.put("Success", success);
         return response;
-      }
+    }
 
-    private boolean commit(long transactionID)
-      {
-        // TODO Auto-generated method stub
+    private boolean commit(long transactionID) {
         return true;
-      }
+    }
 
-    private JSONObject writeRequest(JSONObject request) throws JSONException
-      {
+    private JSONObject jsonifyWriteRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         String key = request.getString("Key");
-        String value = request.getString("Value");
+        int hash = request.getInt("Hash");
+        byte[] value = request.getString("Value").getBytes();
         boolean success = write(transactionID, key, value);
 
         JSONObject response = new JSONObject();
         response.put("Success", success);
         return response;
-      }
+    }
 
-    private boolean write(long transactionID, String key, String value)
-      {
-        // TODO Auto-generated method stub
-        int k = new Integer(key);
+    private boolean write(long transactionID, String key, byte[] value) {
         System.out.println("Write  " + key + "   " + value);
-        kv[k] = value;
+        kvStore.put(key, value);
         return true;
-      }
+    }
 
-    private JSONObject readRequest(JSONObject request) throws JSONException
-      {
+    private JSONObject jsonifyReadRequest(JSONObject request) throws JSONException {
         long transactionID = request.getLong("TransactionID");
         String key = request.getString("Key");
+        int hash = request.getInt("Hash");
         boolean success = read(transactionID, key);
 
         JSONObject response = new JSONObject();
         response.put("Success", success);
-        response.put("Value", valueRead);
+        response.put("Value", new String(valueRead));
         valueRead = null;
         return response;
-      }
+    }
 
-    private boolean read(long transactionID, String key)
-      {
-        // TODO Auto-generated method stub
+    private boolean read(long transactionID, String key) {
         // Updates valueRead
-        int k = new Integer(key);
-        valueRead = kv[k];
+        valueRead = kvStore.get(key);
 
-        System.out.println("Read " + k + "   " + kv[k]);
+        System.out.println("Read " + key + "   " + valueRead);
         return true;
-      }
+    }
 
-  }
+}

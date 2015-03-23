@@ -1,15 +1,28 @@
 package ch.epfl.tkvs.kvstore;
 
+import java.util.HashMap;
+
+
 /**
  * <Key,Value> Store
  */
-public interface KeyValueStore {
+public class KeyValueStore {
 
-    public void put(Key key, Value value);
+    public HashMap<String, ByteArray> store;
 
-    public Value get(Key key);
+    public KeyValueStore() {
+        store = new HashMap<String, ByteArray>();
+    }
 
-    public void update(Key key, Value value);
+    public void put(String key, byte[] value) {
+        store.put(key, new ByteArray(value));
+    }
 
-    public void delete(Key key);
+    public byte[] get(String key) {
+        return store.get(key).getBytes();
+    }
+
+    public void remove(String key) {
+        store.remove(key);
+    }
 }

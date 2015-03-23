@@ -13,3 +13,5 @@ src/*.class
 hs_err_pid*
 /bin/
 /nbproject/private/
+/build
+/tkvs

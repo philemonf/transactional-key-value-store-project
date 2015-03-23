@@ -1,32 +1,21 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package ch.epfl.tkvs.userclient;
 
-/**
- *
- * @author sachin
- */
-public class MyKey
-  {
+public class MyKey extends Key {
 
-    int k;
+    String k;
+    
+    public MyKey(String k) {
+        this.k = k;
+    }
+    
+    @Override
+    public int getHash() {
+        return 0;
+    }
 
-    public MyKey(int i)
-      {
-        k = i;
-      }
-
-    public int getKey()
-      {
+    @Override
+    public String toString() {
         return k;
-      }
+    }
 
-    public String toString()
-      {
-        return String.valueOf(k);
-      }
-
-  }
+}
