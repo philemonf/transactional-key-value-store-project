@@ -103,17 +103,16 @@ public class TMThread extends Thread {
 
         JSONObject response = new JSONObject();
         response.put("Success", success);
-        response.put("Value", valueRead);
+        response.put("Value", new String(valueRead));
         valueRead = null;
         return response;
     }
 
     private boolean read(long transactionID, String key) {
         // Updates valueRead
-        int k = new Integer(key);
         valueRead = kvStore.get(key);
 
-        System.out.println("Read " + k + "   " + valueRead);
+        System.out.println("Read " + key + "   " + valueRead);
         return true;
     }
 

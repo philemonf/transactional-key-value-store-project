@@ -11,7 +11,7 @@ public class UserClient {
         MyKey k0 = new MyKey("asd");
         Transaction t = new Transaction(k0);
         t.write(k0, "zero".getBytes());
-        System.out.println(t.read(k0));
+        System.out.println(new String(t.read(k0)));
 
     }
 }

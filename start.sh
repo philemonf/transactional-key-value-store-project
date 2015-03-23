@@ -28,6 +28,3 @@ hadoop fs -copyFromLocal config /projects/transaction-manager/
 hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client
 
 
-# Outputs the whole log of the last app.
-last=`ls -1t $HADOOP_HOME/logs/userlogs/ | head -1`
-cat $HADOOP_HOME/logs/userlogs/"$last"/*/*
