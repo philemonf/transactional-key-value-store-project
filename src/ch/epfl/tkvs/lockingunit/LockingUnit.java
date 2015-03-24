@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.lockingunit;
 
-
-
 /**
  * Locking Unit Singleton Call a function with LockingUnit.instance.fun(args)
  */

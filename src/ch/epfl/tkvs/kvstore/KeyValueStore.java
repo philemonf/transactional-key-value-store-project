@@ -2,6 +2,8 @@ package ch.epfl.tkvs.kvstore;
 
 import java.util.HashMap;
 
+import org.apache.hadoop.hdfs.util.ByteArray;
+
 
 /**
  * <Key,Value> Store

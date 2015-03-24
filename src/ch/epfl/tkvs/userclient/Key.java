@@ -7,6 +7,6 @@ public abstract class Key {
 
     @Override
     abstract public String toString();
-    
+
     public abstract int getHash();
 }

@@ -3,7 +3,6 @@ package ch.epfl.tkvs.versioningunit;
 import java.sql.Timestamp;
 
 
-
 /**
  * Versioning Unit Singleton Call a function with
  * VersioningUnit.instance.fun(args)

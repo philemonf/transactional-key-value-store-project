@@ -105,7 +105,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                 if (containerCount == containersAllocated) {
 
                     System.out.println("Aasdasdasd.");
-                   new AMServer().run();
+                    new AMServer().run();
                 }
             } catch (Exception ex) {
                 System.err.println("TKVS AppMaster: Container not launched " + container.getId());

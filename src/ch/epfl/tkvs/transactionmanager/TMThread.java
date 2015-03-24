@@ -52,7 +52,7 @@ public class TMThread extends Thread {
             }
 
             // Send the response
-            System.out.println("Response"+response.toString());
+            System.out.println("Response" + response.toString());
             out.println(response.toString());
 
             in.close();
