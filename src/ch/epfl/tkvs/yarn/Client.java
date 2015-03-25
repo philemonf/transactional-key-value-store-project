@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
@@ -50,7 +51,9 @@ public class Client {
 
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java ch.epfl.tkvs.yarn.appmaster.AppMaster"));
+        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java" + " ch.epfl.tkvs.yarn.appmaster.AppMaster"
+                + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
+                + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -92,6 +95,11 @@ public class Client {
 
             String input = System.console().readLine("> ");
             switch (input) {
+            case ":exit":
+                log.info("Stopping " + id);
+                // TODO Send signal to AppMaster to exit gracefully
+                // Somehow trigger AppMaster.onShutdownRequest
+                break;
             case ":kill":
                 client.killApplication(id);
                 log.info("Killing " + id);
@@ -106,11 +114,13 @@ public class Client {
             default:
                 System.out.println("Command Not Found!");
             }
-            // TODO: more cses ..
+            // TODO: support more commands with more cases ..
 
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
         }
+
+        log.info(id + " state " + appState);
         client.stop();
     }
 }

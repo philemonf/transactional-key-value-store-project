@@ -15,20 +15,19 @@ import ch.epfl.tkvs.transactionmanager.TransactionManager;
 
 public class AMThread extends Thread {
 
-    private Socket socket;
-    private Logger log;
+    private Socket sock;
+    private static Logger log = Logger.getLogger(AMThread.class.getName());
 
-    public AMThread(Socket socket, Logger log) {
-        this.socket = socket;
-        this.log = log;
+    public AMThread(Socket sock) {
+        this.sock = sock;
     }
 
     public void run() {
         try {
             // Read the request into a JSONObject
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
-            
+
             // Create the response
             JSONObject request = new JSONObject(inputStr);
             JSONObject response = null;
@@ -40,14 +39,14 @@ public class AMThread extends Thread {
 
             // Send the response
             log.info("Response" + response.toString());
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(response.toString());
 
             in.close();
             out.close();
-            socket.close();
+            sock.close();
         } catch (IOException | JSONException e) {
-            e.printStackTrace();
+            log.error("Err", e);
         }
     }
 

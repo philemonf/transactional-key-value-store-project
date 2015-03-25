@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.lockingunit;
+package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 /**
  * The lock types available for the LockingUnit A READ_LOCK (shared lock) and a

@@ -10,27 +10,26 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.kvstore.KeyValueStore;
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class TMThread extends Thread {
 
-    private Socket socket;
+    private Socket sock;
     private byte[] valueRead;
     private KeyValueStore kvStore;
-    private Logger log;
+    private static Logger log = Logger.getLogger(TMThread.class.getName());
 
-    public TMThread(Socket socket, KeyValueStore kvStore, Logger log) {
-        this.socket = socket;
+    public TMThread(Socket sock, KeyValueStore kvStore) {
+        this.sock = sock;
         this.kvStore = kvStore;
-        this.log = log;
     }
 
     public void run() {
         try {
 
             // Read the request into a JSONObject
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
 
             // Create the response
@@ -50,12 +49,12 @@ public class TMThread extends Thread {
 
             // Send the response
             log.info("Response" + response.toString());
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(response.toString());
 
             in.close();
             out.close();
-            socket.close();
+            sock.close();
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }

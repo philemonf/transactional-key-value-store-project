@@ -6,33 +6,46 @@ import java.net.ServerSocket;
 
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.kvstore.KeyValueStore;
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class TransactionManager {
 
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
-    public static int port = 28404;
-    private static boolean listening = true;
+    private boolean listening = true;
+    private ServerSocket sock;
+    public static int port = 49200;
 
     private static KeyValueStore kvStore;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
+        try {
+            log.info("Initializing...");
+            new TransactionManager().run();
+        } catch (Exception ex) {
+            log.fatal("Could not run transaction manager", ex);
+        }
+    }
+
+    public void run() throws Exception {
         log.info("Initializing");
         log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
-        kvStore = new KeyValueStore();
-        try {
-            ServerSocket sock = new ServerSocket(port);
-            while (listening) {
-                new TMThread(sock.accept(), kvStore, log).start();
-            }
-            sock.close();
-        } catch (IOException e) {
-            log.fatal("Could not listen on port " + port, e);
-            System.exit(-1);
 
+        // Create TM Socket
+        sock = new ServerSocket(port);
+        kvStore = new KeyValueStore();
+
+        log.info("Starting server...");
+        while (listening) {
+            try {
+                new TMThread(sock.accept(), kvStore).start();
+            } catch (IOException e) {
+                log.error("sock.accept ", e);
+            }
         }
+
+        sock.close();
         log.info("Finalizing");
     }
 }

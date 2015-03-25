@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.versioningunit;
+package ch.epfl.tkvs.transactionmanager.versioningunit;
 
 import java.sql.Timestamp;
 

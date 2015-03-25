@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.lockingunit;
+package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import org.apache.log4j.Logger;
 
