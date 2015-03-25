@@ -4,38 +4,35 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
+import org.apache.log4j.Logger;
+
 import ch.epfl.tkvs.kvstore.KeyValueStore;
 
 
 public class TransactionManager {
 
-    static int portNumber = 28404;
+    private static Logger log = Logger.getLogger(TransactionManager.class.getName());
+
+    public static int port = 28404;
+    private static boolean listening = true;
 
     private static KeyValueStore kvStore;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("TKVS TransactionManager: Initializing");
-        System.out.println("TKVS TransactionManager: Host Address: " + InetAddress.getLocalHost().getHostAddress());
-        System.out.println("TKVS TransactionManager: Host Name: " + InetAddress.getLocalHost().getHostName());
-        System.out.println("TKVS TransactionManager: Finalizing");
-        boolean listening = true;
-
+        log.info("Initializing");
+        log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
         kvStore = new KeyValueStore();
-
-        // Dummy examples
-        // LockingUnit.instance.lock(new Key(), LockType.READ_LOCK);
-        // LockingUnit.instance.release(new Key(), LockType.WRITE_LOCK);
-        // VersioningUnit.instance.createNewVersion(new Key(), new Value());
-        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+        try {
+            ServerSocket sock = new ServerSocket(port);
             while (listening) {
-                new TMThread(serverSocket.accept(), serverSocket.getLocalPort(), kvStore).start();
-                // listening=false;
+                new TMThread(sock.accept(), kvStore, log).start();
             }
+            sock.close();
         } catch (IOException e) {
-            System.err.println("Could not listen on port " + portNumber);
-            e.printStackTrace();
+            log.fatal("Could not listen on port " + port, e);
             System.exit(-1);
 
         }
+        log.info("Finalizing");
     }
 }

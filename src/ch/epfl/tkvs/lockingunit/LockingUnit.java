@@ -1,10 +1,15 @@
 package ch.epfl.tkvs.lockingunit;
 
+import org.apache.log4j.Logger;
+
+
 /**
  * Locking Unit Singleton Call a function with LockingUnit.instance.fun(args)
  */
 public enum LockingUnit {
     instance;
+
+    private static Logger log = Logger.getLogger(LockingUnit.class.getName());
 
     /**
      * Acquire a lock of type lockType on the given key
@@ -13,7 +18,7 @@ public enum LockingUnit {
      *         locked
      */
     public boolean lock(String key, LockType lockType) {
-        System.out.println("A key has been locked !");
+        log.info("A key has been locked !");
         return true;
     }
 
@@ -23,7 +28,7 @@ public enum LockingUnit {
      * @return Returns true if the lock is successfully released.
      */
     public boolean release(String key, LockType lockType) {
-        System.out.println("A key has been unlocked !");
+        log.info("A key has been unlocked !");
         return true;
     }
 
@@ -31,7 +36,7 @@ public enum LockingUnit {
      * Release all the locks contained in the lock tables
      */
     public void unlockAll() {
-        System.out.println("All keys have been unlocked !");
+        log.info("All keys have been unlocked !");
     }
 
 }

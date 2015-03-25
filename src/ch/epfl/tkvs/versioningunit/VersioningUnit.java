@@ -2,6 +2,8 @@ package ch.epfl.tkvs.versioningunit;
 
 import java.sql.Timestamp;
 
+import org.apache.log4j.Logger;
+
 
 /**
  * Versioning Unit Singleton Call a function with
@@ -10,6 +12,8 @@ import java.sql.Timestamp;
 public enum VersioningUnit {
     instance;
 
+    private static Logger log = Logger.getLogger(VersioningUnit.class.getName());
+
     /**
      * Creates a new version for the given key with the given value and the
      * current timestamp.
@@ -17,7 +21,7 @@ public enum VersioningUnit {
      * @return timestamp
      */
     public Timestamp createNewVersion(String key, byte[] newValue) {
-        System.out.println("A new version of a key has been created");
+        log.info("A new version of a key has been created");
         return null;
     }
 
@@ -26,7 +30,7 @@ public enum VersioningUnit {
      *         timestamp
      */
     public byte[] getValue(String key, Timestamp timestamp) {
-        System.out.println("Getting a <key, value> version");
+        log.info("Getting a <key, value> version");
         return null;
     }
 
@@ -34,6 +38,6 @@ public enum VersioningUnit {
      * Commit the key at the given timestamp
      */
     public void commit(String key, Timestamp timestamp) {
-        System.out.println("A commit has been done");
+        log.info("A commit has been done");
     }
 }

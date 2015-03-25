@@ -1,10 +1,12 @@
 package ch.epfl.tkvs.yarn;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
@@ -16,18 +18,22 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
+import org.apache.log4j.Logger;
+
+import ch.epfl.tkvs.test.userclient.UserClient;
 
 
 public class Client {
 
+    private static Logger log = Logger.getLogger(Client.class.getName());
     private YarnConfiguration conf;
 
     public static void main(String[] args) {
-        System.out.println("TKVS Client: Initializing");
         try {
+            log.info("Initializing...");
             new Client().run();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.fatal("Could not run yarn client", ex);
         }
     }
 
@@ -44,9 +50,7 @@ public class Client {
 
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M"
-                + " ch.epfl.tkvs.yarn.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout"
-                + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java ch.epfl.tkvs.yarn.appmaster.AppMaster"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -72,19 +76,41 @@ public class Client {
 
         // Submit Application
         ApplicationId id = appContext.getApplicationId();
-        System.out.println("TKVS Client: Submitting " + id);
+        log.info("Submitting " + id);
         client.submitApplication(appContext);
 
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
+        writer.write(id.toString());
+        writer.close();
+
+        // REPL
+        System.out.println("\nClient REPL:");
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED
                 && appState != YarnApplicationState.FAILED) {
-            Thread.sleep(1000);
+
+            String input = System.console().readLine("> ");
+            switch (input) {
+            case ":kill":
+                client.killApplication(id);
+                log.info("Killing " + id);
+                break;
+            case ":test":
+                System.out.println("Running test client...\n");
+                new UserClient().run();
+                System.out.println();
+                break;
+            case "":
+                break;
+            default:
+                System.out.println("Command Not Found!");
+            }
+            // TODO: more cses ..
+
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
         }
-
-        System.out.println("TKVS Client: Finished " + id + " with state " + appState);
+        client.stop();
     }
-
 }

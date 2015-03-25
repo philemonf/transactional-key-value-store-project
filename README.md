@@ -6,10 +6,9 @@ Development of a YARN application for transactional key-value operations.
 For now it only run properly in local HDFS/YARN.
 
 1. HDFS and YARN must be running
-2. If you run it for the first time, you must run `./configure.sh`
-3. Start the YARN Application with `./start.sh`
-4. Run example client application with `./start_client.sh` (It should print "zero" in the end) 
-5. You can see the logs with `./printlogs.sh`
-6. Stop the YARN Application with `./stop.sh` (Kill)
+2. Start the YARN Application with `./start.sh`. The Client REPL will start.
+3. Run example client application with `:test` (It should print "zero" in the end) 
+4. Stop the YARN Application with `:kill` (Kills for now)
+5. (WIP) Viewing logs to be configured.
 
-You can look at the example client source code in `src/ch/epfl/tkvs/userclient/UserClient.java`
+You can look at the example client source code in `test/ch/epfl/tkvs/userclient/UserClient.java`
