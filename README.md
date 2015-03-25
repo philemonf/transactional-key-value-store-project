@@ -7,8 +7,12 @@ For now it only run properly in local HDFS/YARN.
 
 1. HDFS and YARN must be running
 2. Start the YARN Application with `./start.sh`. The Client REPL will start.
-3. Run example client application with `:test` (It should print "zero" in the end) 
-4. Stop the YARN Application with `:kill` (Kills for now)
-5. (WIP) Viewing logs to be configured.
+3. Run example client application with `:test`.
+4. [WIP] Stop the YARN Application with `:exit`.
+5. View all logs with `./printlogs.sh`.
+
+Other comamnds:
+* Kill the YARN Application with `:kill`.
+* TODO: more(?).
 
 You can look at the example client source code in `test/ch/epfl/tkvs/userclient/UserClient.java`
