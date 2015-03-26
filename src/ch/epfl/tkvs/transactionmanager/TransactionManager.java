@@ -3,18 +3,30 @@ package ch.epfl.tkvs.transactionmanager;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
-
+/**
+ * The TransactionManager is the deamon started by
+ * the {@link AppMaster} on many nodes of the cluster.
+ * 
+ * It is mainly a server which answers the client requests.
+ *
+ */
 public class TransactionManager {
 
-    private static Logger log = Logger.getLogger(TransactionManager.class.getName());
+	private static final int THREAD_POOL_SIZE = 15;
+	private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    
+	private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     private boolean listening = true;
-    private ServerSocket sock;
+    private ServerSocket server;
     public static int port = 49200;
 
     private static KeyValueStore kvStore;
@@ -32,20 +44,27 @@ public class TransactionManager {
         log.info("Initializing");
         log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
 
-        // Create TM Socket
-        sock = new ServerSocket(port);
+        // Create TM Server
+        server = new ServerSocket(port);
         kvStore = new KeyValueStore();
 
         log.info("Starting server...");
         while (listening) {
             try {
-                new TMThread(sock.accept(), kvStore).start();
+            	
+                Socket socket = server.accept();
+                Runnable tmThread = new TMThread(socket, kvStore);
+            	
+                executor.execute(tmThread);
+                
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
         }
 
-        sock.close();
+        server.close();
         log.info("Finalizing");
     }
 }
+
+

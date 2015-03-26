@@ -2,26 +2,24 @@ package ch.epfl.tkvs.keyvaluestore;
 
 import java.util.HashMap;
 
-import org.apache.hadoop.hdfs.util.ByteArray;
-
 
 /**
  * <Key,Value> Store
  */
 public class KeyValueStore {
 
-    public HashMap<String, ByteArray> store;
+    public HashMap<String, String> store;
 
     public KeyValueStore() {
-        store = new HashMap<String, ByteArray>();
+        store = new HashMap<String, String>();
     }
 
-    public void put(String key, byte[] value) {
-        store.put(key, new ByteArray(value));
+    public void put(String key, String value) {
+        store.put(key, value);
     }
 
-    public byte[] get(String key) {
-        return store.get(key).getBytes();
+    public String get(String key) {
+        return store.get(key);
     }
 
     public void remove(String key) {

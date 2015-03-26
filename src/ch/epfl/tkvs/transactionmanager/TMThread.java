@@ -6,11 +6,17 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.requests.ReadRequest;
+import ch.epfl.tkvs.transactionmanager.requests.Request;
+import ch.epfl.tkvs.transactionmanager.requests.Request.InvalidRequestException;
+import ch.epfl.tkvs.transactionmanager.requests.Response;
+import ch.epfl.tkvs.transactionmanager.requests.WriteRequest;
 
 
 public class TMThread extends Thread {
@@ -33,17 +39,21 @@ public class TMThread extends Thread {
             String inputStr = in.readLine();
 
             // Create the response
-            JSONObject request = new JSONObject(inputStr);
+            JSONObject jsonRequest = new JSONObject(inputStr);
             JSONObject response = null;
-            switch (request.getString("Type")) {
-            case "Read":
-                response = jsonifyReadRequest(request);
+            
+            String requestType = jsonRequest.getString(Request.JSON_KEY_FOR_REQUEST_TYPE);
+            
+            switch (requestType) {
+            
+            case ReadRequest.TYPE:
+                response = getResponseForRequest(new ReadRequest(jsonRequest));
                 break;
-            case "Write":
-                response = jsonifyWriteRequest(request);
+            case WriteRequest.TYPE:
+                response = getResponseForRequest(new WriteRequest(jsonRequest));
                 break;
-            case "Commit":
-                response = jsonifyCommitRequest(request);
+           default:
+                response = getErrorResponse("Unsupported operation: " + requestType);
                 break;
             }
 
@@ -55,61 +65,36 @@ public class TMThread extends Thread {
             in.close();
             out.close();
             sock.close();
-        } catch (IOException | JSONException e) {
+        } catch (IOException | JSONException | InvalidRequestException e) {
             e.printStackTrace();
+            
         }
     }
-
-    private JSONObject jsonifyCommitRequest(JSONObject request) throws JSONException {
-        long transactionID = request.getLong("TransactionID");
-        boolean success = commit(transactionID);
-
-        JSONObject response = new JSONObject();
-        response.put("Success", success);
-        return response;
+    
+    private JSONObject getResponseForRequest(ReadRequest request) throws JSONException {
+    	String encodedKey = request.getKeyBase64();
+    	String encodedValue = kvStore.get(encodedKey);
+    	return Response.toJSON(encodedKey, encodedValue);
     }
-
-    private boolean commit(long transactionID) {
-        return true;
+    
+    private JSONObject getResponseForRequest(WriteRequest request) throws JSONException {
+    	kvStore.put(request.getKeyBase64(), request.getValueKeyBase64());
+    	
+    	return getSuccessResponse("Key/value successfully written.");
     }
-
-    private JSONObject jsonifyWriteRequest(JSONObject request) throws JSONException {
-        long transactionID = request.getLong("TransactionID");
-        String key = request.getString("Key");
-        int hash = request.getInt("Hash");
-        byte[] value = request.getString("Value").getBytes();
-        boolean success = write(transactionID, key, value);
-
-        JSONObject response = new JSONObject();
-        response.put("Success", success);
-        return response;
+    
+    private JSONObject getSuccessResponse(String message) throws JSONException {
+    	JSONObject json = new JSONObject();
+    	json.put(Response.JSON_KEY_FOR_RESPONSE_TYPE, Response.JSON_VALUE_FOR_SUCCESS);
+    	json.put(Response.JSON_KEY_FOR_MESSAGE, message);
+    	return json;
     }
-
-    private boolean write(long transactionID, String key, byte[] value) {
-        log.info("Write  " + key + "   " + value);
-        kvStore.put(key, value);
-        return true;
-    }
-
-    private JSONObject jsonifyReadRequest(JSONObject request) throws JSONException {
-        long transactionID = request.getLong("TransactionID");
-        String key = request.getString("Key");
-        int hash = request.getInt("Hash");
-        boolean success = read(transactionID, key);
-
-        JSONObject response = new JSONObject();
-        response.put("Success", success);
-        response.put("Value", new String(valueRead));
-        valueRead = null;
-        return response;
-    }
-
-    private boolean read(long transactionID, String key) {
-        // Updates valueRead
-        valueRead = kvStore.get(key);
-
-        log.info("Read " + key + "   " + valueRead);
-        return true;
+    
+    private JSONObject getErrorResponse(String message) throws JSONException {
+    	JSONObject json = new JSONObject();
+    	json.put(Response.JSON_KEY_FOR_RESPONSE_TYPE, Response.JSON_VALUE_FOR_ERROR);
+    	json.put(Response.JSON_KEY_FOR_MESSAGE, message);
+    	return json;
     }
 
 }
