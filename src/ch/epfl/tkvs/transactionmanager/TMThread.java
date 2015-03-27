@@ -6,38 +6,34 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.kvstore.KeyValueStore;
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class TMThread extends Thread {
 
-    private Socket socket = null;
-    private byte[] valueRead = null;
-    private KeyValueStore kvStore = null;
-    private int portNumber;
+    private Socket sock;
+    private byte[] valueRead;
+    private KeyValueStore kvStore;
+    private static Logger log = Logger.getLogger(TMThread.class.getName());
 
-    public TMThread(Socket socket, int portNumber, KeyValueStore kvStore) {
-        super("TMServerThread");
-        this.socket = socket;
-        this.portNumber = portNumber;
+    public TMThread(Socket sock, KeyValueStore kvStore) {
+        this.sock = sock;
         this.kvStore = kvStore;
     }
 
     public void run() {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
+        try {
 
             // Read the request into a JSONObject
-
-            String inputStr;
-            inputStr = in.readLine();
-
-            JSONObject request = new JSONObject(inputStr);
+            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+            String inputStr = in.readLine();
 
             // Create the response
+            JSONObject request = new JSONObject(inputStr);
             JSONObject response = null;
             switch (request.getString("Type")) {
             case "Read":
@@ -52,13 +48,13 @@ public class TMThread extends Thread {
             }
 
             // Send the response
-            System.out.println("Response" + response.toString());
+            log.info("Response" + response.toString());
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(response.toString());
 
             in.close();
             out.close();
-            socket.close();
-
+            sock.close();
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
@@ -90,7 +86,7 @@ public class TMThread extends Thread {
     }
 
     private boolean write(long transactionID, String key, byte[] value) {
-        System.out.println("Write  " + key + "   " + value);
+        log.info("Write  " + key + "   " + value);
         kvStore.put(key, value);
         return true;
     }
@@ -112,7 +108,7 @@ public class TMThread extends Thread {
         // Updates valueRead
         valueRead = kvStore.get(key);
 
-        System.out.println("Read " + key + "   " + valueRead);
+        log.info("Read " + key + "   " + valueRead);
         return true;
     }
 

@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.kvstore;
+package ch.epfl.tkvs.keyvaluestore;
 
 import java.util.HashMap;
 

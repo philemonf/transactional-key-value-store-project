@@ -4,38 +4,48 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 
-import ch.epfl.tkvs.kvstore.KeyValueStore;
+import org.apache.log4j.Logger;
+
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class TransactionManager {
 
-    static int portNumber = 28404;
+    private static Logger log = Logger.getLogger(TransactionManager.class.getName());
+
+    private boolean listening = true;
+    private ServerSocket sock;
+    public static int port = 49200;
 
     private static KeyValueStore kvStore;
 
-    public static void main(String[] args) throws Exception {
-        System.out.println("TKVS TransactionManager: Initializing");
-        System.out.println("TKVS TransactionManager: Host Address: " + InetAddress.getLocalHost().getHostAddress());
-        System.out.println("TKVS TransactionManager: Host Name: " + InetAddress.getLocalHost().getHostName());
-        System.out.println("TKVS TransactionManager: Finalizing");
-        boolean listening = true;
+    public static void main(String[] args) {
+        try {
+            log.info("Initializing...");
+            new TransactionManager().run();
+        } catch (Exception ex) {
+            log.fatal("Could not run transaction manager", ex);
+        }
+    }
 
+    public void run() throws Exception {
+        log.info("Initializing");
+        log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
+
+        // Create TM Socket
+        sock = new ServerSocket(port);
         kvStore = new KeyValueStore();
 
-        // Dummy examples
-        // LockingUnit.instance.lock(new Key(), LockType.READ_LOCK);
-        // LockingUnit.instance.release(new Key(), LockType.WRITE_LOCK);
-        // VersioningUnit.instance.createNewVersion(new Key(), new Value());
-        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
-            while (listening) {
-                new TMThread(serverSocket.accept(), serverSocket.getLocalPort(), kvStore).start();
-                // listening=false;
+        log.info("Starting server...");
+        while (listening) {
+            try {
+                new TMThread(sock.accept(), kvStore).start();
+            } catch (IOException e) {
+                log.error("sock.accept ", e);
             }
-        } catch (IOException e) {
-            System.err.println("Could not listen on port " + portNumber);
-            e.printStackTrace();
-            System.exit(-1);
-
         }
+
+        sock.close();
+        log.info("Finalizing");
     }
 }

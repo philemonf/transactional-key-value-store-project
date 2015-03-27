@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.userclient;
+package ch.epfl.tkvs.test.userclient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,16 +17,16 @@ public class Transaction<K extends Key> {
         live, aborted, commited
     }
 
-    private static String hostNameOfAM;
-    private static int portNumberOfAM;
-    private String hostNameOfTM = null;
-    private int portNumberOfTM;
+    private static String amHost;
+    private static int amPort;
+    private String tmHost;
+    private int tmPort;
     private long transactionID;
     private TransactionStatus status;
 
     public static void initialize(String host, int port) {
-        hostNameOfAM = host;
-        portNumberOfAM = port;
+        amHost = host;
+        amPort = port;
     }
 
     public Transaction(K key) {
@@ -35,35 +35,35 @@ public class Transaction<K extends Key> {
             request.put("Type", "TM");
             request.put("Hash", key.getHash());
             request.put("Key", key);
-            JSONObject response = sendRequest(hostNameOfAM, portNumberOfAM, request);
-            hostNameOfTM = response.getString("HostName");
-            portNumberOfTM = response.getInt("PortNumber");
+            JSONObject response = sendRequest(amHost, amPort, request);
+            tmHost = response.getString("HostName");
+            tmPort = response.getInt("PortNumber");
             transactionID = response.getLong("TransactionID");
             status = TransactionStatus.live;
         } catch (JSONException e) {
-            hostNameOfTM = null;
+            tmHost = null;
             e.printStackTrace();
         }
     }
 
     private JSONObject sendRequest(String hostName, int portNumber, JSONObject request) {
-        try (Socket socket = new Socket(hostName, portNumber);
-                BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
-            out.println(request.toString());
+        try {
+            Socket sock = new Socket(hostName, portNumber);
 
-            System.out.print("Sending request to " + hostName + ":" + portNumber + "     ");
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+            out.println(request.toString());
+            System.out.println("Sending request to " + hostName + ":" + portNumber);
             System.out.println(request.toString());
 
-            // Read the response into a JSONObject
-
+            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
-            System.out.print("Received response from " + hostName + ":" + portNumber + "     ");
+            System.out.println("Received response from " + hostName + ":" + portNumber);
             System.out.println(inputStr);
 
-            JSONObject response = new JSONObject(inputStr);
-
-            return response;
+            in.close();
+            out.close();
+            sock.close();
+            return new JSONObject(inputStr);
 
         } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
@@ -89,7 +89,7 @@ public class Transaction<K extends Key> {
         request.put("TransactionID", transactionID);
         request.put("Hash", key.getHash());
         request.put("Key", key.toString());
-        JSONObject response = sendRequest(hostNameOfTM, portNumberOfTM, request);
+        JSONObject response = sendRequest(tmHost, tmPort, request);
 
         boolean isSuccess = response.getBoolean("Success");
         if (!isSuccess) {
@@ -110,7 +110,7 @@ public class Transaction<K extends Key> {
         request.put("Hash", key.getHash());
         request.put("Key", key.toString());
         request.put("Value", new String(value));
-        JSONObject response = sendRequest(hostNameOfTM, portNumberOfTM, request);
+        JSONObject response = sendRequest(tmHost, tmPort, request);
         boolean isSuccess = response.getBoolean("Success");
         if (!isSuccess) {
             status = TransactionStatus.aborted;
@@ -126,7 +126,7 @@ public class Transaction<K extends Key> {
         JSONObject request = new JSONObject();
         request.put("Type", "Commit");
         request.put("TransactionID", transactionID);
-        JSONObject response = sendRequest(hostNameOfTM, portNumberOfTM, request);
+        JSONObject response = sendRequest(tmHost, tmPort, request);
         boolean isSuccess = response.getBoolean("Success");
         if (!isSuccess) {
             status = TransactionStatus.aborted;

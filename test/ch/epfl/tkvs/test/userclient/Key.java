@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.userclient;
+package ch.epfl.tkvs.test.userclient;
 
 /**
  * The Key type for the <Key, Value> store
