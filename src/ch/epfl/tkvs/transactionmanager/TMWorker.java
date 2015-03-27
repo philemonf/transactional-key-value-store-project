@@ -1,32 +1,38 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.requests.ReadRequest;
-import ch.epfl.tkvs.transactionmanager.requests.Request;
-import ch.epfl.tkvs.transactionmanager.requests.Request.InvalidRequestException;
-import ch.epfl.tkvs.transactionmanager.requests.Response;
-import ch.epfl.tkvs.transactionmanager.requests.WriteRequest;
+import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
+import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 
 
-public class TMThread extends Thread {
+public class TMWorker extends Thread {
 
     private Socket sock;
     private byte[] valueRead;
     private KeyValueStore kvStore;
-    private static Logger log = Logger.getLogger(TMThread.class.getName());
+    private static Logger log = Logger.getLogger(TMWorker.class.getName());
 
-    public TMThread(Socket sock, KeyValueStore kvStore) {
+    public TMWorker(Socket sock, KeyValueStore kvStore) {
         this.sock = sock;
         this.kvStore = kvStore;
     }
@@ -34,6 +40,7 @@ public class TMThread extends Thread {
     public void run() {
         try {
 
+        	log.info("Transaction manager's worker thread just started...");
             // Read the request into a JSONObject
             BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
@@ -42,21 +49,21 @@ public class TMThread extends Thread {
             JSONObject jsonRequest = new JSONObject(inputStr);
             JSONObject response = null;
             
-            String requestType = jsonRequest.getString(Request.JSON_KEY_FOR_REQUEST_TYPE);
+            String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
             
             switch (requestType) {
             
-            case ReadRequest.TYPE:
-                response = getResponseForRequest(new ReadRequest(jsonRequest));
+            case ReadRequest.MESSAGE_TYPE:
+            	ReadRequest readRequest = (ReadRequest) JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
+                response = getResponseForRequest(readRequest);
                 break;
-            case WriteRequest.TYPE:
-                response = getResponseForRequest(new WriteRequest(jsonRequest));
-                break;
-           default:
-                response = getErrorResponse("Unsupported operation: " + requestType);
+                
+            case WriteRequest.MESSAGE_TYPE:
+            	WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest, WriteRequest.class);
+                response = getResponseForRequest(writeRequest);
                 break;
             }
-
+            
             // Send the response
             log.info("Response" + response.toString());
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
@@ -65,36 +72,23 @@ public class TMThread extends Thread {
             in.close();
             out.close();
             sock.close();
-        } catch (IOException | JSONException | InvalidRequestException e) {
+        } catch (IOException | InvalidMessageException | JSONException e) {
             e.printStackTrace();
             
         }
     }
     
-    private JSONObject getResponseForRequest(ReadRequest request) throws JSONException {
-    	String encodedKey = request.getKeyBase64();
+    private JSONObject getResponseForRequest(ReadRequest request) throws JSONException, IOException {
+    	String encodedKey = request.getEncodedKey();
     	String encodedValue = kvStore.get(encodedKey);
-    	return Response.toJSON(encodedKey, encodedValue);
+    	
+    	return toJSON(new ReadResponse(true, encodedValue));
     }
     
     private JSONObject getResponseForRequest(WriteRequest request) throws JSONException {
-    	kvStore.put(request.getKeyBase64(), request.getValueKeyBase64());
+    	kvStore.put(request.getEncodedKey(), request.getEncodedValue());
     	
-    	return getSuccessResponse("Key/value successfully written.");
-    }
-    
-    private JSONObject getSuccessResponse(String message) throws JSONException {
-    	JSONObject json = new JSONObject();
-    	json.put(Response.JSON_KEY_FOR_RESPONSE_TYPE, Response.JSON_VALUE_FOR_SUCCESS);
-    	json.put(Response.JSON_KEY_FOR_MESSAGE, message);
-    	return json;
-    }
-    
-    private JSONObject getErrorResponse(String message) throws JSONException {
-    	JSONObject json = new JSONObject();
-    	json.put(Response.JSON_KEY_FOR_RESPONSE_TYPE, Response.JSON_VALUE_FOR_ERROR);
-    	json.put(Response.JSON_KEY_FOR_MESSAGE, message);
-    	return json;
+    	return toJSON(new GenericSuccessResponse());
     }
 
 }

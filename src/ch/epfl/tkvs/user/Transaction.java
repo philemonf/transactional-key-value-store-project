@@ -1,14 +1,28 @@
-package ch.epfl.tkvs.test.userclient;
+package ch.epfl.tkvs.user;
+
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 
 
 public class Transaction<K extends Key> {
@@ -21,7 +35,7 @@ public class Transaction<K extends Key> {
     private static int amPort;
     private String tmHost;
     private int tmPort;
-    private long transactionID;
+    private int transactionID;
     private TransactionStatus status;
 
     public static void initialize(String host, int port) {
@@ -31,16 +45,17 @@ public class Transaction<K extends Key> {
 
     public Transaction(K key) {
         try {
-            JSONObject request = new JSONObject();
-            request.put("Type", "TM");
-            request.put("Hash", key.getHash());
-            request.put("Key", key);
-            JSONObject response = sendRequest(amHost, amPort, request);
-            tmHost = response.getString("HostName");
-            tmPort = response.getInt("PortNumber");
-            transactionID = response.getLong("TransactionID");
+        	TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
+        	
+            JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));
+            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
+            
+            tmHost = response.getHost();
+            tmPort = response.getPort();
+            transactionID = response.getTransactionId();
             status = TransactionStatus.live;
-        } catch (JSONException e) {
+            
+        } catch (JSONException | InvalidMessageException e) {
             tmHost = null;
             e.printStackTrace();
         }
@@ -78,40 +93,34 @@ public class Transaction<K extends Key> {
         return null;
     }
 
-    public byte[] read(K key) throws AbortException, JSONException {
+    public Serializable read(K key) throws Exception {
 
         if (status != TransactionStatus.live) {
             throw new AbortException("Transaction is no longer live");
         }
-        JSONObject request = new JSONObject();
-
-        request.put("Type", "Read");
-        request.put("TransactionID", transactionID);
-        request.put("Hash", key.getHash());
-        request.put("Key", key.toString());
-        JSONObject response = sendRequest(tmHost, tmPort, request);
-
-        boolean isSuccess = response.getBoolean("Success");
-        if (!isSuccess) {
+        
+        ReadRequest request = new ReadRequest(transactionID, key, key.getHash());
+        
+        JSONObject json = sendRequest(tmHost, tmPort, toJSON(request));
+        ReadResponse response = (ReadResponse) parseJSON(json, ReadResponse.class);
+        
+        if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
             throw new AbortException("Abort");
         }
-        return response.getString("Value").getBytes();
+        
+        return response.getValue();
     }
 
-    public void write(K key, byte[] value) throws AbortException, JSONException {
+    public void write(K key, Serializable value) throws Exception {
 
         if (status != TransactionStatus.live) {
             throw new AbortException("Transaction is no longer live");
         }
-        JSONObject request = new JSONObject();
-        request.put("Type", "Write");
-        request.put("TransactionID", transactionID);
-        request.put("Hash", key.getHash());
-        request.put("Key", key.toString());
-        request.put("Value", new String(value));
-        JSONObject response = sendRequest(tmHost, tmPort, request);
-        boolean isSuccess = response.getBoolean("Success");
+        WriteRequest request = new WriteRequest(transactionID, key, value, key.getHash());
+        JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
+        
+        boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
         if (!isSuccess) {
             status = TransactionStatus.aborted;
             throw new AbortException("Abort");
@@ -124,8 +133,8 @@ public class Transaction<K extends Key> {
             throw new AbortException("Transaction is no longer live");
         }
         JSONObject request = new JSONObject();
-        request.put("Type", "Commit");
-        request.put("TransactionID", transactionID);
+        request.put("request_type", "Commit");
+        request.put("transaction_id", transactionID);
         JSONObject response = sendRequest(tmHost, tmPort, request);
         boolean isSuccess = response.getBoolean("Success");
         if (!isSuccess) {

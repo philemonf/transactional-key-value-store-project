@@ -42,7 +42,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static boolean listening = true;
     private ServerSocket sock;
-    public static int port = 49100;
+    public static int port = 9999;
 
     public static void main(String[] args) {
         try {
@@ -82,12 +82,14 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setMemory(128);
         capability.setVirtualCores(1);
 
-        // Reqiest Containers from RM
+        // Request Containers from RM
         Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
         FileSystem fs = slavesPath.getFileSystem(conf);
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(slavesPath)));
 
         String slave;
+        log.info("About to start requesting containers.");
+        
         while ((slave = reader.readLine()) != null) {
             log.info("Requesting Container at " + slave);
             rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { slave }, null, priority));

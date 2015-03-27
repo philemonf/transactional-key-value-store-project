@@ -27,7 +27,7 @@ public class TransactionManager {
 
     private boolean listening = true;
     private ServerSocket server;
-    public static int port = 49200;
+    public static int port = 9998;
 
     private static KeyValueStore kvStore;
 
@@ -53,7 +53,7 @@ public class TransactionManager {
             try {
             	
                 Socket socket = server.accept();
-                Runnable tmThread = new TMThread(socket, kvStore);
+                Runnable tmThread = new TMWorker(socket, kvStore);
             	
                 executor.execute(tmThread);
                 

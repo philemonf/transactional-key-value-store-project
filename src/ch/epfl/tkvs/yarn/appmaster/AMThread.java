@@ -1,5 +1,8 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,6 +14,10 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 
 
 public class AMThread extends Thread {
@@ -29,11 +36,14 @@ public class AMThread extends Thread {
             String inputStr = in.readLine();
 
             // Create the response
-            JSONObject request = new JSONObject(inputStr);
+            JSONObject jsonRequest = new JSONObject(inputStr);
             JSONObject response = null;
-            switch (request.getString("Type")) {
-            case "TM":
-                response = jsonifyTMRequest(request);
+            
+            switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
+            
+            case TransactionManagerRequest.MESSAGE_TYPE:
+            	TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
+                response = getResponseForRequest(request);
                 break;
             }
 
@@ -45,27 +55,21 @@ public class AMThread extends Thread {
             in.close();
             out.close();
             sock.close();
-        } catch (IOException | JSONException e) {
+        } catch (IOException | JSONException | InvalidMessageException e) {
             log.error("Err", e);
         }
     }
 
-    private JSONObject jsonifyTMRequest(JSONObject request) throws JSONException {
-        String key = request.getString("Key");
-        int hash = request.getInt("Hash");
-
-        // Compute the hash of the key.
-        String hostName = "localhost";
+    private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
+        // TODO: Compute the hash of the key.
+        
+        // TODO: Get the hostName and portNumber for that hash.
+    	String hostName = "localhost";
         int portNumber = TransactionManager.port;
-        long transactionID = 0;
-
-        // get the hostName and portNumber for that hash.
-        // create a unique transactionID
-        log.info("Begin " + transactionID);
-        JSONObject response = new JSONObject();
-        response.put("HostName", hostName);
-        response.put("PortNumber", portNumber);
-        response.put("TransactionID", transactionID);
-        return response;
+        
+        // TODO: Create a unique transactionID
+        int transactionID = 0;
+        
+        return toJSON(new TransactionManagerResponse(true, transactionID, hostName,  portNumber));
     }
 }
