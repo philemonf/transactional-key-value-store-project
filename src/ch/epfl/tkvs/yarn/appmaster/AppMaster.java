@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.Container;
@@ -31,6 +33,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private YarnConfiguration conf;
+    
+    private static final int MAX_NUMBER_OF_WORKERS = 10;
 
     private NMClient nmClient;
     AMRMClientAsync<ContainerRequest> rmClient;
@@ -94,9 +98,11 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         }
 
         log.info("Starting server...");
+        
+        ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
         while (listening) {
             try {
-                new AMWorker(sock.accept()).start();
+            	threadPool.execute(new AMWorker(sock.accept()));
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }

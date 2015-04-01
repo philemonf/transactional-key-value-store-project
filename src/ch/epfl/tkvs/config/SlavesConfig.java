@@ -31,7 +31,6 @@ public class SlavesConfig {
         	
         	line = reader.readLine();
         	if (line != null && !line.startsWith("#") && line.length() > 0) {
-        		System.out.println(line);
         		int indexOfColumn = line.indexOf(':');
         		
         		String host = line;
