@@ -13,22 +13,18 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
-import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 
 
 public class TMWorker extends Thread {
 
     private Socket sock;
-    private byte[] valueRead;
     private KeyValueStore kvStore;
     private static Logger log = Logger.getLogger(TMWorker.class.getName());
 
@@ -65,12 +61,14 @@ public class TMWorker extends Thread {
             }
             
             // Send the response
-            log.info("Response" + response.toString());
-            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.println(response.toString());
-
+            if (response != null) {
+                log.info("Response" + response.toString());
+            	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+            	out.println(response.toString());
+            	out.close();
+            }
+            
             in.close();
-            out.close();
             sock.close();
         } catch (IOException | InvalidMessageException | JSONException e) {
             e.printStackTrace();

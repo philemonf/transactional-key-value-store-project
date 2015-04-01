@@ -8,7 +8,6 @@ import java.lang.reflect.Modifier;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.lang.ClassUtils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 

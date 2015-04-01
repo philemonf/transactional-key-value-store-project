@@ -97,9 +97,11 @@ public class Client {
             switch (input) {
             case ":exit":
                 log.info("Stopping " + id);
-                // TODO Send signal to AppMaster to exit gracefully
-                // Somehow trigger AppMaster.onShutdownRequest
+                
+                // TODO: stop stuffs gracefully
+                
                 break;
+                
             case ":kill":
                 client.killApplication(id);
                 log.info("Killing " + id);

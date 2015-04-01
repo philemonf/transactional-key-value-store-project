@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
+import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 /**
@@ -25,27 +26,33 @@ public class TransactionManager {
     
 	private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
-    private boolean listening = true;
+    private static boolean listening = true;
     private ServerSocket server;
-    public static int port = 9998;
+    private int idNumber;
 
     private static KeyValueStore kvStore;
 
     public static void main(String[] args) {
+    	
         try {
             log.info("Initializing...");
-            new TransactionManager().run();
+            new TransactionManager(Integer.parseInt(args[0])).run();
         } catch (Exception ex) {
             log.fatal("Could not run transaction manager", ex);
         }
+    }
+    
+    public TransactionManager(int idNumber) {
+    	this.idNumber = idNumber;
     }
 
     public void run() throws Exception {
         log.info("Initializing");
         log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
 
+        SlavesConfig slaveConfig = new SlavesConfig();
         // Create TM Server
-        server = new ServerSocket(port);
+        server = new ServerSocket(slaveConfig.getPortForTransactionManager(idNumber));
         kvStore = new KeyValueStore();
 
         log.info("Starting server...");
@@ -64,6 +71,11 @@ public class TransactionManager {
 
         server.close();
         log.info("Finalizing");
+    }
+    
+    
+    public static void stopGracefully() {
+    	listening = false;
     }
 }
 

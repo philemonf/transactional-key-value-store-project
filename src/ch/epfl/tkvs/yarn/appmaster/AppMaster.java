@@ -1,16 +1,12 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -27,6 +23,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
 
+import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.yarn.Utils;
 
 
@@ -39,10 +36,10 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     AMRMClientAsync<ContainerRequest> rmClient;
 
     private int containerCount = 0;
+    private int currentIdNumber = 0;
 
     private static boolean listening = true;
     private ServerSocket sock;
-    public static int port = 9999;
 
     public static void main(String[] args) {
         try {
@@ -56,8 +53,10 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     public void run() throws Exception {
         conf = new YarnConfiguration();
 
+        SlavesConfig slavesConfig = new SlavesConfig();
+        
         // Create AM Socket
-        sock = new ServerSocket(port);
+        sock = new ServerSocket(slavesConfig.getAppMasterPort());
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -83,32 +82,32 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setVirtualCores(1);
 
         // Request Containers from RM
-        Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
-        FileSystem fs = slavesPath.getFileSystem(conf);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(slavesPath)));
-
-        String slave;
-        log.info("About to start requesting containers.");
+        SlavesConfig conf = new SlavesConfig();
+        String[] hosts = conf.getHosts();
         
-        while ((slave = reader.readLine()) != null) {
-            log.info("Requesting Container at " + slave);
-            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { slave }, null, priority));
+        for (int i = 0; i < hosts.length; ++i) {
+        	
+            log.info("Requesting Container at " + hosts[i]);
+            
+            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { hosts[i] }, null, priority));
             containerCount += 1;
         }
-        reader.close();
-        fs.close();
 
         log.info("Starting server...");
         while (listening) {
             try {
-                new AMThread(sock.accept()).start();
+                new AMWorker(sock.accept()).start();
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
         }
 
         log.info("Stopping server...");
-        // TODO Send signal to all TransactionManagers to exit gracefully
+        
+        // Stop the containers
+        
+        // TODO: find how to stop the other containers
+        
         while (containerCount > 0) {
             Thread.sleep(1000);
         }
@@ -124,7 +123,10 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
             try {
-                nmClient.startContainer(container, initContainer());
+                nmClient.startContainer(container, initContainer(currentIdNumber));
+                ++currentIdNumber;
+                ++containerCount;
+                
                 log.info("Container launched " + container.getId());
             } catch (Exception ex) {
                 log.error("Container not launched " + container.getId(), ex);
@@ -132,12 +134,12 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         }
     }
 
-    private ContainerLaunchContext initContainer() {
+    private ContainerLaunchContext initContainer(int idNumber) {
         try {
             // Create Container Context
             ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
             cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
-                    + " ch.epfl.tkvs.transactionmanager.TransactionManager" + " 1>"
+                    + " ch.epfl.tkvs.transactionmanager.TransactionManager " + idNumber + " " + " 1>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
@@ -163,9 +165,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statusOfContainers) {
             log.info("Container finished " + status.getContainerId());
             synchronized (this) {
-                if (--containerCount == 0) {
-                    listening = false;
-                }
+            	--containerCount;
             }
         }
     }

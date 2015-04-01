@@ -14,15 +14,14 @@ import java.net.UnknownHostException;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 
 
 public class Transaction<K extends Key> {
@@ -38,13 +37,24 @@ public class Transaction<K extends Key> {
     private int transactionID;
     private TransactionStatus status;
 
-    public static void initialize(String host, int port) {
-        amHost = host;
-        amPort = port;
-    }
-
     public Transaction(K key) {
         try {
+        	
+        	try {
+				SlavesConfig conf = new SlavesConfig();
+				
+				//TODO: Find how to deal with that.
+				amHost = "localhost";
+				
+				amPort = conf.getAppMasterPort();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	
+        	
+        	
         	TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
         	
             JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));

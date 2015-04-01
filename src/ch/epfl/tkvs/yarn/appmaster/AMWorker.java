@@ -13,19 +13,19 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.TransactionManager;
+import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 
 
-public class AMThread extends Thread {
+public class AMWorker extends Thread {
 
     private Socket sock;
-    private static Logger log = Logger.getLogger(AMThread.class.getName());
+    private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
-    public AMThread(Socket sock) {
+    public AMWorker(Socket sock) {
         this.sock = sock;
     }
 
@@ -49,11 +49,14 @@ public class AMThread extends Thread {
 
             // Send the response
             log.info("Response" + response.toString());
-            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.println(response.toString());
+            
+            if (response != null) {
+            	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+            	out.println(response.toString());
+                out.close();
+            }
 
             in.close();
-            out.close();
             sock.close();
         } catch (IOException | JSONException | InvalidMessageException e) {
             log.error("Err", e);
@@ -62,10 +65,12 @@ public class AMThread extends Thread {
 
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
         // TODO: Compute the hash of the key.
+        int hash = 0;
         
-        // TODO: Get the hostName and portNumber for that hash.
-    	String hostName = "localhost";
-        int portNumber = TransactionManager.port;
+        // Get the hostName and portNumber for that hash.
+        SlavesConfig conf = new SlavesConfig();
+    	String hostName = conf.getHosts()[hash];
+        int portNumber = conf.getPortForTransactionManager(hash);
         
         // TODO: Create a unique transactionID
         int transactionID = 0;
