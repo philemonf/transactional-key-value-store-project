@@ -36,7 +36,7 @@ public class TMWorker extends Thread {
     public void run() {
         try {
 
-        	log.info("Transaction manager's worker thread just started...");
+            log.info("Transaction manager's worker thread just started...");
             // Read the request into a JSONObject
             BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
@@ -44,49 +44,50 @@ public class TMWorker extends Thread {
             // Create the response
             JSONObject jsonRequest = new JSONObject(inputStr);
             JSONObject response = null;
-            
+
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
-            
+
             switch (requestType) {
-            
+
             case ReadRequest.MESSAGE_TYPE:
-            	ReadRequest readRequest = (ReadRequest) JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
+                ReadRequest readRequest = (ReadRequest) JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
                 response = getResponseForRequest(readRequest);
                 break;
-                
+
             case WriteRequest.MESSAGE_TYPE:
-            	WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest, WriteRequest.class);
+                WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest,
+                        WriteRequest.class);
                 response = getResponseForRequest(writeRequest);
                 break;
             }
-            
+
             // Send the response
             if (response != null) {
                 log.info("Response" + response.toString());
-            	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            	out.println(response.toString());
-            	out.close();
+                PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+                out.println(response.toString());
+                out.close();
             }
-            
+
             in.close();
             sock.close();
         } catch (IOException | InvalidMessageException | JSONException e) {
             e.printStackTrace();
-            
+
         }
     }
-    
+
     private JSONObject getResponseForRequest(ReadRequest request) throws JSONException, IOException {
-    	String encodedKey = request.getEncodedKey();
-    	String encodedValue = kvStore.get(encodedKey);
-    	
-    	return toJSON(new ReadResponse(true, encodedValue));
+        String encodedKey = request.getEncodedKey();
+        String encodedValue = kvStore.get(encodedKey);
+
+        return toJSON(new ReadResponse(true, encodedValue));
     }
-    
+
     private JSONObject getResponseForRequest(WriteRequest request) throws JSONException {
-    	kvStore.put(request.getEncodedKey(), request.getEncodedValue());
-    	
-    	return toJSON(new GenericSuccessResponse());
+        kvStore.put(request.getEncodedKey(), request.getEncodedValue());
+
+        return toJSON(new GenericSuccessResponse());
     }
 
 }

@@ -11,20 +11,22 @@ import org.apache.log4j.Logger;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
+
 
 /**
- * The TransactionManager is the deamon started by
- * the {@link AppMaster} on many nodes of the cluster.
+ * The TransactionManager is the deamon started by the {@link AppMaster} on many
+ * nodes of the cluster.
  * 
  * It is mainly a server which answers the client requests.
  *
  */
 public class TransactionManager {
 
-	private static final int THREAD_POOL_SIZE = 15;
-	private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-    
-	private static Logger log = Logger.getLogger(TransactionManager.class.getName());
+    private static final int THREAD_POOL_SIZE = 15;
+    private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+
+    private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     private static boolean listening = true;
     private ServerSocket server;
@@ -33,7 +35,7 @@ public class TransactionManager {
     private static KeyValueStore kvStore;
 
     public static void main(String[] args) {
-    	
+
         try {
             log.info("Initializing...");
             new TransactionManager(Integer.parseInt(args[0])).run();
@@ -41,9 +43,9 @@ public class TransactionManager {
             log.fatal("Could not run transaction manager", ex);
         }
     }
-    
+
     public TransactionManager(int idNumber) {
-    	this.idNumber = idNumber;
+        this.idNumber = idNumber;
     }
 
     public void run() throws Exception {
@@ -58,12 +60,12 @@ public class TransactionManager {
         log.info("Starting server...");
         while (listening) {
             try {
-            	
+
                 Socket socket = server.accept();
                 Runnable tmThread = new TMWorker(socket, kvStore);
-            	
+
                 executor.execute(tmThread);
-                
+
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
@@ -72,11 +74,8 @@ public class TransactionManager {
         server.close();
         log.info("Finalizing");
     }
-    
-    
+
     public static void stopGracefully() {
-    	listening = false;
+        listening = false;
     }
 }
-
-

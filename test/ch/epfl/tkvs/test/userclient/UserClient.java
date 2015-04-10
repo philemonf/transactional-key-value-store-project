@@ -2,6 +2,7 @@ package ch.epfl.tkvs.test.userclient;
 
 import ch.epfl.tkvs.user.Transaction;
 
+
 public class UserClient implements Runnable {
 
     @Override
@@ -11,7 +12,7 @@ public class UserClient implements Runnable {
             MyKey k0 = new MyKey("myKey");
             Transaction t = new Transaction<MyKey>(k0);
             t.write(k0, "myValue");
-            System.out.println((String)t.read(k0));
+            System.out.println((String) t.read(k0));
         } catch (Exception e) {
             e.printStackTrace();
         }

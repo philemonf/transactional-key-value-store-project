@@ -39,32 +39,31 @@ public class Transaction<K extends Key> {
 
     public Transaction(K key) {
         try {
-        	
-        	try {
-				SlavesConfig conf = new SlavesConfig();
-				
-				//TODO: Find how to deal with that.
-				amHost = "localhost";
-				
-				amPort = conf.getAppMasterPort();
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        	
-        	
-        	
-        	TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
-        	
+
+            try {
+                SlavesConfig conf = new SlavesConfig();
+
+                // TODO: Find how to deal with that.
+                amHost = "localhost";
+
+                amPort = conf.getAppMasterPort();
+
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
+
             JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));
-            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
-            
+            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse,
+                    TransactionManagerResponse.class);
+
             tmHost = response.getHost();
             tmPort = response.getPort();
             transactionID = response.getTransactionId();
             status = TransactionStatus.live;
-            
+
         } catch (JSONException | InvalidMessageException e) {
             tmHost = null;
             e.printStackTrace();
@@ -108,17 +107,17 @@ public class Transaction<K extends Key> {
         if (status != TransactionStatus.live) {
             throw new AbortException("Transaction is no longer live");
         }
-        
+
         ReadRequest request = new ReadRequest(transactionID, key, key.getHash());
-        
+
         JSONObject json = sendRequest(tmHost, tmPort, toJSON(request));
         ReadResponse response = (ReadResponse) parseJSON(json, ReadResponse.class);
-        
+
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
             throw new AbortException("Abort");
         }
-        
+
         return response.getValue();
     }
 
@@ -129,7 +128,7 @@ public class Transaction<K extends Key> {
         }
         WriteRequest request = new WriteRequest(transactionID, key, value, key.getHash());
         JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
-        
+
         boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
         if (!isSuccess) {
             status = TransactionStatus.aborted;

@@ -33,7 +33,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private YarnConfiguration conf;
-    
+
     private static final int MAX_NUMBER_OF_WORKERS = 10;
 
     private NMClient nmClient;
@@ -58,7 +58,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         conf = new YarnConfiguration();
 
         SlavesConfig slavesConfig = new SlavesConfig();
-        
+
         // Create AM Socket
         sock = new ServerSocket(slavesConfig.getAppMasterPort());
 
@@ -88,32 +88,32 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         // Request Containers from RM
         SlavesConfig conf = new SlavesConfig();
         String[] hosts = conf.getHosts();
-        
+
         for (int i = 0; i < hosts.length; ++i) {
-        	
+
             log.info("Requesting Container at " + hosts[i]);
-            
+
             rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { hosts[i] }, null, priority));
             containerCount += 1;
         }
 
         log.info("Starting server...");
-        
+
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
         while (listening) {
             try {
-            	threadPool.execute(new AMWorker(sock.accept()));
+                threadPool.execute(new AMWorker(sock.accept()));
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
         }
 
         log.info("Stopping server...");
-        
+
         // Stop the containers
-        
+
         // TODO: find how to stop the other containers
-        
+
         while (containerCount > 0) {
             Thread.sleep(1000);
         }
@@ -132,7 +132,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                 nmClient.startContainer(container, initContainer(currentIdNumber));
                 ++currentIdNumber;
                 ++containerCount;
-                
+
                 log.info("Container launched " + container.getId());
             } catch (Exception ex) {
                 log.error("Container not launched " + container.getId(), ex);
@@ -171,7 +171,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statusOfContainers) {
             log.info("Container finished " + status.getContainerId());
             synchronized (this) {
-            	--containerCount;
+                --containerCount;
             }
         }
     }

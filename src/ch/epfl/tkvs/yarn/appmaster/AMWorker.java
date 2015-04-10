@@ -38,21 +38,22 @@ public class AMWorker extends Thread {
             // Create the response
             JSONObject jsonRequest = new JSONObject(inputStr);
             JSONObject response = null;
-            
+
             switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
-            
+
             case TransactionManagerRequest.MESSAGE_TYPE:
-            	TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
+                TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest,
+                        TransactionManagerRequest.class);
                 response = getResponseForRequest(request);
                 break;
             }
 
             // Send the response
             log.info("Response" + response.toString());
-            
+
             if (response != null) {
-            	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            	out.println(response.toString());
+                PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+                out.println(response.toString());
                 out.close();
             }
 
@@ -66,15 +67,15 @@ public class AMWorker extends Thread {
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
         // TODO: Compute the hash of the key.
         int hash = 0;
-        
+
         // Get the hostName and portNumber for that hash.
         SlavesConfig conf = new SlavesConfig();
-    	String hostName = conf.getHosts()[hash];
+        String hostName = conf.getHosts()[hash];
         int portNumber = conf.getPortForTransactionManager(hash);
-        
+
         // TODO: Create a unique transactionID
         int transactionID = 0;
-        
-        return toJSON(new TransactionManagerResponse(true, transactionID, hostName,  portNumber));
+
+        return toJSON(new TransactionManagerResponse(true, transactionID, hostName, portNumber));
     }
 }
