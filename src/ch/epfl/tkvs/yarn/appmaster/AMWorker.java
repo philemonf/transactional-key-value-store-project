@@ -3,12 +3,11 @@ package ch.epfl.tkvs.yarn.appmaster;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import org.apache.commons.math3.util.Pair;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -22,21 +21,19 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter
 
 public class AMWorker extends Thread {
 
+    private String input;
     private Socket sock;
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
-    public AMWorker(Socket sock) {
+    public AMWorker(String input, Socket sock) {
+        this.input = input;
         this.sock = sock;
     }
 
     public void run() {
         try {
-            // Read the request into a JSONObject
-            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-            String inputStr = in.readLine();
-
             // Create the response
-            JSONObject jsonRequest = new JSONObject(inputStr);
+            JSONObject jsonRequest = new JSONObject(input);
             JSONObject response = null;
 
             switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
@@ -54,11 +51,9 @@ public class AMWorker extends Thread {
             if (response != null) {
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
                 out.println(response.toString());
-                out.close();
             }
-
-            in.close();
-            sock.close();
+            sock.close(); // Closing this socket will also close the socket's
+                          // InputStream and OutputStream.
         } catch (IOException | JSONException | InvalidMessageException e) {
             log.error("Err", e);
         }
@@ -70,12 +65,12 @@ public class AMWorker extends Thread {
 
         // Get the hostName and portNumber for that hash.
         SlavesConfig conf = new SlavesConfig();
-        String hostName = conf.getHosts()[hash];
-        int portNumber = conf.getPortForTransactionManager(hash);
+        conf.getTMbyHash(hash);
+        Pair<String, Integer> tm = conf.getTMbyHash(hash);
 
         // TODO: Create a unique transactionID
         int transactionID = 0;
 
-        return toJSON(new TransactionManagerResponse(true, transactionID, hostName, portNumber));
+        return toJSON(new TransactionManagerResponse(true, transactionID, tm.getKey(), tm.getValue()));
     }
 }

@@ -3,9 +3,10 @@ package ch.epfl.tkvs.config;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
+import org.apache.commons.math3.util.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -15,11 +16,12 @@ import ch.epfl.tkvs.yarn.Utils;
 
 public class SlavesConfig {
 
-    private static final int AM_DEFAULT_PORT = 9999;
-    private static final int TM_DEFAULT_PORT = 9996;
+    public static final int AM_DEFAULT_PORT = 31299;
+    public static final int TM_DEFAULT_PORT = 31200;
 
-    List<String> tmHosts = new LinkedList<String>();
-    List<Integer> tmPorts = new LinkedList<Integer>();
+    // TODO: With a map, only 1 container per machine is allowd.
+    LinkedHashMap<String, Integer> tms = new LinkedHashMap<String, Integer>();
+    ArrayList<String> hosts = new ArrayList<String>();
 
     public SlavesConfig() throws IOException {
         Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
@@ -37,34 +39,32 @@ public class SlavesConfig {
                 Integer port = null;
                 if (indexOfColumn > 0) {
                     host = line.substring(0, indexOfColumn);
-                    port = Integer.parseInt(line.substring(indexOfColumn + 1));
+                    try {
+                        port = Integer.parseInt(line.substring(indexOfColumn + 1));
+                    } catch (Exception e) {
+                        port = TM_DEFAULT_PORT;
+                    }
                 }
-
-                tmHosts.add(host);
-                tmPorts.add(port);
+                tms.put(host, port);
             }
         } while (line != null);
 
+        hosts.addAll(tms.keySet());
         reader.close();
         fs.close();
     }
 
-    public String[] getHosts() {
-        return tmHosts.toArray(new String[tmHosts.size()]);
+    public LinkedHashMap<String, Integer> getTMs() {
+        return tms;
     }
 
-    public int getAppMasterPort() {
-        return AM_DEFAULT_PORT;
+    public int getPortForHost(String host) {
+        return tms.get(host);
     }
 
-    public int getPortForTransactionManager(int no) {
-        Integer port = tmPorts.get(no);
-
-        if (port != null) {
-            return port.intValue();
-        } else {
-            return TM_DEFAULT_PORT;
-        }
+    public Pair<String, Integer> getTMbyHash(int hash) {
+        String host = hosts.get(hash);
+        return new Pair<String, Integer>(host, tms.get(host));
     }
 
 }

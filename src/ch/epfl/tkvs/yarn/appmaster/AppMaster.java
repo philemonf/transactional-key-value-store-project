@@ -1,11 +1,17 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -40,10 +46,9 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     AMRMClientAsync<ContainerRequest> rmClient;
 
     private int containerCount = 0;
-    private int currentIdNumber = 0;
 
     private static boolean listening = true;
-    private ServerSocket sock;
+    private ServerSocket server;
 
     public static void main(String[] args) {
         try {
@@ -57,10 +62,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     public void run() throws Exception {
         conf = new YarnConfiguration();
 
-        SlavesConfig slavesConfig = new SlavesConfig();
-
         // Create AM Socket
-        sock = new ServerSocket(slavesConfig.getAppMasterPort());
+        server = new ServerSocket(SlavesConfig.AM_DEFAULT_PORT);
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -87,52 +90,64 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
         // Request Containers from RM
         SlavesConfig conf = new SlavesConfig();
-        String[] hosts = conf.getHosts();
+        LinkedHashMap<String, Integer> tmHosts = conf.getTMs();
 
-        for (int i = 0; i < hosts.length; ++i) {
-
-            log.info("Requesting Container at " + hosts[i]);
-
-            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { hosts[i] }, null, priority));
+        for (String host : tmHosts.keySet()) {
+            log.info("Requesting Container at " + host);
+            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { host }, null, priority));
             containerCount += 1;
         }
 
         log.info("Starting server...");
-
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
         while (listening) {
             try {
-                threadPool.execute(new AMWorker(sock.accept()));
+                Socket sock = server.accept();
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = in.readLine();
+
+                switch (input) {
+                case ":exit":
+                    log.info("Stopping Server");
+                    listening = false;
+                    sock.close();
+                    server.close();
+
+                    log.info("Stopping TMs");
+                    for (Entry<String, Integer> ent : tmHosts.entrySet()) {
+                        Socket exitSock = new Socket(ent.getKey(), ent.getValue());
+                        PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
+                        out.println(input);
+                        out.close();
+                        exitSock.close();
+                    }
+                    break;
+                default:
+                    threadPool.execute(new AMWorker(input, sock));
+                }
+
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
         }
-
-        log.info("Stopping server...");
-
-        // Stop the containers
-
-        // TODO: find how to stop the other containers
 
         while (containerCount > 0) {
             Thread.sleep(1000);
         }
 
         log.info("Unregistered");
-        rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
         nmClient.stop();
+        server.close();
+        rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
         rmClient.stop();
-        sock.close();
     }
 
     @Override
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
             try {
-                nmClient.startContainer(container, initContainer(currentIdNumber));
-                ++currentIdNumber;
-                ++containerCount;
-
+                nmClient.startContainer(container, initContainer());
                 log.info("Container launched " + container.getId());
             } catch (Exception ex) {
                 log.error("Container not launched " + container.getId(), ex);
@@ -140,12 +155,12 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         }
     }
 
-    private ContainerLaunchContext initContainer(int idNumber) {
+    private ContainerLaunchContext initContainer() {
         try {
             // Create Container Context
             ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
             cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java"
-                    + " ch.epfl.tkvs.transactionmanager.TransactionManager " + idNumber + " " + " 1>"
+                    + " ch.epfl.tkvs.transactionmanager.TransactionManager " + " 1>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 

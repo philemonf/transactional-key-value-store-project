@@ -3,6 +3,8 @@ package ch.epfl.tkvs.yarn;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +23,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
 
+import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
 
 
@@ -87,25 +90,32 @@ public class Client {
         writer.close();
 
         // REPL
+        Thread.sleep(5000);
         System.out.println("\nClient REPL:");
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
-        while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED
+        boolean listening = true;
+        while (listening && appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED
                 && appState != YarnApplicationState.FAILED) {
 
             String input = System.console().readLine("> ");
             switch (input) {
             case ":exit":
-                log.info("Stopping " + id);
-
-                // TODO: stop stuffs gracefully
-
+                log.info("Stopping gracefully " + id);
+                // listening = false;
+                // TODO: How to know the hostname of the AM???
+                // XXX: FIX ME! "localhost"
+                Socket exitSock = new Socket("localhost", SlavesConfig.AM_DEFAULT_PORT);
+                PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
+                out.println(input);
+                out.close();
+                exitSock.close();
                 break;
-
-            case ":kill":
-                client.killApplication(id);
-                log.info("Killing " + id);
-                break;
+            // case ":kill":
+            // log.info("Killing " + id);
+            // listening = false;
+            // client.killApplication(id);
+            // break;
             case ":test":
                 System.out.println("Running test client...\n");
                 new UserClient().run();
@@ -116,6 +126,7 @@ public class Client {
             default:
                 System.out.println("Command Not Found!");
             }
+
             // TODO: support more commands with more cases ..
 
             appReport = client.getApplicationReport(id);

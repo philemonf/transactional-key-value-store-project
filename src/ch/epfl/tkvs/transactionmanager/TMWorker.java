@@ -2,9 +2,7 @@ package ch.epfl.tkvs.transactionmanager;
 
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -24,11 +22,13 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter
 
 public class TMWorker extends Thread {
 
+    private String input;
     private Socket sock;
     private KeyValueStore kvStore;
     private static Logger log = Logger.getLogger(TMWorker.class.getName());
 
-    public TMWorker(Socket sock, KeyValueStore kvStore) {
+    public TMWorker(String input, Socket sock, KeyValueStore kvStore) {
+        this.input = input;
         this.sock = sock;
         this.kvStore = kvStore;
     }
@@ -36,24 +36,17 @@ public class TMWorker extends Thread {
     public void run() {
         try {
 
-            log.info("Transaction manager's worker thread just started...");
-            // Read the request into a JSONObject
-            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-            String inputStr = in.readLine();
-
             // Create the response
-            JSONObject jsonRequest = new JSONObject(inputStr);
+            JSONObject jsonRequest = new JSONObject(input);
             JSONObject response = null;
 
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
 
             switch (requestType) {
-
             case ReadRequest.MESSAGE_TYPE:
                 ReadRequest readRequest = (ReadRequest) JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
                 response = getResponseForRequest(readRequest);
                 break;
-
             case WriteRequest.MESSAGE_TYPE:
                 WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest,
                         WriteRequest.class);
@@ -66,11 +59,9 @@ public class TMWorker extends Thread {
                 log.info("Response" + response.toString());
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
                 out.println(response.toString());
-                out.close();
             }
-
-            in.close();
-            sock.close();
+            sock.close(); // Closing this socket will also close the socket's
+                          // InputStream and OutputStream.
         } catch (IOException | InvalidMessageException | JSONException e) {
             e.printStackTrace();
 

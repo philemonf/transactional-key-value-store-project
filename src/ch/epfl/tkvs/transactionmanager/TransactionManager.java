@@ -1,9 +1,11 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,58 +26,66 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 public class TransactionManager {
 
     private static final int THREAD_POOL_SIZE = 15;
-    private static final ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    private static final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     private static boolean listening = true;
     private ServerSocket server;
-    private int idNumber;
+    private String hostname;
 
     private static KeyValueStore kvStore;
 
     public static void main(String[] args) {
-
+        log.info("Initializing...");
         try {
-            log.info("Initializing...");
-            new TransactionManager(Integer.parseInt(args[0])).run();
+            new TransactionManager().run();
         } catch (Exception ex) {
             log.fatal("Could not run transaction manager", ex);
         }
+        log.info("Finished");
+        System.exit(0);
     }
 
-    public TransactionManager(int idNumber) {
-        this.idNumber = idNumber;
+    public TransactionManager() throws UnknownHostException {
+        // TODO: Fix this when tested on cluster!
+        // this.hostname = InetAddress.getLocalHost().getCanonicalHostName();
+        this.hostname = "localhost";
     }
 
     public void run() throws Exception {
-        log.info("Initializing");
-        log.info("Host Name: " + InetAddress.getLocalHost().getHostName());
+        log.info("Host Name: " + hostname);
 
         SlavesConfig slaveConfig = new SlavesConfig();
         // Create TM Server
-        server = new ServerSocket(slaveConfig.getPortForTransactionManager(idNumber));
+        server = new ServerSocket(slaveConfig.getPortForHost(hostname));
         kvStore = new KeyValueStore();
 
         log.info("Starting server...");
         while (listening) {
             try {
+                Socket sock = server.accept();
 
-                Socket socket = server.accept();
-                Runnable tmThread = new TMWorker(socket, kvStore);
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = in.readLine();
 
-                executor.execute(tmThread);
-
+                switch (input) {
+                case ":exit":
+                    log.info("Stopping Server");
+                    listening = false;
+                    sock.close();
+                    server.close();
+                    break;
+                default:
+                    threadPool.execute(new TMWorker(input, sock, kvStore));
+                }
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
         }
 
-        server.close();
         log.info("Finalizing");
-    }
-
-    public static void stopGracefully() {
-        listening = false;
+        server.close();
+        // TODO: write KV store to disk ?
     }
 }

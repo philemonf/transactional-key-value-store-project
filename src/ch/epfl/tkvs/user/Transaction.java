@@ -39,19 +39,9 @@ public class Transaction<K extends Key> {
 
     public Transaction(K key) {
         try {
-
-            try {
-                SlavesConfig conf = new SlavesConfig();
-
-                // TODO: Find how to deal with that.
-                amHost = "localhost";
-
-                amPort = conf.getAppMasterPort();
-
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            // TODO: Find how to deal with that.
+            amHost = "localhost";
+            amPort = SlavesConfig.AM_DEFAULT_PORT;
 
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
