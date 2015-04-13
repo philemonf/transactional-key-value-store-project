@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.userclient;
+package ch.epfl.tkvs.user;
 
 public class AbortException extends Exception {
 

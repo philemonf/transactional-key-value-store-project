@@ -1,4 +1,7 @@
-package ch.epfl.tkvs.userclient;
+package ch.epfl.tkvs.test.userclient;
+
+import ch.epfl.tkvs.user.Key;
+
 
 public class MyKey extends Key {
 

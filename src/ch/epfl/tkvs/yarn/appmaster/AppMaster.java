@@ -1,14 +1,20 @@
-package ch.epfl.tkvs.yarn;
+package ch.epfl.tkvs.yarn.appmaster;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
@@ -23,28 +29,41 @@ import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
+import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.transactionmanager.AMServer;
+import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.yarn.Utils;
 
 
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
-    private YarnConfiguration conf = new YarnConfiguration();
+    private static Logger log = Logger.getLogger(AppMaster.class.getName());
+    private YarnConfiguration conf;
+
+    private static final int MAX_NUMBER_OF_WORKERS = 10;
+
     private NMClient nmClient;
+    AMRMClientAsync<ContainerRequest> rmClient;
+
     private int containerCount = 0;
-    private int containersAllocated = 0;
+
+    private static boolean listening = true;
+    private ServerSocket server;
 
     public static void main(String[] args) {
-        System.out.println("TKVS AppMaster: Initializing");
         try {
+            log.info("Initializing...");
             new AppMaster().run();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.fatal("Could not run yarn app master", ex);
         }
     }
 
     public void run() throws Exception {
         conf = new YarnConfiguration();
+
+        // Create AM Socket
+        server = new ServerSocket(SlavesConfig.AM_DEFAULT_PORT);
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -52,13 +71,13 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         nmClient.start();
 
         // Create AM - RM Client
-        AMRMClientAsync<ContainerRequest> rmClient = AMRMClientAsync.createAMRMClientAsync(1000, this);
+        rmClient = AMRMClientAsync.createAMRMClientAsync(1000, this);
         rmClient.init(conf);
         rmClient.start();
 
         // Register with RM
         rmClient.registerApplicationMaster("", 0, "");
-        System.out.println("TKVS AppMaster: Registered");
+        log.info("Registered");
 
         // Priority for worker containers - priorities are intra-application
         Priority priority = Records.newRecord(Priority.class);
@@ -69,30 +88,59 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setMemory(128);
         capability.setVirtualCores(1);
 
-        // Reqiest Containers from RM
-        Path hostnamesPath = new Path(Utils.TKVS_CONFIG_PATH, "hostnames");
-        FileSystem fs = hostnamesPath.getFileSystem(conf);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(hostnamesPath)));
+        // Request Containers from RM
+        SlavesConfig conf = new SlavesConfig();
+        LinkedHashMap<String, Integer> tmHosts = conf.getTMs();
 
-        String hostname = reader.readLine();
-        while (hostname != null) {
-            System.out.println("TKVS AppMaster: Requesting Containers for Hostname " + hostname);
-            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { hostname }, null, priority));
-
-            ++containerCount;
-            hostname = reader.readLine();
+        for (String host : tmHosts.keySet()) {
+            log.info("Requesting Container at " + host);
+            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { host }, null, priority));
+            containerCount += 1;
         }
 
-        while (!containersFinished()) {
-            Thread.sleep(100);
+        log.info("Starting server...");
+        ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
+        while (listening) {
+            try {
+                Socket sock = server.accept();
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = in.readLine();
+
+                switch (input) {
+                case ":exit":
+                    log.info("Stopping Server");
+                    listening = false;
+                    sock.close();
+                    server.close();
+
+                    log.info("Stopping TMs");
+                    for (Entry<String, Integer> ent : tmHosts.entrySet()) {
+                        Socket exitSock = new Socket(ent.getKey(), ent.getValue());
+                        PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
+                        out.println(input);
+                        out.close();
+                        exitSock.close();
+                    }
+                    break;
+                default:
+                    threadPool.execute(new AMWorker(input, sock));
+                }
+
+            } catch (IOException e) {
+                log.error("sock.accept ", e);
+            }
         }
 
-        System.out.println("TKVS AppMaster: Unregistered");
+        while (containerCount > 0) {
+            Thread.sleep(1000);
+        }
+
+        log.info("Unregistered");
+        nmClient.stop();
+        server.close();
         rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
-    }
-
-    private boolean containersFinished() {
-        return containerCount == 0;
+        rmClient.stop();
     }
 
     @Override
@@ -100,16 +148,9 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         for (Container container : containers) {
             try {
                 nmClient.startContainer(container, initContainer());
-                System.err.println("TKVS AppMaster: Container launched " + container.getId());
-                containersAllocated++;
-                if (containerCount == containersAllocated) {
-
-                    System.out.println("Aasdasdasd.");
-                    new AMServer().run();
-                }
+                log.info("Container launched " + container.getId());
             } catch (Exception ex) {
-                System.err.println("TKVS AppMaster: Container not launched " + container.getId());
-                ex.printStackTrace();
+                log.error("Container not launched " + container.getId(), ex);
             }
         }
     }
@@ -118,8 +159,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         try {
             // Create Container Context
             ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-            cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java" + " -Xmx256M"
-                    + " ch.epfl.tkvs.transactionmanager.TransactionManager" + " 1>"
+            cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX
+                    + " ch.epfl.tkvs.transactionmanager.TransactionManager " + " 1>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
                     + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
@@ -143,15 +184,16 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     @Override
     public void onContainersCompleted(List<ContainerStatus> statusOfContainers) {
         for (ContainerStatus status : statusOfContainers) {
-            System.err.println("TKVS AppMaster: Container finished " + status.getContainerId());
+            log.info("Container finished " + status.getContainerId());
             synchronized (this) {
-                containerCount--;
+                --containerCount;
             }
         }
     }
 
     @Override
     public void onError(Throwable e) {
+        log.error("onError", e);
     }
 
     @Override
@@ -160,6 +202,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     @Override
     public void onShutdownRequest() {
+        log.warn("onShutdownRequest");
+        // TODO: FIND HOW TO CALL IT!!!
     }
 
     @Override
