@@ -55,9 +55,8 @@ public class Client {
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
         amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX
-                + " ch.epfl.tkvs.yarn.appmaster.AppMaster"
-                + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
-                + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+                + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR
+                + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
