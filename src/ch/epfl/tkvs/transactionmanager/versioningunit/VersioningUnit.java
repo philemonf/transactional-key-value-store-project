@@ -1,43 +1,96 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
+
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 /**
  * Versioning Unit Singleton Call a function with
  * VersioningUnit.instance.fun(args)
  */
+
 public enum VersioningUnit {
     instance;
 
     private static Logger log = Logger.getLogger(VersioningUnit.class.getName());
 
-    /**
-     * Creates a new version for the given key with the given value and the
-     * current timestamp.
-     * 
-     * @return timestamp
-     */
-    public Timestamp createNewVersion(String key, byte[] newValue) {
-        log.info("A new version of a key has been created");
-        return null;
+    final static int PRIMARY_CACHE = 0;
+    KeyValueStore kvStore;
+
+    private Map<Integer, Cache> caches = new HashMap<Integer, Cache>();
+    private Cache primary = new Cache(PRIMARY_CACHE);
+    private Cache tmpPrimary = null;
+
+    public String get(int xid, String key) {
+        log.info("Get xid: " + xid + "- key: " + key);
+        Cache xactCache = caches.get(xid);
+
+        if (xactCache != null) {
+            String value = xactCache.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        if (tmpPrimary != null) {
+            String value = tmpPrimary.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        return primary.get(key);
     }
 
-    /**
-     * @return the corresponding value of the key with the closest oldest
-     *         timestamp
-     */
-    public byte[] getValue(String key, Timestamp timestamp) {
-        log.info("Getting a <key, value> version");
-        return null;
+    public void put(int xid, String key, String value) {
+        log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
+        Cache xactCache = caches.get(xid);
+
+        if (xactCache == null) {
+            xactCache = new Cache(xid);
+
+            caches.put(xid, xactCache);
+        }
+
+        xactCache.put(key, value);
+
     }
 
-    /**
-     * Commit the key at the given timestamp
-     */
-    public void commit(String key, Timestamp timestamp) {
-        log.info("A commit has been done");
+    public boolean commit(final int xid) {
+        log.info("Commit xid: " + xid);
+
+        if (tmpPrimary != null) {
+            return false;
+        }
+        tmpPrimary = caches.get(xid);
+        if (tmpPrimary == null) {
+            return true;
+        }
+
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+
+                for (String key : tmpPrimary.getWritenKeys()) {
+                    primary.put(key, tmpPrimary.get(key));
+                }
+
+                caches.remove(xid);
+                tmpPrimary = null;
+            }
+        }).start();
+
+        return true;
+
     }
+
+    public void abort(int xid) {
+        caches.remove(xid);
+    }
+
 }
