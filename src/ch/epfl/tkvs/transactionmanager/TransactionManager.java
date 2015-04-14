@@ -21,7 +21,7 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
  * nodes of the cluster.
  * 
  * It is mainly a server which answers the client requests.
- * 
+ *
  */
 public class TransactionManager {
 

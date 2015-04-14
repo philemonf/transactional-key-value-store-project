@@ -8,11 +8,6 @@ import org.apache.log4j.Logger;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
-/**
- * Versioning Unit Singleton Call a function with
- * VersioningUnit.instance.fun(args)
- */
-
 public enum VersioningUnit {
     instance;
 
@@ -76,7 +71,7 @@ public enum VersioningUnit {
             @Override
             public void run() {
 
-                for (String key : tmpPrimary.getWritenKeys()) {
+                for (String key : tmpPrimary.getWrittenKeys()) {
                     primary.put(key, tmpPrimary.get(key));
                 }
 
