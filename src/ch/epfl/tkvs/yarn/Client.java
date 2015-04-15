@@ -28,7 +28,7 @@ import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
-import ch.epfl.tkvs.transactionmanager.LockingUnitTest;
+import ch.epfl.tkvs.transactionmanager.LockingUnitTest_2;
 
 
 public class Client {
@@ -148,7 +148,7 @@ public class Client {
 
     private static void runTestCases() {
         log.info("Running LockingUnitTest...");
-        runTestCase(LockingUnitTest.class);
+        runTestCase(LockingUnitTest_2.class);
     }
 
     private static void runTestCase(Class<?> testCase) {

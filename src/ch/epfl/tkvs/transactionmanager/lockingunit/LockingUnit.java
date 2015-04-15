@@ -59,7 +59,6 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void init() {
-        unlockAll();
         currentLockTypes.clear();
         waitingLists.clear();
         lockCompatibilityTable = defaultCompatibilityTable();
@@ -73,7 +72,6 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void initOnlyExclusiveLock() {
-        unlockAll();
         currentLockTypes.clear();
         waitingLists.clear();
         lockCompatibilityTable = new LockCompatibilityTable() {
@@ -97,7 +95,6 @@ public enum LockingUnit {
      *            the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(LockCompatibilityTable table) {
-        unlockAll();
         currentLockTypes.clear();
         waitingLists.clear();
 
@@ -146,15 +143,6 @@ public enum LockingUnit {
         internalLock.lock();
         removeFromCurrentLocks(key, lockType);
         signalOn(key, lockType);
-        internalLock.unlock();
-    }
-
-    /**
-     * Release all the locks currently locked.
-     */
-    public void unlockAll() {
-        internalLock.lock();
-        // TODO: something
         internalLock.unlock();
     }
 
