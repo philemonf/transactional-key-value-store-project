@@ -22,9 +22,13 @@ import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
+import ch.epfl.tkvs.transactionmanager.LockingUnitTest_2;
 
 
 public class Client {
@@ -118,7 +122,12 @@ public class Client {
             // break;
             case ":test":
                 System.out.println("Running test client...\n");
+
+                log.info("Running example client program...");
                 new UserClient().run();
+
+                runTestCases();
+
                 System.out.println();
                 break;
             case "":
@@ -135,5 +144,22 @@ public class Client {
 
         log.info(id + " state " + appState);
         client.stop();
+    }
+
+    private static void runTestCases() {
+        log.info("Running LockingUnitTest...");
+        runTestCase(LockingUnitTest_2.class);
+    }
+
+    private static void runTestCase(Class<?> testCase) {
+        Result res = JUnitCore.runClasses(testCase);
+
+        if (res.getFailureCount() == 0) {
+            log.info("All tests passed for " + testCase.getClass().getSimpleName());
+        }
+
+        for (Failure failure : res.getFailures()) {
+            log.error(failure.toString());
+        }
     }
 }
