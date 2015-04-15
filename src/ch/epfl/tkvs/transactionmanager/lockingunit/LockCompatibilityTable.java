@@ -3,7 +3,7 @@ package ch.epfl.tkvs.transactionmanager.lockingunit;
 /**
  * A lock compatibility table that one should provide the LockingUnit with.
  */
-public interface LockCompatibilityTable<LOCK_TYPE extends Enum> {
+public interface LockCompatibilityTable {
 
     /**
      * Returns true iff lock1 is compatible with lock2.
@@ -11,5 +11,5 @@ public interface LockCompatibilityTable<LOCK_TYPE extends Enum> {
      * @param lock2 the second lock type
      * @return true iff lock1 is compatible with lock2.
      */
-    boolean areCompatible(LOCK_TYPE lock1, LOCK_TYPE lock2);
+    <E extends Enum<E>> boolean areCompatible(E lock1, E lock2);
 }
