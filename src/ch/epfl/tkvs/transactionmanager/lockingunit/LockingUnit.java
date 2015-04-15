@@ -28,10 +28,14 @@ public enum LockingUnit{
      * will do table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
-     * @param table the lock compatibility table
+     * @param table the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(LockCompatibilityTable table) {
-        lockCompatibilityTable = table;
+        if (table == null) {
+            lockCompatibilityTable = defaultCompatibilityTable;
+        } else {
+            lockCompatibilityTable = table;
+        }
     }
 
     /**
