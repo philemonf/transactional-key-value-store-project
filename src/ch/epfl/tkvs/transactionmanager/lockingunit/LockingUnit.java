@@ -1,11 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.io.Serializable;
-import java.util.EnumMap;
-import java.util.EnumSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -16,40 +15,16 @@ import org.apache.log4j.Logger;
 /**
  * Locking Unit Singleton Call a function with LockingUnit.instance.fun(args)
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
 public enum LockingUnit {
     instance;
 
-    private LockCompatibilityTable lockCompatibilityTable;
-    private Map<Serializable, EnumSet> currentLockTypes = new HashMap<Serializable, EnumSet>();
+    private LockCompatibilityTable lct;
+    private HashMap<Serializable, HashSet<LockType>> currentLocks = new HashMap<Serializable, HashSet<LockType>>();
 
-    private Map<Serializable, EnumMap<? extends Enum, Condition>> waitingLists = new HashMap<Serializable, EnumMap<? extends Enum, Condition>>();
+    private HashMap<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
 
     private static Logger log = Logger.getLogger(LockingUnit.class.getName());
-
-    /**
-     * The default lock type of the unit. READ_LOCK is only compatible with
-     * itself. All other combinations are not compatible.
-     */
-    public static enum DefaultLockType {
-        READ_LOCK, WRITE_LOCK
-    }
-
-    public static enum ExclusiveLockType {
-        LOCK
-    }
-
-    private static LockCompatibilityTable defaultCompatibilityTable() {
-        return new LockCompatibilityTable() {
-
-            @Override
-            public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-                log.info("Test compatibility between " + lock1 + " and " + lock2);
-                return lock1.equals(DefaultLockType.READ_LOCK) && lock2.equals(DefaultLockType.READ_LOCK);
-            }
-        };
-    }
 
     /**
      * MUST be called before use to specify the default 2PL lock compatibility
@@ -59,9 +34,9 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void init() {
-        currentLockTypes.clear();
+        currentLocks.clear();
         waitingLists.clear();
-        lockCompatibilityTable = defaultCompatibilityTable();
+        lct = new LockCompatibilityTable(false);
     }
 
     /**
@@ -72,15 +47,9 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void initOnlyExclusiveLock() {
-        currentLockTypes.clear();
+        currentLocks.clear();
         waitingLists.clear();
-        lockCompatibilityTable = new LockCompatibilityTable() {
-
-            @Override
-            public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-                return false; // if there is a lock there is no compatibility.
-            }
-        };
+        lct = new LockCompatibilityTable(true);
     }
 
     /**
@@ -94,15 +63,15 @@ public enum LockingUnit {
      * @param table
      *            the lock compatibility table - if null, use default parameter
      */
-    public void initWithLockCompatibilityTable(LockCompatibilityTable table) {
-        currentLockTypes.clear();
+    public void initWithLockCompatibilityTable(HashMap<LockType, ArrayList<LockType>> table) {
+        currentLocks.clear();
         waitingLists.clear();
 
         if (table == null) {
             log.warn("LockCompatibilityTable is null. Using default compatibility table.");
-            lockCompatibilityTable = defaultCompatibilityTable();
+            lct = new LockCompatibilityTable(false);
         } else {
-            lockCompatibilityTable = table;
+            lct = new LockCompatibilityTable(table);
         }
     }
 
@@ -115,7 +84,7 @@ public enum LockingUnit {
      * @param lockType
      *            the lock type
      */
-    public <E extends Enum<E>> void lock(Serializable key, E lockType) {
+    public void lock(Serializable key, LockType lockType) {
         try {
             internalLock.lock();
             while (!isLockTypeCompatible(key, lockType)) {
@@ -139,73 +108,72 @@ public enum LockingUnit {
      *            the lock type, be careful to init the module with the right
      *            lock compatibility table.
      */
-    public <E extends Enum<E>> void release(Serializable key, E lockType) {
+    public void release(Serializable key, LockType lockType) {
         internalLock.lock();
         removeFromCurrentLocks(key, lockType);
         signalOn(key, lockType);
         internalLock.unlock();
     }
 
-    private Set<? extends Enum> getCurrentLocks(Serializable key, Class<? extends Enum> lockTypes) {
-        if (currentLockTypes.containsKey(key)) {
-            return currentLockTypes.get(key);
+    private HashSet<LockType> getCurrentLocks(Serializable key) {
+        if (currentLocks.containsKey(key)) {
+            return currentLocks.get(key);
         } else {
-            return EnumSet.noneOf(lockTypes);
+            return new HashSet<LockType>();
         }
     }
 
-    private <E extends Enum<E>> void addToCurrentLocks(Serializable key, E lockType) {
-        if (currentLockTypes.containsKey(key)) {
-            currentLockTypes.get(key).add(lockType);
+    private void addToCurrentLocks(Serializable key, LockType lockType) {
+        if (currentLocks.containsKey(key)) {
+            currentLocks.get(key).add(lockType);
         } else {
-            currentLockTypes.put(key, EnumSet.of(lockType));
+            currentLocks.put(key, new HashSet<LockType>(Arrays.asList(lockType)));
         }
-        log.info("SHOULD NOT BE EMPTY: " + currentLockTypes.get(key));
+        log.info("SHOULD NOT BE EMPTY: " + currentLocks.get(key));
     }
 
-    private <E extends Enum<E>> void removeFromCurrentLocks(Serializable key, E lockType) {
-        EnumSet lockSet = currentLockTypes.get(key);
-        if (lockSet != null && lockSet.contains(lockType)) {
+    private void removeFromCurrentLocks(Serializable key, LockType lockType) {
+        HashSet<LockType> lockSet = currentLocks.get(key);
+        if (lockSet != null) {
             lockSet.remove(lockType);
         }
     }
 
-    private <E extends Enum<E>> boolean isLockTypeCompatible(Serializable key, E lockType) {
-        Set<? extends Enum> currentLocksOnKey = getCurrentLocks(key, lockType.getClass());
-        log.info(currentLocksOnKey);
+    private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
+        HashSet<LockType> locks = getCurrentLocks(key);
+        log.info(locks);
 
         boolean compatible = true;
-        for (Enum currLock : currentLocksOnKey) {
-            compatible = compatible && lockCompatibilityTable.areCompatible(lockType, currLock);
+        for (LockType currLock : locks) {
+            compatible = compatible && lct.areCompatible(lockType, currLock);
         }
         return compatible;
     }
 
-    private <E extends Enum<E>> void waitOn(Serializable key, E lockType) throws InterruptedException {
-        EnumMap<? extends Enum, Condition> em = waitingLists.get(key);
+    private void waitOn(Serializable key, LockType lockType) throws InterruptedException {
+        HashMap<LockType, Condition> em = waitingLists.get(key);
 
         if (em == null) {
-            em = waitingLists.put(key, new EnumMap(lockType.getClass()));
+            em = waitingLists.put(key, new HashMap<LockType, Condition>());
         }
 
         if (!em.containsKey(lockType)) {
-            EnumMap waitList = waitingLists.get(key);
-            waitList.put(lockType, internalLock.newCondition());
+            em.put(lockType, internalLock.newCondition());
         }
 
         em.get(lockType).await();
     }
 
-    private <E extends Enum<E>> void signalOn(Serializable key, E lockType) {
-        EnumMap<? extends Enum, Condition> em = waitingLists.get(key);
+    private void signalOn(Serializable key, LockType lockType) {
+        HashMap<LockType, Condition> em = waitingLists.get(key);
 
         if (em == null || !em.containsKey(lockType)) {
             return;
         }
 
-        for (Enum otherLockType : em.keySet()) {
-            if (!lockCompatibilityTable.areCompatible(lockType, otherLockType)) {
-                em.get(otherLockType).signal();
+        for (LockType lock : em.keySet()) {
+            if (!lct.areCompatible(lockType, lock)) {
+                em.get(lock).signal();
             }
         }
 
