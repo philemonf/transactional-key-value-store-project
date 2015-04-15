@@ -1,50 +1,46 @@
-package ch.epfl.tkvs.transactionmanager.lockingunit;
-
-import junit.framework.TestCase;
-import org.junit.Test;
+package ch.epfl.tkvs.transactionmanager;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import junit.framework.TestCase;
+
+import org.junit.Test;
+
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
+
+
 public class LockingUnitTest extends TestCase {
 
-    public static enum TestSimpleLockType {
-        THE_LOCK
-    }
-
-    public static boolean check = true;
+    private static boolean check = true;
 
     @Test
-    public void testSimpleLock() throws Exception {
-         LockingUnit.instance.initWithLockCompatibilityTable(new LockCompatibilityTable() {
-             @Override
-             public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-                 return false; // if there is a lock there is no compatibility.
-             }
-         });
-
+    public void testExclusiveLock() throws Exception {
+        LockingUnit.instance.initOnlyExclusiveLock();
         check = true;
 
         Thread thread1 = new Thread(new Runnable() {
+
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", TestSimpleLockType.THE_LOCK);
+                LockingUnit.instance.lock("test", LockingUnit.ExclusiveLockType.LOCK);
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     fail();
                 }
                 check = false;
-                LockingUnit.instance.release("test", TestSimpleLockType.THE_LOCK);
+                LockingUnit.instance.release("test", LockingUnit.ExclusiveLockType.LOCK);
             }
         });
 
         Thread thread2 = new Thread(new Runnable() {
+
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", TestSimpleLockType.THE_LOCK);
+                LockingUnit.instance.lock("test", LockingUnit.ExclusiveLockType.LOCK);
                 assertEquals(check, false);
-                LockingUnit.instance.release("test", TestSimpleLockType.THE_LOCK);
+                LockingUnit.instance.release("test", LockingUnit.ExclusiveLockType.LOCK);
             }
         });
 
@@ -58,12 +54,13 @@ public class LockingUnitTest extends TestCase {
     }
 
     @Test
-    public void testDefaultLockShared() throws Exception {
+    public void testDefaultLockRead() throws Exception {
         // Init with default parameters
-        LockingUnit.instance.initWithLockCompatibilityTable(null);
+        LockingUnit.instance.init();
 
         final Semaphore sem = new Semaphore(0);
         Thread thread1 = new Thread(new Runnable() {
+
             @Override
             public void run() {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.READ_LOCK);
@@ -79,6 +76,7 @@ public class LockingUnitTest extends TestCase {
         });
 
         Thread thread2 = new Thread(new Runnable() {
+
             @Override
             public void run() {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.READ_LOCK);
@@ -95,10 +93,11 @@ public class LockingUnitTest extends TestCase {
     @Test
     public void testDefaultLockWrite() throws Exception {
         // Init with default parameters
-        LockingUnit.instance.initWithLockCompatibilityTable(null);
+        LockingUnit.instance.init();
 
         final Semaphore sem = new Semaphore(0);
         Thread thread1 = new Thread(new Runnable() {
+
             @Override
             public void run() {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.WRITE_LOCK);
@@ -114,6 +113,7 @@ public class LockingUnitTest extends TestCase {
         });
 
         Thread thread2 = new Thread(new Runnable() {
+
             @Override
             public void run() {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.WRITE_LOCK);
@@ -126,6 +126,5 @@ public class LockingUnitTest extends TestCase {
         Thread.sleep(200);
         thread2.run();
     }
-
 
 }

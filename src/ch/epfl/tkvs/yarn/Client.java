@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
@@ -23,16 +22,13 @@ import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
-import org.junit.runner.Computer;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-import org.junit.runners.AllTests;
-import org.junit.runners.Suite;
+import ch.epfl.tkvs.transactionmanager.LockingUnitTest;
 
 
 public class Client {
@@ -155,7 +151,7 @@ public class Client {
         runTestCase(LockingUnitTest.class);
     }
 
-    private static void runTestCase(Class testCase) {
+    private static void runTestCase(Class<?> testCase) {
         Result res = JUnitCore.runClasses(testCase);
 
         if (res.getFailureCount() == 0) {
