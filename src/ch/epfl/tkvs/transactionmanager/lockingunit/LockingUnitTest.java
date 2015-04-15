@@ -43,7 +43,7 @@ public class LockingUnitTest extends TestCase {
             @Override
             public void run() {
                 LockingUnit.instance.lock("test", TestSimpleLockType.THE_LOCK);
-                assertEquals(check, true);
+                assertEquals(check, false);
                 LockingUnit.instance.release("test", TestSimpleLockType.THE_LOCK);
             }
         });
@@ -69,7 +69,7 @@ public class LockingUnitTest extends TestCase {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.READ_LOCK);
                 try {
                     if (!sem.tryAcquire(1, 5000, TimeUnit.MILLISECONDS)) {
-                        fail();
+                        fail("thread2 did not release the semaphore and was blocked on the read lock");
                     }
                 } catch (InterruptedException e) {
                     fail();
@@ -104,7 +104,7 @@ public class LockingUnitTest extends TestCase {
                 LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.WRITE_LOCK);
                 try {
                     if (sem.tryAcquire(1, 5000, TimeUnit.MILLISECONDS)) {
-                        fail();
+                        fail("thread2 could release the semaphore and was not blocked on the write lock");
                     }
                 } catch (InterruptedException e) {
                     fail();

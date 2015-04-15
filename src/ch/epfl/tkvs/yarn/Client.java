@@ -157,6 +157,11 @@ public class Client {
 
     private static void runTestCase(Class testCase) {
         Result res = JUnitCore.runClasses(testCase);
+
+        if (res.getFailureCount() == 0) {
+            log.info("All tests passed for " + testCase.getClass().getSimpleName());
+        }
+
         for (Failure failure : res.getFailures()) {
             log.error(failure.toString());
         }
