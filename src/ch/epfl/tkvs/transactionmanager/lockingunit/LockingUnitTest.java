@@ -88,7 +88,7 @@ public class LockingUnitTest extends TestCase {
         });
 
         thread1.run();
-        Thread.sleep(2000);
+        Thread.sleep(200);
         thread2.run();
     }
 
@@ -123,7 +123,7 @@ public class LockingUnitTest extends TestCase {
         });
 
         thread1.run();
-        Thread.sleep(2000);
+        Thread.sleep(200);
         thread2.run();
     }
 

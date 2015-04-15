@@ -76,8 +76,8 @@ public enum LockingUnit{
     public <E extends Enum<E>> void release(Serializable key, E lockType) {
         internalLock.lock();
         try {
-            signalOn(key, lockType);
             removeFromCurrentLocks(key, lockType);
+            signalOn(key, lockType);
         } finally {
             internalLock.unlock();
         }
@@ -128,6 +128,8 @@ public enum LockingUnit{
             lockSet.add(lockType);
             currentLockTypes.put(key, lockSet);
         }
+
+        log.info("SHOULD NOT BE EMPTY: " + getCurrentLocks(key, lockType.getClass()));
     }
 
     private <E extends Enum<E>> void removeFromCurrentLocks(Serializable key, E lockType) {
