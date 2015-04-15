@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import junit.framework.TestCase;
+import org.junit.Test;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -13,6 +14,7 @@ public class LockingUnitTest extends TestCase {
 
     public static boolean check = true;
 
+    @Test
     public void testSimpleLock() throws Exception {
          LockingUnit.instance.initWithLockCompatibilityTable(new LockCompatibilityTable() {
              @Override
@@ -55,6 +57,7 @@ public class LockingUnitTest extends TestCase {
         assertEquals(check, false);
     }
 
+    @Test
     public void testDefaultLockShared() throws Exception {
         // Init with default parameters
         LockingUnit.instance.initWithLockCompatibilityTable(null);
@@ -89,6 +92,7 @@ public class LockingUnitTest extends TestCase {
         thread2.run();
     }
 
+    @Test
     public void testDefaultLockWrite() throws Exception {
         // Init with default parameters
         LockingUnit.instance.initWithLockCompatibilityTable(null);
@@ -122,5 +126,6 @@ public class LockingUnitTest extends TestCase {
         Thread.sleep(2000);
         thread2.run();
     }
+
 
 }

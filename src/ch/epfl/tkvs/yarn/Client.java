@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
@@ -25,6 +26,13 @@ import org.apache.log4j.Logger;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
+import org.junit.runner.Computer;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Request;
+import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
+import org.junit.runners.AllTests;
+import org.junit.runners.Suite;
 
 
 public class Client {
@@ -118,7 +126,13 @@ public class Client {
             // break;
             case ":test":
                 System.out.println("Running test client...\n");
+
+                log.info("Running example client program...");
                 new UserClient().run();
+
+                log.info("Running LockingUnitTest...");
+                runTestCase(LockingUnitTest.class);
+
                 System.out.println();
                 break;
             case "":
@@ -135,5 +149,16 @@ public class Client {
 
         log.info(id + " state " + appState);
         client.stop();
+    }
+
+    private static void runTestCases() {
+
+    }
+
+    private static void runTestCase(Class testCase) {
+        Result res = JUnitCore.runClasses(testCase);
+        for (Failure failure : res.getFailures()) {
+            log.error(failure.toString());
+        }
     }
 }

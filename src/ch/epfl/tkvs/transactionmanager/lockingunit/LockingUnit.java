@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public enum LockingUnit{
     instance;
 
-    private LockCompatibilityTable lockCompatibilityTable = defaultCompatibilityTable;
+    private LockCompatibilityTable lockCompatibilityTable = defaultCompatibilityTable();
 
     private Map<Serializable, EnumSet> currentLockTypes = new HashMap<Serializable, EnumSet>();
     private Lock internalLock = new ReentrantLock();
@@ -32,7 +32,7 @@ public enum LockingUnit{
      */
     public void initWithLockCompatibilityTable(LockCompatibilityTable table) {
         if (table == null) {
-            lockCompatibilityTable = defaultCompatibilityTable;
+            lockCompatibilityTable = defaultCompatibilityTable();
         } else {
             lockCompatibilityTable = table;
         }
@@ -78,12 +78,14 @@ public enum LockingUnit{
         READ_LOCK, WRITE_LOCK
     }
 
-    private static LockCompatibilityTable defaultCompatibilityTable = new LockCompatibilityTable() {
-        @Override
-        public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-            return lock1.equals(DefaultLockType.READ_LOCK) && lock2.equals(DefaultLockType.READ_LOCK);
-        }
-    };
+    private static LockCompatibilityTable defaultCompatibilityTable() {
+        return new LockCompatibilityTable() {
+            @Override
+            public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
+                return lock1.equals(DefaultLockType.READ_LOCK) && lock2.equals(DefaultLockType.READ_LOCK);
+            }
+        };
+    }
 
     private Set<? extends Enum> getCurrentLocks(Serializable key, Class<? extends Enum> lockTypes) {
         if (currentLockTypes.containsKey(key)) {
