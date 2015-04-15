@@ -18,8 +18,8 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
  */
 public interface Algorithm
   {
-    ReadResponse read(ReadRequest r);
-    GenericSuccessResponse write(WriteRequest r);
-    GenericSuccessResponse begin(BeginRequest r);
-    GenericSuccessResponse commit(CommitRequest r);
+    ReadResponse read(ReadRequest request);
+    GenericSuccessResponse write(WriteRequest request);
+    GenericSuccessResponse begin(BeginRequest request);
+    GenericSuccessResponse commit(CommitRequest request);
   }

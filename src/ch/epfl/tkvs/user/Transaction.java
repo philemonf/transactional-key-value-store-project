@@ -141,8 +141,9 @@ public class Transaction<K extends Key>
           } catch (IOException | InvalidMessageException | JSONException ex)
           {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
+            throw new AbortException(ex.getLocalizedMessage());
           }
-        return null;
+    
       }
 
     public void write(K key, Serializable value) throws AbortException
@@ -166,6 +167,7 @@ public class Transaction<K extends Key>
           } catch (IOException | JSONException ex)
           {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
+            throw new AbortException(ex.getLocalizedMessage());
           }
       }
 
@@ -189,6 +191,7 @@ public class Transaction<K extends Key>
           } catch (JSONException ex)
           {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
+            throw new AbortException(ex.getLocalizedMessage());
           }
       }
 
