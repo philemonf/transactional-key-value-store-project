@@ -130,8 +130,7 @@ public class Client {
                 log.info("Running example client program...");
                 new UserClient().run();
 
-                log.info("Running LockingUnitTest...");
-                runTestCase(LockingUnitTest.class);
+                runTestCases();
 
                 System.out.println();
                 break;
@@ -152,7 +151,8 @@ public class Client {
     }
 
     private static void runTestCases() {
-
+        log.info("Running LockingUnitTest...");
+        runTestCase(LockingUnitTest.class);
     }
 
     private static void runTestCase(Class testCase) {
