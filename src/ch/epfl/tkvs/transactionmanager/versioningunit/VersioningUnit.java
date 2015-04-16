@@ -1,7 +1,8 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import java.util.HashMap;
+import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
@@ -16,23 +17,23 @@ public enum VersioningUnit {
     final static int PRIMARY_CACHE = 0;
     KeyValueStore kvStore;
 
-    private Map<Integer, Cache> caches = new HashMap<Integer, Cache>();
+    private Map<Integer, Cache> caches = new ConcurrentHashMap<Integer, Cache>();
     private Cache primary = new Cache(PRIMARY_CACHE);
     private Cache tmpPrimary = null;
 
-    public String get(int xid, String key) {
+    public Serializable get(int xid, Serializable key) {
         log.info("Get xid: " + xid + "- key: " + key);
         Cache xactCache = caches.get(xid);
 
         if (xactCache != null) {
-            String value = xactCache.get(key);
+            Serializable value = xactCache.get(key);
             if (value != null) {
                 return value;
             }
         }
 
         if (tmpPrimary != null) {
-            String value = tmpPrimary.get(key);
+            Serializable value = tmpPrimary.get(key);
             if (value != null) {
                 return value;
             }
@@ -41,7 +42,7 @@ public enum VersioningUnit {
         return primary.get(key);
     }
 
-    public void put(int xid, String key, String value) {
+    public void put(int xid, Serializable key, Serializable value) {
         log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
         Cache xactCache = caches.get(xid);
 
@@ -71,7 +72,7 @@ public enum VersioningUnit {
             @Override
             public void run() {
 
-                for (String key : tmpPrimary.getWrittenKeys()) {
+                for (Serializable key : tmpPrimary.getWrittenKeys()) {
                     primary.put(key, tmpPrimary.get(key));
                 }
 
