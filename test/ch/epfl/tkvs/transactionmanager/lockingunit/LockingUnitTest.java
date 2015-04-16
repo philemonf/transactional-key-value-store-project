@@ -42,9 +42,9 @@ public class LockingUnitTest extends TestCase {
             }
         });
 
-        thread1.run();
+        thread1.start();
         Thread.sleep(2000);
-        thread2.run();
+        thread2.start();
 
         thread1.join();
         thread2.join();
@@ -83,9 +83,11 @@ public class LockingUnitTest extends TestCase {
             }
         });
 
-        thread1.run();
-        Thread.sleep(200);
-        thread2.run();
+        thread1.start();
+        thread2.start();
+        
+        thread1.join();
+        thread2.join();
     }
 
     @Test
@@ -120,9 +122,11 @@ public class LockingUnitTest extends TestCase {
             }
         });
 
-        thread1.run();
-        Thread.sleep(200);
-        thread2.run();
+        thread1.start();
+        thread2.start();
+        
+        thread1.join();
+        thread2.join();
     }
 
 }

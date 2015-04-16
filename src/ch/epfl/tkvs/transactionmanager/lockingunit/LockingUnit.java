@@ -1,10 +1,13 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,9 +22,9 @@ public enum LockingUnit {
     instance;
 
     private LockCompatibilityTable lct;
-    private HashMap<Serializable, HashSet<LockType>> currentLocks = new HashMap<Serializable, HashSet<LockType>>();
+    private Map<Serializable, Set<LockType>> currentLocks = new HashMap<Serializable, Set<LockType>>();
 
-    private HashMap<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+    private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
 
     private static Logger log = Logger.getLogger(LockingUnit.class.getName());
@@ -63,7 +66,7 @@ public enum LockingUnit {
      * @param table
      *            the lock compatibility table - if null, use default parameter
      */
-    public void initWithLockCompatibilityTable(HashMap<LockType, ArrayList<LockType>> table) {
+    public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
         currentLocks.clear();
         waitingLists.clear();
 
@@ -115,11 +118,11 @@ public enum LockingUnit {
         internalLock.unlock();
     }
 
-    private HashSet<LockType> getCurrentLocks(Serializable key) {
+    private Set<LockType> getCurrentLocks(Serializable key) {
         if (currentLocks.containsKey(key)) {
             return currentLocks.get(key);
         } else {
-            return new HashSet<LockType>();
+            return Collections.emptySet();
         }
     }
 
@@ -129,19 +132,19 @@ public enum LockingUnit {
         } else {
             currentLocks.put(key, new HashSet<LockType>(Arrays.asList(lockType)));
         }
-        log.info("SHOULD NOT BE EMPTY: " + currentLocks.get(key));
     }
 
     private void removeFromCurrentLocks(Serializable key, LockType lockType) {
-        HashSet<LockType> lockSet = currentLocks.get(key);
+        Set<LockType> lockSet = currentLocks.get(key);
         if (lockSet != null) {
             lockSet.remove(lockType);
         }
     }
 
     private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
-        HashSet<LockType> locks = getCurrentLocks(key);
-        log.info(locks);
+    	
+        Set<LockType> locks = getCurrentLocks(key);
+        
 
         boolean compatible = true;
         for (LockType currLock : locks) {
@@ -154,7 +157,8 @@ public enum LockingUnit {
         HashMap<LockType, Condition> em = waitingLists.get(key);
 
         if (em == null) {
-            em = waitingLists.put(key, new HashMap<LockType, Condition>());
+            waitingLists.put(key, new HashMap<LockType, Condition>());
+            em = waitingLists.get(key);
         }
 
         if (!em.containsKey(lockType)) {

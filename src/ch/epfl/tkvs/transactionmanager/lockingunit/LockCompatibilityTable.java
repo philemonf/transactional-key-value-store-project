@@ -3,6 +3,8 @@ package ch.epfl.tkvs.transactionmanager.lockingunit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -10,19 +12,19 @@ import java.util.HashMap;
  */
 public class LockCompatibilityTable {
 
-    HashMap<LockType, ArrayList<LockType>> table;
+    Map<LockType, List<LockType>> table;
     boolean exclusive = false;
 
     public LockCompatibilityTable(boolean exclusive) {
         if (exclusive) {
             this.exclusive = true;
         } else {
-            table = new HashMap<LockType, ArrayList<LockType>>();
+            table = new HashMap<LockType, List<LockType>>();
             table.put(LockType.Default.READ_LOCK, newCompatibilityList(LockType.Default.READ_LOCK));
         }
     }
 
-    public LockCompatibilityTable(HashMap<LockType, ArrayList<LockType>> table) {
+    public LockCompatibilityTable(Map<LockType, List<LockType>> table) {
         this.table = table;
     }
 
@@ -33,10 +35,8 @@ public class LockCompatibilityTable {
     /**
      * Returns true iff lock1 is compatible with lock2.
      *
-     * @param l1
-     *            the first lock type
-     * @param l2
-     *            the second lock type
+     * @param l1 the first lock type
+     * @param l2 the second lock type
      * @return true iff lock1 is compatible with lock2.
      */
     public boolean areCompatible(LockType l1, LockType l2) {
