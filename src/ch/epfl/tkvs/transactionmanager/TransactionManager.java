@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,7 +13,7 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 
 import ch.epfl.tkvs.config.SlavesConfig;
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
@@ -33,8 +34,8 @@ public class TransactionManager {
     private ServerSocket server;
     private String hostname;
 
-    private static KeyValueStore kvStore;
-
+ 
+    private static Algorithm concurrencyController;
     public static void main(String[] args) {
         log.info("Initializing...");
         try {
@@ -58,7 +59,11 @@ public class TransactionManager {
         SlavesConfig slaveConfig = new SlavesConfig();
         // Create TM Server
         server = new ServerSocket(slaveConfig.getPortForHost(hostname));
-        kvStore = new KeyValueStore();
+        
+        //TODO Call init of LockingUnit?
+        //TODO setup versioningUnit
+        
+        concurrencyController = new MVCC2PL();
 
         log.info("Starting server...");
         while (listening) {
@@ -76,7 +81,7 @@ public class TransactionManager {
                     server.close();
                     break;
                 default:
-                    threadPool.execute(new TMWorker(input, sock, kvStore));
+                    threadPool.execute(new TMWorker(input, sock, concurrencyController));
                 }
             } catch (IOException e) {
                 log.error("sock.accept ", e);

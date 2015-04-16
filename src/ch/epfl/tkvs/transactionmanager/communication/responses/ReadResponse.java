@@ -20,7 +20,7 @@ public class ReadResponse extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_VALUE)
     private String encodedValue;
 
-    public ReadResponse(boolean success, String encodedValue) throws IOException {
+    public ReadResponse(boolean success, String encodedValue) {
         this.success = success;
         this.encodedValue = encodedValue;
     }
