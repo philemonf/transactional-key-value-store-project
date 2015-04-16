@@ -8,109 +8,113 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.apache.log4j.Logger;
 
+
 public enum VersioningUnit {
-	instance;
+    instance;
 
-	private static Logger log = Logger
-			.getLogger(VersioningUnit.class.getName());
+    private static Logger log = Logger.getLogger(VersioningUnit.class.getName());
 
-	final static int PRIMARY_CACHE = 0;
+    final static int PRIMARY_CACHE = 0;
 
-	private Map<Integer, Cache> caches;
-	private Cache primary;
-	private Deque<Cache> tmpPrimary;
-	private BackgroundCommitThread backgroundCommitThread = null;
+    private Map<Integer, Cache> caches;
+    private Cache primary;
+    public Deque<Cache> tmpPrimary;
+    private BackgroundCommitThread backgroundCommitThread = null;
 
-	/**
-	 * MUST be called before first use. This initializes the module.
-	 */
-	public void init() {
-		if (backgroundCommitThread != null && backgroundCommitThread.isAlive()) {
-			backgroundCommitThread.stopNow();
-			try {
-				backgroundCommitThread.join();
-			} catch (InterruptedException e) {
-				// TODO: think about it
-				e.printStackTrace();
-			}
-		}
+    /**
+     * MUST be called before first use. This initializes the module.
+     */
+    public void init() {
+        if (backgroundCommitThread != null && backgroundCommitThread.isAlive()) {
+            backgroundCommitThread.stopNow();
+            try {
+                backgroundCommitThread.join();
+            } catch (InterruptedException e) {
+                // TODO: think about it
+                e.printStackTrace();
+            }
+        }
 
-		caches = new ConcurrentHashMap<Integer, Cache>();
-		primary = new Cache(PRIMARY_CACHE);
-		tmpPrimary = new ConcurrentLinkedDeque<Cache>();
+        caches = new ConcurrentHashMap<Integer, Cache>();
+        primary = new Cache(PRIMARY_CACHE);
+        tmpPrimary = new ConcurrentLinkedDeque<Cache>();
 
-		backgroundCommitThread = new BackgroundCommitThread();
-		backgroundCommitThread.start();
-	}
+        backgroundCommitThread = new BackgroundCommitThread();
+        backgroundCommitThread.start();
+    }
 
-	private class BackgroundCommitThread extends Thread {
-		private volatile boolean shouldRun = true;
+    private class BackgroundCommitThread extends Thread {
 
-		@Override
-		public void run() {
-			while (shouldRun) {
+        private volatile boolean shouldRun = true;
 
-				if (!tmpPrimary.isEmpty()) {
-					Cache cacheToCommit = tmpPrimary.getLast();
+        @Override
+        public void run() {
+            while (shouldRun) {
 
-					for (Serializable key : cacheToCommit.getWrittenKeys()) {
-						primary.put(key, cacheToCommit.get(key));
-					}
+                if (!tmpPrimary.isEmpty()) {
+                    Cache cacheToCommit = tmpPrimary.getLast();
 
-					tmpPrimary.removeLast();
-					caches.remove(cacheToCommit.getXid());
-				}
-			}
-		}
+                    for (Serializable key : cacheToCommit.getWrittenKeys()) {
+                        primary.put(key, cacheToCommit.get(key));
 
-		public void stopNow() {
-			shouldRun = false;
-		}
-	}
+                    }
 
-	public Serializable get(int xid, Serializable key) {
-		log.info("Get xid: " + xid + "- key: " + key);
-		Cache xactCache = caches.get(xid);
+                    tmpPrimary.removeLast();
+                    caches.remove(cacheToCommit.getXid());
+                }
+            }
+        }
 
-		if (xactCache != null) {
-			Serializable value = xactCache.get(key);
-			if (value != null) {
-				return value;
-			}
-		}
+        public void stopNow() {
+            shouldRun = false;
+        }
+    }
 
-		for (Cache c : tmpPrimary) {
-			Serializable value = c.get(key);
-			if (value != null) {
-				return value;
-			}
-		}
+    public Serializable get(int xid, Serializable key) {
+        log.info("Get xid: " + xid + "- key: " + key);
+        Cache xactCache = caches.get(xid);
 
-		return primary.get(key);
-	}
+        if (xactCache != null) {
+            Serializable value = xactCache.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
 
-	public void put(int xid, Serializable key, Serializable value) {
-		log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
-		Cache xactCache = caches.get(xid);
+        for (Cache c : tmpPrimary) {
+            Serializable value = c.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
 
-		if (xactCache == null) {
-			xactCache = new Cache(xid);
+        return primary.get(key);
+    }
 
-			caches.put(xid, xactCache);
-		}
+    public void put(int xid, Serializable key, Serializable value) {
+        log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
+        Cache xactCache = caches.get(xid);
 
-		xactCache.put(key, value);
+        if (xactCache == null) {
+            xactCache = new Cache(xid);
 
-	}
+            caches.put(xid, xactCache);
+        }
 
-	public void commit(final int xid) {
-		log.info("Commit xid: " + xid);
+        xactCache.put(key, value);
 
-		tmpPrimary.addFirst((caches.get(xid)));
-	}
+    }
 
-	public void abort(int xid) {
-		caches.remove(xid);
-	}
+    public void commit(final int xid) {
+        log.info("Commit xid: " + xid);
+
+        if (caches.get(xid) != null) {
+            tmpPrimary.addFirst((caches.get(xid)));
+        }
+    }
+
+    public void abort(int xid) {
+        caches.remove(xid);
+    }
 
 }
