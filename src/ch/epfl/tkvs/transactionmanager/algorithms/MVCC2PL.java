@@ -11,6 +11,7 @@ import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
 import static ch.epfl.tkvs.transactionmanager.lockingunit.LockCompatibilityTable.newCompatibilityList;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class MVCC2PL implements Algorithm
         transactions = new ConcurrentHashMap<>();
       }
 
-    boolean checkForDeadlock(int transactionId, String key, LockType lockType)
+    boolean checkForDeadlock(int transactionId, Serializable key, LockType lockType)
       {
         return false;
       }
@@ -53,7 +54,7 @@ public class MVCC2PL implements Algorithm
     public ReadResponse read(ReadRequest request)
       {
         int xid = request.getTransactionId();
-        String key = request.getEncodedKey();
+        Serializable key = request.getEncodedKey();
 
         Transaction transaction = transactions.get(xid);
 
@@ -69,8 +70,8 @@ public class MVCC2PL implements Algorithm
 
         lockingUnit.lock(key, lock);
         transaction.addLock(key, lock);
-        String value = (String) versioningUnit.get(xid, key);
-        return new ReadResponse(true, value);
+        Serializable value = versioningUnit.get(xid, key);
+        return new ReadResponse(true, (String)value);
 
       }
 
@@ -78,8 +79,8 @@ public class MVCC2PL implements Algorithm
     public GenericSuccessResponse write(WriteRequest request)
       {
         int xid = request.getTransactionId();
-        String key = request.getEncodedKey();
-        String value = request.getEncodedValue();
+        Serializable key = request.getEncodedKey();
+        Serializable value = request.getEncodedValue();
 
         Transaction transaction = transactions.get(xid);
 
@@ -156,7 +157,7 @@ public class MVCC2PL implements Algorithm
         private int transactionId;
         private LinkedList<Key_LockType> heldLocks;
 
-        public void addLock(String key, LockType type)
+        public void addLock(Serializable key, LockType type)
           {
             heldLocks.add(new Key_LockType(key, type));
             // TODO check redundancy
@@ -183,10 +184,10 @@ public class MVCC2PL implements Algorithm
     private class Key_LockType
       {
 
-        String key;
+        Serializable key;
         LockType type;
 
-        public Key_LockType(String key, LockType type)
+        public Key_LockType(Serializable key, LockType type)
           {
             this.key = key;
             this.type = type;
