@@ -60,9 +60,6 @@ public class TransactionManager {
         // Create TM Server
         server = new ServerSocket(slaveConfig.getPortForHost(hostname));
         
-        //TODO Call init of LockingUnit?
-        //TODO setup versioningUnit
-        
         concurrencyController = new MVCC2PL();
 
         log.info("Starting server...");

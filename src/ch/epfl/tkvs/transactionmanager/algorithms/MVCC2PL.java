@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -14,141 +10,187 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
+import static ch.epfl.tkvs.transactionmanager.lockingunit.LockCompatibilityTable.newCompatibilityList;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- *
- * @author sachin
- */
-public class MVCC2PL implements Algorithm {
 
-	private LockingUnit lockingUnit;
-	private VersioningUnit versioningUnit;
+public class MVCC2PL implements Algorithm
+  {
 
-	public MVCC2PL() {
-		versioningUnit = VersioningUnit.instance;
-		lockingUnit = LockingUnit.instance;
-		transactions = new ConcurrentHashMap<>();
-	}
+    private LockingUnit lockingUnit;
+    private VersioningUnit versioningUnit;
 
-	boolean checkForDeadlock(int transactionId, String key, LockType lockType) {
-		return false;
-	}
+    public MVCC2PL()
+      {
+        
+        lockingUnit = LockingUnit.instance;
+        
+        HashMap<LockType, List<LockType>> lockCompatibility = new HashMap<>();
+        lockCompatibility.put(Lock.READ_LOCK, newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
+        lockCompatibility.put(Lock.WRITE_LOCK, newCompatibilityList(Lock.READ_LOCK));
+        lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
+        
+        versioningUnit = VersioningUnit.instance;
+        versioningUnit.init();
+        
+        transactions = new ConcurrentHashMap<>();
+      }
 
-	void deadLockHandlingatCommit(int transactionId) {
+    boolean checkForDeadlock(int transactionId, String key, LockType lockType)
+      {
+        return false;
+      }
 
-	}
+    void deadLockHandlingAtCommit(int transactionId)
+      {
 
-	@Override
-	public ReadResponse read(ReadRequest request) {
-		int xid = request.getTransactionId();
-		String key = request.getEncodedKey();
+      }
 
-		Transaction transaction = transactions.get(xid);
+    @Override
+    public ReadResponse read(ReadRequest request)
+      {
+        int xid = request.getTransactionId();
+        String key = request.getEncodedKey();
 
-		if (transaction == null) {
-			return new ReadResponse(false, null);
-		}
-		LockType type = null; // TODO Add LockType
-		if (checkForDeadlock(xid, key, type)) {
-			return new ReadResponse(false, null);
-		}
+        Transaction transaction = transactions.get(xid);
 
-		// lockingUnit.lock(key,type); //TODO fix lock
-		transaction.addLock(key, type);
-		String value = (String) versioningUnit.get(xid, key);
-		return new ReadResponse(true, value);
+        if (transaction == null)
+          {
+            return new ReadResponse(false, null);
+          }
+        Lock lock = Lock.READ_LOCK;
+        if (checkForDeadlock(xid, key, lock))
+          {
+            return new ReadResponse(false, null);
+          }
 
-	}
+        lockingUnit.lock(key, lock);
+        transaction.addLock(key, lock);
+        String value = (String) versioningUnit.get(xid, key);
+        return new ReadResponse(true, value);
 
-	@Override
-	public GenericSuccessResponse write(WriteRequest request) {
-		int xid = request.getTransactionId();
-		String key = request.getEncodedKey();
-		String value = request.getEncodedValue();
+      }
 
-		Transaction transaction = transactions.get(xid);
+    @Override
+    public GenericSuccessResponse write(WriteRequest request)
+      {
+        int xid = request.getTransactionId();
+        String key = request.getEncodedKey();
+        String value = request.getEncodedValue();
 
-		if (transaction == null) {
-			return new GenericSuccessResponse(false);
-		}
-		LockType type = null; // TODO Add LockType
-		if (checkForDeadlock(xid, key, type)) {
-			return new GenericSuccessResponse(false);
-		}
+        Transaction transaction = transactions.get(xid);
 
-		// lockingUnit.lock(key,type); //TODO fix lock
-		transaction.addLock(key, type);
-		versioningUnit.put(xid, key, value);
-		return new GenericSuccessResponse(true);
+        if (transaction == null)
+          {
+            return new GenericSuccessResponse(false);
+          }
 
-	}
+        Lock lock = Lock.WRITE_LOCK;
+        if (checkForDeadlock(xid, key, lock))
+          {
+            return new GenericSuccessResponse(false);
+          }
 
-	@Override
-	public GenericSuccessResponse begin(BeginRequest request) {
-		int xid = request.getTransactionId();
-		transactions.put(xid, new Transaction(xid));
-		return new GenericSuccessResponse(true);
-	}
+        lockingUnit.lock(key, lock);
+        transaction.addLock(key, lock);
+        versioningUnit.put(xid, key, value);
+        return new GenericSuccessResponse(true);
 
-	@Override
-	public GenericSuccessResponse commit(CommitRequest request) {
-		int xid = request.getTransactionId();
+      }
 
-		Transaction transaction = transactions.get(xid);
-		if (transaction == null) {
-			return new GenericSuccessResponse(false);
-		}
+    @Override
+    public GenericSuccessResponse begin(BeginRequest request)
+      {
+        int xid = request.getTransactionId();
+        transactions.put(xid, new Transaction(xid));
+        return new GenericSuccessResponse(true);
+      }
 
-		for (Key_LockType KL : transaction.getHeldLocks()) {
-			// if(KL.type == WRITELOCK) //TODO Fix LockType
-			// lockingUnit.lock(key, COMMITLOCK); //TODO Fix LockType
-		}
-		versioningUnit.commit(xid);
-		deadLockHandlingatCommit(xid);
-		for (Key_LockType KL : transaction.getHeldLocks()) {
-			// lockingUnit.release(KL.key, KL.type); //TODO Fix LockType
-		}
-		return new GenericSuccessResponse(true);
-	}
+    @Override
+    public GenericSuccessResponse commit(CommitRequest request)
+      {
+        int xid = request.getTransactionId();
 
-	private ConcurrentHashMap<Integer, Transaction> transactions;
+        Transaction transaction = transactions.get(xid);
+        if (transaction == null)
+          {
+            return new GenericSuccessResponse(false);
+          }
 
-	private class Transaction {
+        for (Key_LockType KL : transaction.getHeldLocks())
+          {
 
-		private int transactionId;
-		private LinkedList<Key_LockType> heldLocks;
+            if (KL.type == Lock.WRITE_LOCK)
+              {
+                if (checkForDeadlock(xid, KL.key, Lock.COMMIT_LOCK))
+                  {
+                    return new GenericSuccessResponse(false);
+                  }
 
-		public void addLock(String key, LockType type) {
-			heldLocks.add(new Key_LockType(key, type));
-			// TODO check redundancy
-		}
+                lockingUnit.lock(KL.key, Lock.COMMIT_LOCK);
+              }
+          }
+        versioningUnit.commit(xid);
+        deadLockHandlingAtCommit(xid);
+        for (Key_LockType KL : transaction.getHeldLocks())
+          {
+             lockingUnit.release(KL.key, KL.type); 
+          }
+        return new GenericSuccessResponse(true);
+      }
 
-		public LinkedList<Key_LockType> getHeldLocks() {
-			return heldLocks;
-		}
+    private ConcurrentHashMap<Integer, Transaction> transactions;
 
-		public int getTransactionId() {
-			return transactionId;
-		}
+    private static enum Lock implements LockType
+      {
 
-		public Transaction(int transactionId) {
-			this.transactionId = transactionId;
-			heldLocks = new LinkedList<>();
-		}
+        READ_LOCK, WRITE_LOCK, COMMIT_LOCK
+      }
 
-	}
+    private class Transaction
+      {
 
-	private class Key_LockType {
+        private int transactionId;
+        private LinkedList<Key_LockType> heldLocks;
 
-		String key;
-		LockType type;
+        public void addLock(String key, LockType type)
+          {
+            heldLocks.add(new Key_LockType(key, type));
+            // TODO check redundancy
+          }
 
-		public Key_LockType(String key, LockType type) {
-			this.key = key;
-			this.type = type;
-		}
+        public LinkedList<Key_LockType> getHeldLocks()
+          {
+            return heldLocks;
+          }
 
-	}
-}
+        public int getTransactionId()
+          {
+            return transactionId;
+          }
+
+        public Transaction(int transactionId)
+          {
+            this.transactionId = transactionId;
+            heldLocks = new LinkedList<>();
+          }
+
+      }
+
+    private class Key_LockType
+      {
+
+        String key;
+        LockType type;
+
+        public Key_LockType(String key, LockType type)
+          {
+            this.key = key;
+            this.type = type;
+          }
+
+      }
+  }
