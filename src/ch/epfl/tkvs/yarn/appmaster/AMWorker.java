@@ -39,8 +39,7 @@ public class AMWorker extends Thread {
             switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
 
             case TransactionManagerRequest.MESSAGE_TYPE:
-                TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest,
-                        TransactionManagerRequest.class);
+                TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
                 response = getResponseForRequest(request);
                 break;
             }

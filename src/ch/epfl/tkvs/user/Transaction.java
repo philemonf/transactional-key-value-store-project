@@ -46,8 +46,7 @@ public class Transaction<K extends Key> {
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
             JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));
-            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse,
-                    TransactionManagerResponse.class);
+            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
 
             tmHost = response.getHost();
             tmPort = response.getPort();

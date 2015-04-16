@@ -6,8 +6,7 @@ import org.apache.log4j.Logger;
 
 
 /**
- * Versioning Unit Singleton Call a function with
- * VersioningUnit.instance.fun(args)
+ * Versioning Unit Singleton Call a function with VersioningUnit.instance.fun(args)
  */
 public enum VersioningUnit {
     instance;
@@ -15,8 +14,7 @@ public enum VersioningUnit {
     private static Logger log = Logger.getLogger(VersioningUnit.class.getName());
 
     /**
-     * Creates a new version for the given key with the given value and the
-     * current timestamp.
+     * Creates a new version for the given key with the given value and the current timestamp.
      * 
      * @return timestamp
      */
@@ -26,8 +24,7 @@ public enum VersioningUnit {
     }
 
     /**
-     * @return the corresponding value of the key with the closest oldest
-     *         timestamp
+     * @return the corresponding value of the key with the closest oldest timestamp
      */
     public byte[] getValue(String key, Timestamp timestamp) {
         log.info("Getting a <key, value> version");

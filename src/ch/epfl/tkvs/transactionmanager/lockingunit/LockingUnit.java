@@ -30,9 +30,8 @@ public enum LockingUnit {
     private static Logger log = Logger.getLogger(LockingUnit.class.getName());
 
     /**
-     * MUST be called before use to specify the default 2PL lock compatibility
-     * table. To check whether lockTypeA is compatible with lockTypeB, the unit
-     * will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
+     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
      */
@@ -43,9 +42,8 @@ public enum LockingUnit {
     }
 
     /**
-     * MUST be called before use to specify the default 2PL lock compatibility
-     * table. To check whether lockTypeA is compatible with lockTypeB, the unit
-     * will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
+     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
      */
@@ -56,15 +54,13 @@ public enum LockingUnit {
     }
 
     /**
-     * MUST be called before use to specify the lock compatibility table. By
-     * default, the lock compatibility table of 2PL is set. To check whether
-     * lockTypeA is compatible with lockTypeB, the unit will do
+     * MUST be called before use to specify the lock compatibility table. By default, the lock compatibility table of
+     * 2PL is set. To check whether lockTypeA is compatible with lockTypeB, the unit will do
      * table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
      * 
-     * @param table
-     *            the lock compatibility table - if null, use default parameter
+     * @param table the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
         currentLocks.clear();
@@ -79,13 +75,10 @@ public enum LockingUnit {
     }
 
     /**
-     * Locks an object. Remember to init the module with the right lock
-     * compatibility table.
+     * Locks an object. Remember to init the module with the right lock compatibility table.
      * 
-     * @param key
-     *            the key of the object to lock
-     * @param lockType
-     *            the lock type
+     * @param key the key of the object to lock
+     * @param lockType the lock type
      */
     public void lock(Serializable key, LockType lockType) {
         try {
@@ -105,11 +98,8 @@ public enum LockingUnit {
     /**
      * Release/Unlock an object.
      * 
-     * @param key
-     *            the key of the object to unlock
-     * @param lockType
-     *            the lock type, be careful to init the module with the right
-     *            lock compatibility table.
+     * @param key the key of the object to unlock
+     * @param lockType the lock type, be careful to init the module with the right lock compatibility table.
      */
     public void release(Serializable key, LockType lockType) {
         internalLock.lock();
@@ -142,9 +132,8 @@ public enum LockingUnit {
     }
 
     private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
-    	
+
         Set<LockType> locks = getCurrentLocks(key);
-        
 
         boolean compatible = true;
         for (LockType currLock : locks) {

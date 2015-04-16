@@ -48,8 +48,7 @@ public class TMWorker extends Thread {
                 response = getResponseForRequest(readRequest);
                 break;
             case WriteRequest.MESSAGE_TYPE:
-                WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest,
-                        WriteRequest.class);
+                WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest, WriteRequest.class);
                 response = getResponseForRequest(writeRequest);
                 break;
             }
