@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
 
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+
 
 public class Cache {
 
@@ -73,11 +75,11 @@ public class Cache {
     }
 
     public Serializable get(Serializable key) {
-        return VersioningUnit.instance.kvStore.get(prefixKey(key));
+        return KeyValueStore.instance.get(prefixKey(key));
     }
 
     public void put(Serializable key, Serializable value) {
-        VersioningUnit.instance.kvStore.put(prefixKey(key), value);
+    	KeyValueStore.instance.put(prefixKey(key), value);
         writtenKeys.add(key);
     }
 

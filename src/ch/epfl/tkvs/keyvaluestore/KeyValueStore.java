@@ -7,14 +7,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * <Key,Value> Store
  */
-public class KeyValueStore {
+public enum KeyValueStore {
+	instance;
+	
+    public ConcurrentHashMap<Serializable, Serializable> store = new ConcurrentHashMap<Serializable, Serializable>();
 
-    public ConcurrentHashMap<Serializable, Serializable> store;
-
-    public KeyValueStore() {
-        store = new ConcurrentHashMap<Serializable, Serializable>();
+    public void clear() {
+    	store.clear();
     }
-
+    
     public void put(Serializable key, Serializable value) {
         store.put(key, value);
     }

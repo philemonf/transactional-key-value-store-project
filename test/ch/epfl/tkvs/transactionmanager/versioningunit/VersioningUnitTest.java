@@ -15,9 +15,10 @@ public class VersioningUnitTest extends TestCase {
     @Before
     public void setUp() throws Exception {
         V.init();
-        V.kvStore = new KeyValueStore();
+        
+        KeyValueStore.instance.clear();
     }
-
+    
     @Test
     public void testSingleXact() {
         final int xid = 1;
