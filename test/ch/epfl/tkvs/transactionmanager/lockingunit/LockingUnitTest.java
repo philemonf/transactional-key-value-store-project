@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.transactionmanager;
+package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -23,14 +23,14 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.ExclusiveLockType.LOCK);
+                LockingUnit.instance.lock("test", LockType.Exclusive.LOCK);
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     fail();
                 }
                 check = false;
-                LockingUnit.instance.release("test", LockingUnit.ExclusiveLockType.LOCK);
+                LockingUnit.instance.release("test", LockType.Exclusive.LOCK);
             }
         });
 
@@ -38,9 +38,9 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.ExclusiveLockType.LOCK);
+                LockingUnit.instance.lock("test", LockType.Exclusive.LOCK);
                 assertEquals(check, false);
-                LockingUnit.instance.release("test", LockingUnit.ExclusiveLockType.LOCK);
+                LockingUnit.instance.release("test", LockType.Exclusive.LOCK);
             }
         });
 
@@ -63,7 +63,7 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.READ_LOCK);
+                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
                 try {
                     if (!sem.tryAcquire(1, 5000, TimeUnit.MILLISECONDS)) {
                         fail("thread2 did not release the semaphore and was blocked on the read lock");
@@ -71,7 +71,7 @@ public class LockingUnitTest extends TestCase {
                 } catch (InterruptedException e) {
                     fail();
                 }
-                LockingUnit.instance.release("test", LockingUnit.DefaultLockType.READ_LOCK);
+                LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
             }
         });
 
@@ -79,9 +79,9 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.READ_LOCK);
+                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
                 sem.release();
-                LockingUnit.instance.release("test", LockingUnit.DefaultLockType.READ_LOCK);
+                LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
             }
         });
 
@@ -100,7 +100,7 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.WRITE_LOCK);
+                LockingUnit.instance.lock("test", LockType.Default.WRITE_LOCK);
                 try {
                     if (sem.tryAcquire(1, 5000, TimeUnit.MILLISECONDS)) {
                         fail("thread2 could release the semaphore and was not blocked on the write lock");
@@ -108,7 +108,7 @@ public class LockingUnitTest extends TestCase {
                 } catch (InterruptedException e) {
                     fail();
                 }
-                LockingUnit.instance.release("test", LockingUnit.DefaultLockType.WRITE_LOCK);
+                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
             }
         });
 
@@ -116,9 +116,9 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockingUnit.DefaultLockType.WRITE_LOCK);
+                LockingUnit.instance.lock("test", LockType.Default.WRITE_LOCK);
                 sem.release();
-                LockingUnit.instance.release("test", LockingUnit.DefaultLockType.WRITE_LOCK);
+                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
             }
         });
 

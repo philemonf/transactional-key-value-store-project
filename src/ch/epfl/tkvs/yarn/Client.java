@@ -28,7 +28,7 @@ import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
-import ch.epfl.tkvs.transactionmanager.LockingUnitTest_2;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 
 
 public class Client {
