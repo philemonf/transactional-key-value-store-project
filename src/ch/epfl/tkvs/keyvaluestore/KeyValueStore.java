@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.keyvaluestore;
 
-import java.util.HashMap;
+import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -8,21 +9,21 @@ import java.util.HashMap;
  */
 public class KeyValueStore {
 
-    public HashMap<String, String> store;
+    public ConcurrentHashMap<Serializable, Serializable> store;
 
     public KeyValueStore() {
-        store = new HashMap<String, String>();
+        store = new ConcurrentHashMap<Serializable, Serializable>();
     }
 
-    public void put(String key, String value) {
+    public void put(Serializable key, Serializable value) {
         store.put(key, value);
     }
 
-    public String get(String key) {
+    public Serializable get(Serializable key) {
         return store.get(key);
     }
 
-    public void remove(String key) {
+    public void remove(Serializable key) {
         store.remove(key);
     }
 }

@@ -69,7 +69,7 @@ public class TMWorker extends Thread {
 
     private JSONObject getResponseForRequest(ReadRequest request) throws JSONException, IOException {
         String encodedKey = request.getEncodedKey();
-        String encodedValue = kvStore.get(encodedKey);
+        String encodedValue = kvStore.get(encodedKey).toString();
 
         return toJSON(new ReadResponse(true, encodedValue));
     }
