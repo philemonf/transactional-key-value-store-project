@@ -7,8 +7,6 @@ import junit.framework.TestCase;
 
 import org.junit.Test;
 
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
-
 
 public class LockingUnitTest extends TestCase {
 

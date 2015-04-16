@@ -21,20 +21,22 @@ public class LockCompatibilityTable {
             table.put(LockType.Default.READ_LOCK, newCompatibilityList(LockType.Default.READ_LOCK));
         }
     }
-    
+
     public LockCompatibilityTable(HashMap<LockType, ArrayList<LockType>> table) {
         this.table = table;
     }
 
-    public static ArrayList<LockType> newCompatibilityList(LockType...lt) {
+    public static ArrayList<LockType> newCompatibilityList(LockType... lt) {
         return new ArrayList<LockType>(Arrays.asList(lt));
     }
 
     /**
      * Returns true iff lock1 is compatible with lock2.
      *
-     * @param l1 the first lock type
-     * @param l2 the second lock type
+     * @param l1
+     *            the first lock type
+     * @param l2
+     *            the second lock type
      * @return true iff lock1 is compatible with lock2.
      */
     public boolean areCompatible(LockType l1, LockType l2) {
