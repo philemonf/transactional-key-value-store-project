@@ -1,6 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +10,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 
+import ch.epfl.tkvs.user.Key;
+
 
 /**
  * Locking Unit Singleton Call a function with LockingUnit.instance.fun(args)
@@ -19,9 +20,9 @@ public enum LockingUnit {
     instance;
 
     private LockCompatibilityTable lct;
-    private HashMap<Serializable, HashSet<LockType>> currentLocks = new HashMap<Serializable, HashSet<LockType>>();
+    private HashMap<Key, HashSet<LockType>> currentLocks = new HashMap<Key, HashSet<LockType>>();
 
-    private HashMap<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+    private HashMap<Key, HashMap<LockType, Condition>> waitingLists = new HashMap<Key, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
 
     private static Logger log = Logger.getLogger(LockingUnit.class.getName());
@@ -84,7 +85,7 @@ public enum LockingUnit {
      * @param lockType
      *            the lock type
      */
-    public void lock(Serializable key, LockType lockType) {
+    public void lock(Key key, LockType lockType) {
         try {
             internalLock.lock();
             while (!isLockTypeCompatible(key, lockType)) {
@@ -108,14 +109,14 @@ public enum LockingUnit {
      *            the lock type, be careful to init the module with the right
      *            lock compatibility table.
      */
-    public void release(Serializable key, LockType lockType) {
+    public void release(Key key, LockType lockType) {
         internalLock.lock();
         removeFromCurrentLocks(key, lockType);
         signalOn(key, lockType);
         internalLock.unlock();
     }
 
-    private HashSet<LockType> getCurrentLocks(Serializable key) {
+    private HashSet<LockType> getCurrentLocks(Key key) {
         if (currentLocks.containsKey(key)) {
             return currentLocks.get(key);
         } else {
@@ -123,7 +124,7 @@ public enum LockingUnit {
         }
     }
 
-    private void addToCurrentLocks(Serializable key, LockType lockType) {
+    private void addToCurrentLocks(Key key, LockType lockType) {
         if (currentLocks.containsKey(key)) {
             currentLocks.get(key).add(lockType);
         } else {
@@ -132,14 +133,14 @@ public enum LockingUnit {
         log.info("SHOULD NOT BE EMPTY: " + currentLocks.get(key));
     }
 
-    private void removeFromCurrentLocks(Serializable key, LockType lockType) {
+    private void removeFromCurrentLocks(Key key, LockType lockType) {
         HashSet<LockType> lockSet = currentLocks.get(key);
         if (lockSet != null) {
             lockSet.remove(lockType);
         }
     }
 
-    private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
+    private boolean isLockTypeCompatible(Key key, LockType lockType) {
         HashSet<LockType> locks = getCurrentLocks(key);
         log.info(locks);
 
@@ -150,7 +151,7 @@ public enum LockingUnit {
         return compatible;
     }
 
-    private void waitOn(Serializable key, LockType lockType) throws InterruptedException {
+    private void waitOn(Key key, LockType lockType) throws InterruptedException {
         HashMap<LockType, Condition> em = waitingLists.get(key);
 
         if (em == null) {
@@ -164,7 +165,7 @@ public enum LockingUnit {
         em.get(lockType).await();
     }
 
-    private void signalOn(Serializable key, LockType lockType) {
+    private void signalOn(Key key, LockType lockType) {
         HashMap<LockType, Condition> em = waitingLists.get(key);
 
         if (em == null || !em.containsKey(lockType)) {
