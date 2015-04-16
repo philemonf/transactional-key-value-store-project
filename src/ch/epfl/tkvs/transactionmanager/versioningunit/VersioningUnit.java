@@ -1,8 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
 import java.io.Serializable;
+import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import org.apache.log4j.Logger;
 
@@ -17,9 +19,36 @@ public enum VersioningUnit {
     final static int PRIMARY_CACHE = 0;
     KeyValueStore kvStore;
 
-    private Map<Integer, Cache> caches = new ConcurrentHashMap<Integer, Cache>();
-    private Cache primary = new Cache(PRIMARY_CACHE);
-    private Cache tmpPrimary = null;
+    private Map<Integer, Cache> caches;
+    private Cache primary;
+    private Deque<Cache> tmpPrimary;
+
+    public void init() {
+        caches = new ConcurrentHashMap<Integer, Cache>();
+        primary = new Cache(PRIMARY_CACHE);
+        tmpPrimary = new ConcurrentLinkedDeque<Cache>();
+
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+
+                while (true) {
+
+                    if (!tmpPrimary.isEmpty()) {
+                        Cache cacheToCommit = tmpPrimary.getLast();
+
+                        for (Serializable key : cacheToCommit.getWrittenKeys()) {
+                            primary.put(key, cacheToCommit.get(key));
+                        }
+
+                        caches.remove(cacheToCommit.getXid());
+                        tmpPrimary.removeLast();
+                    }
+                }
+            }
+        }).start();
+    }
 
     public Serializable get(int xid, Serializable key) {
         log.info("Get xid: " + xid + "- key: " + key);
@@ -32,8 +61,8 @@ public enum VersioningUnit {
             }
         }
 
-        if (tmpPrimary != null) {
-            Serializable value = tmpPrimary.get(key);
+        for (Cache c : tmpPrimary) {
+            Serializable value = c.get(key);
             if (value != null) {
                 return value;
             }
@@ -56,32 +85,10 @@ public enum VersioningUnit {
 
     }
 
-    public boolean commit(final int xid) {
+    public void commit(final int xid) {
         log.info("Commit xid: " + xid);
 
-        if (tmpPrimary != null) {
-            return false;
-        }
-        tmpPrimary = caches.get(xid);
-        if (tmpPrimary == null) {
-            return true;
-        }
-
-        new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-
-                for (Serializable key : tmpPrimary.getWrittenKeys()) {
-                    primary.put(key, tmpPrimary.get(key));
-                }
-
-                caches.remove(xid);
-                tmpPrimary = null;
-            }
-        }).start();
-
-        return true;
+        tmpPrimary.addFirst((caches.get(xid)));
 
     }
 

@@ -7,6 +7,7 @@ import java.util.Set;
 
 public class Cache {
 
+    private int xid;
     private String prefix;
     private Set<Serializable> writtenKeys;
 
@@ -61,9 +62,14 @@ public class Cache {
 
     }
 
-    public Cache(int id) {
-        this.prefix = "Cache" + id + "_";
+    public Cache(int xid) {
+        this.xid = xid;
+        this.prefix = "Cache" + xid + "_";
         this.writtenKeys = new HashSet<Serializable>();
+    }
+
+    public int getXid() {
+        return xid;
     }
 
     public Serializable get(Serializable key) {

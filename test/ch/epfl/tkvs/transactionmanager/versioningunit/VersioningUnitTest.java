@@ -1,6 +1,6 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import static org.junit.Assert.assertTrue;
+import junit.framework.TestCase;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -8,12 +8,13 @@ import org.junit.Test;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
-public class VersioningUnitTest {
+public class VersioningUnitTest extends TestCase {
 
     private VersioningUnit V = VersioningUnit.instance;
 
     @Before
     public void setUp() throws Exception {
+        V.init();
         V.kvStore = new KeyValueStore();
     }
 
@@ -50,8 +51,7 @@ public class VersioningUnitTest {
         V.put(xid3, "key", "value3");
         V.commit(xid1);
         assertTrue(V.get(xid2, "key").equals("value1"));
-        while (!V.commit(xid3))
-            ;
+        V.commit(xid3);
         assertTrue(V.get(xid2, "key").equals("value3"));
 
     }
