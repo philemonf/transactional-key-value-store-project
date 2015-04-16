@@ -1,13 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -22,7 +16,7 @@ public enum LockingUnit {
     instance;
 
     private LockCompatibilityTable lct;
-    private Map<Serializable, Set<LockType>> currentLocks = new HashMap<Serializable, Set<LockType>>();
+    private Map<Serializable, List<LockType>> currentLocks = new HashMap<Serializable, List<LockType>>();
 
     private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
@@ -96,6 +90,33 @@ public enum LockingUnit {
     }
 
     /**
+     * Promotes a lock on an object atomically.
+     *
+     * @param key the key of the object associated with the lock
+     * @param oldType the current lock type to promote
+     * @param newType the new lock type
+     */
+    public void promote(Serializable key, LockType oldType, LockType newType) {
+        try {
+            internalLock.lock();
+
+            removeFromCurrentLocks(key, oldType);
+
+            while (!isLockTypeCompatible(key, newType)) {
+                waitOn(key, newType);
+            }
+
+            addToCurrentLocks(key, newType);
+
+        } catch (InterruptedException e) {
+            // TODO: something
+            log.error("Shit happens...");
+        } finally {
+            internalLock.unlock();
+        }
+    }
+
+    /**
      * Release/Unlock an object.
      * 
      * @param key the key of the object to unlock
@@ -108,11 +129,11 @@ public enum LockingUnit {
         internalLock.unlock();
     }
 
-    private Set<LockType> getCurrentLocks(Serializable key) {
+    private List<LockType> getCurrentLocks(Serializable key) {
         if (currentLocks.containsKey(key)) {
             return currentLocks.get(key);
         } else {
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
     }
 
@@ -120,12 +141,12 @@ public enum LockingUnit {
         if (currentLocks.containsKey(key)) {
             currentLocks.get(key).add(lockType);
         } else {
-            currentLocks.put(key, new HashSet<LockType>(Arrays.asList(lockType)));
+            currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(lockType)));
         }
     }
 
     private void removeFromCurrentLocks(Serializable key, LockType lockType) {
-        Set<LockType> lockSet = currentLocks.get(key);
+        List<LockType> lockSet = currentLocks.get(key);
         if (lockSet != null) {
             lockSet.remove(lockType);
         }
@@ -133,7 +154,7 @@ public enum LockingUnit {
 
     private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
 
-        Set<LockType> locks = getCurrentLocks(key);
+        List<LockType> locks = getCurrentLocks(key);
 
         boolean compatible = true;
         for (LockType currLock : locks) {
