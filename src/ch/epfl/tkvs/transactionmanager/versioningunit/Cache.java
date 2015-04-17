@@ -90,5 +90,11 @@ public class Cache {
     public HashSet<Serializable> getWrittenKeys() {
         return new HashSet<Serializable>(writtenKeys);
     }
+    
+    
+    @Override
+    public String toString() {
+        return prefix + getWrittenKeys();
+    }
 
 }
