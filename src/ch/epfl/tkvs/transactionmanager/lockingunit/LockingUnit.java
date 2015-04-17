@@ -111,7 +111,7 @@ public enum LockingUnit {
                 locks.remove(oldType);
             }
 
-            while (!isLockTypeCompatible(key, newType, oldTypes)) {
+            while (!isLockTypeCompatible(key, newType, locks)) {
                 waitOn(key, newType);
             }
 
@@ -171,8 +171,7 @@ public enum LockingUnit {
 
     private boolean isLockTypeCompatible(Serializable key, LockType lockType, List<LockType> locksToCheck) {
 
-        List<LockType> locks = getCurrentLocks(key);
-
+     
         boolean compatible = true;
         for (LockType currLock : locksToCheck) {
             compatible = compatible && lct.areCompatible(lockType, currLock);
