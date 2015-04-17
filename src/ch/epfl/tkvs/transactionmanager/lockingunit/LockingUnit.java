@@ -93,20 +93,33 @@ public enum LockingUnit {
      * Promotes a lock on an object atomically.
      *
      * @param key the key of the object associated with the lock
-     * @param oldType the current lock type to promote
+     * @param oldTypes the lock types to promote
      * @param newType the new lock type
      */
-    public void promote(Serializable key, LockType oldType, LockType newType) {
+    public void promote(Serializable key, List<LockType> oldTypes, LockType newType) {
         try {
             internalLock.lock();
 
-            removeFromCurrentLocks(key, oldType);
+            // Copy the list of current locks
+            List<LockType> locks = new LinkedList<LockType>();
+            for (LockType lt : getCurrentLocks(key)) {
+                locks.add(lt);
+            }
 
-            while (!isLockTypeCompatible(key, newType)) {
+            //Remove the old types from the copy
+            for (LockType oldType: oldTypes) {
+                locks.remove(oldType);
+            }
+
+            while (!isLockTypeCompatible(key, newType, oldTypes)) {
                 waitOn(key, newType);
             }
 
             addToCurrentLocks(key, newType);
+
+            for (LockType oldType : oldTypes) {
+                removeFromCurrentLocks(key, oldType);
+            }
 
         } catch (InterruptedException e) {
             // TODO: something
@@ -153,11 +166,15 @@ public enum LockingUnit {
     }
 
     private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
+        return isLockTypeCompatible(key, lockType, getCurrentLocks(key));
+    }
+
+    private boolean isLockTypeCompatible(Serializable key, LockType lockType, List<LockType> locksToCheck) {
 
         List<LockType> locks = getCurrentLocks(key);
 
         boolean compatible = true;
-        for (LockType currLock : locks) {
+        for (LockType currLock : locksToCheck) {
             compatible = compatible && lct.areCompatible(lockType, currLock);
         }
         return compatible;
