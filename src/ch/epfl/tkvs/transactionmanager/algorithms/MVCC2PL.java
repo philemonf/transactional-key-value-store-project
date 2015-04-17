@@ -1,4 +1,3 @@
-
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -12,11 +11,12 @@ import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
 import static ch.epfl.tkvs.transactionmanager.lockingunit.LockCompatibilityTable.newCompatibilityList;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 public class MVCC2PL implements Algorithm
   {
@@ -26,17 +26,17 @@ public class MVCC2PL implements Algorithm
 
     public MVCC2PL()
       {
-        
+
         lockingUnit = LockingUnit.instance;
-        
+
         HashMap<LockType, List<LockType>> lockCompatibility = new HashMap<>();
         lockCompatibility.put(Lock.READ_LOCK, newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
         lockCompatibility.put(Lock.WRITE_LOCK, newCompatibilityList(Lock.READ_LOCK));
         lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
-        
+
         versioningUnit = VersioningUnit.instance;
         versioningUnit.init();
-        
+
         transactions = new ConcurrentHashMap<>();
       }
 
@@ -65,13 +65,17 @@ public class MVCC2PL implements Algorithm
         Lock lock = Lock.READ_LOCK;
         if (checkForDeadlock(xid, key, lock))
           {
+            transactions.remove(xid);
             return new ReadResponse(false, null);
           }
 
         lockingUnit.lock(key, lock);
         transaction.addLock(key, lock);
         Serializable value = versioningUnit.get(xid, key);
-        return new ReadResponse(true, (String)value);
+        
+
+            
+        return new ReadResponse(true, (String) value);
 
       }
 
@@ -92,6 +96,7 @@ public class MVCC2PL implements Algorithm
         Lock lock = Lock.WRITE_LOCK;
         if (checkForDeadlock(xid, key, lock))
           {
+            transactions.remove(xid);
             return new GenericSuccessResponse(false);
           }
 
@@ -106,6 +111,8 @@ public class MVCC2PL implements Algorithm
     public GenericSuccessResponse begin(BeginRequest request)
       {
         int xid = request.getTransactionId();
+        if(transactions.contains(xid))
+             return new GenericSuccessResponse(false);
         transactions.put(xid, new Transaction(xid));
         return new GenericSuccessResponse(true);
       }
@@ -121,25 +128,30 @@ public class MVCC2PL implements Algorithm
             return new GenericSuccessResponse(false);
           }
 
-        for (Key_LockType KL : transaction.getHeldLocks())
+        for (Serializable key : transaction.getLockedKeys())
           {
 
-            if (KL.type == Lock.WRITE_LOCK)
+            if (transaction.getLocksForKey(key).contains(Lock.WRITE_LOCK))
               {
-                if (checkForDeadlock(xid, KL.key, Lock.COMMIT_LOCK))
+                if (checkForDeadlock(xid, key, Lock.COMMIT_LOCK))
                   {
+                    transactions.remove(xid);
                     return new GenericSuccessResponse(false);
                   }
 
-                lockingUnit.lock(KL.key, Lock.COMMIT_LOCK);
+                lockingUnit.promote(key, transaction.getLocksForKey(key), Lock.COMMIT_LOCK);
               }
           }
         versioningUnit.commit(xid);
         deadLockHandlingAtCommit(xid);
-        for (Key_LockType KL : transaction.getHeldLocks())
+        for (Serializable key : transaction.getLockedKeys())
           {
-             lockingUnit.release(KL.key, KL.type); 
+            for (LockType lock : transaction.getLocksForKey(key))
+              {
+                lockingUnit.release(key, lock);
+              }
           }
+        transactions.remove(xid);
         return new GenericSuccessResponse(true);
       }
 
@@ -155,17 +167,27 @@ public class MVCC2PL implements Algorithm
       {
 
         private int transactionId;
-        private LinkedList<Key_LockType> heldLocks;
+        private HashMap<Serializable, List<LockType>> currentLocks;
 
         public void addLock(Serializable key, LockType type)
           {
-            heldLocks.add(new Key_LockType(key, type));
-            // TODO check redundancy
+            if (currentLocks.containsKey(key))
+              {
+                currentLocks.get(key).add(type);
+              } else
+              {
+                currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(type)));
+              }
           }
 
-        public LinkedList<Key_LockType> getHeldLocks()
+        public Set<Serializable> getLockedKeys()
           {
-            return heldLocks;
+            return currentLocks.keySet();
+          }
+
+        public List<LockType> getLocksForKey(Serializable key)
+          {
+            return currentLocks.get(key);
           }
 
         public int getTransactionId()
@@ -176,22 +198,10 @@ public class MVCC2PL implements Algorithm
         public Transaction(int transactionId)
           {
             this.transactionId = transactionId;
-            heldLocks = new LinkedList<>();
+            currentLocks = new HashMap<>();
           }
 
       }
 
-    private class Key_LockType
-      {
-
-        Serializable key;
-        LockType type;
-
-        public Key_LockType(Serializable key, LockType type)
-          {
-            this.key = key;
-            this.type = type;
-          }
-
-      }
+    
   }

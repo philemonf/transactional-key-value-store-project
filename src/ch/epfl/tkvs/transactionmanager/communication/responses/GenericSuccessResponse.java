@@ -15,7 +15,7 @@ public class GenericSuccessResponse extends Message {
         this.success = success;
       }
 
-    public boolean isSuccess()
+    public boolean getSuccess()
       {
         return success;
       }
