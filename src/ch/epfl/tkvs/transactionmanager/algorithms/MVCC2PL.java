@@ -224,7 +224,7 @@ public class MVCC2PL implements Algorithm
         public synchronized boolean checkForDeadlock(int transactionId,
                 Serializable key, Lock lockType)
           {
-            if (heldLocks.contains(key))
+            if (heldLocks.containsKey(key))
               {
                 List<Lock> incompatiblelockTypes = new LinkedList<Lock>();
                 switch (lockType)
