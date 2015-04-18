@@ -51,29 +51,34 @@ public class DeadlockGraph {
 	private boolean checkForCycle(Integer node, HashSet<Integer> visited,
 			HashSet<Integer> onStack) {
 		visited.add(node);
-		onStack.add(node);
-		for (Integer neighbor : outgoingEdges.get(node)) {
-			if (!visited.contains(neighbor)) {
-				if (checkForCycle(neighbor, visited, onStack))
+		if (outgoingEdges.get(node) != null) {
+			onStack.add(node);
+			for (Integer neighbor : outgoingEdges.get(node)) {
+				if (!visited.contains(neighbor)) {
+					if (checkForCycle(neighbor, visited, onStack))
+						return true;
+				} else if (onStack.contains(neighbor)) {
 					return true;
-			} else if (onStack.contains(neighbor)) {
-				return true;
+				}
 			}
+			onStack.remove(node);
 		}
-		onStack.remove(node);
 		return false;
 	}
 
 	public void remove(int transactionId) {
-		for (Integer next : outgoingEdges.get(transactionId)) {
-			incomingEdges.get(next).remove(transactionId);
+		if (outgoingEdges.get(transactionId) != null) {
+			for (Integer next : outgoingEdges.get(transactionId)) {
+				incomingEdges.get(next).remove(transactionId);
+			}
+			outgoingEdges.remove(transactionId);
 		}
-		outgoingEdges.remove(transactionId);
-
-		for (Integer previous : incomingEdges.get(transactionId)) {
-			outgoingEdges.get(previous).remove(transactionId);
+		if (incomingEdges.get(transactionId) != null) {
+			for (Integer previous : incomingEdges.get(transactionId)) {
+				outgoingEdges.get(previous).remove(transactionId);
+			}
+			incomingEdges.remove(transactionId);
 		}
-		incomingEdges.remove(transactionId);
 	}
 
 }
