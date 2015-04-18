@@ -19,6 +19,12 @@ public class VersioningUnitTest extends TestCase {
         KeyValueStore.instance.clear();
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        V.stopNow();
+    }
+
     @Test
     public void testSingleXact() {
         final int xid = 1;

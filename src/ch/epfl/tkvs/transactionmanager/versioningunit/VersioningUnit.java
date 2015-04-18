@@ -25,6 +25,17 @@ public enum VersioningUnit {
      * MUST be called before first use. This initializes the module.
      */
     public void init() {
+        stopBackgroundCommitThreadIfAlive();
+
+        caches = new ConcurrentHashMap<Integer, Cache>();
+        primary = new Cache(PRIMARY_CACHE);
+        tmpPrimary = new ConcurrentLinkedDeque<Cache>();
+
+        backgroundCommitThread = new BackgroundCommitThread();
+        backgroundCommitThread.start();
+    }
+
+    private void stopBackgroundCommitThreadIfAlive() {
         if (backgroundCommitThread != null && backgroundCommitThread.isAlive()) {
             backgroundCommitThread.stopNow();
             try {
@@ -34,13 +45,6 @@ public enum VersioningUnit {
                 e.printStackTrace();
             }
         }
-
-        caches = new ConcurrentHashMap<Integer, Cache>();
-        primary = new Cache(PRIMARY_CACHE);
-        tmpPrimary = new ConcurrentLinkedDeque<Cache>();
-
-        backgroundCommitThread = new BackgroundCommitThread();
-        backgroundCommitThread.start();
     }
 
     private class BackgroundCommitThread extends Thread {
@@ -115,6 +119,10 @@ public enum VersioningUnit {
 
     public void abort(int xid) {
         caches.remove(xid);
+    }
+
+    public void stopNow() {
+        stopBackgroundCommitThreadIfAlive();
     }
 
 }
