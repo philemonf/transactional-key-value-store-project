@@ -72,9 +72,7 @@ public class MVCC2PL implements Algorithm
         lockingUnit.lock(key, lock);
         transaction.addLock(key, lock);
         Serializable value = versioningUnit.get(xid, key);
-        
 
-            
         return new ReadResponse(true, (String) value);
 
       }
@@ -111,9 +109,13 @@ public class MVCC2PL implements Algorithm
     public GenericSuccessResponse begin(BeginRequest request)
       {
         int xid = request.getTransactionId();
-        if(transactions.contains(xid))
-             return new GenericSuccessResponse(false);
+
+        if (transactions.containsKey(xid))
+          {
+            return new GenericSuccessResponse(false);
+          }
         transactions.put(xid, new Transaction(xid));
+        
         return new GenericSuccessResponse(true);
       }
 
@@ -127,7 +129,7 @@ public class MVCC2PL implements Algorithm
           {
             return new GenericSuccessResponse(false);
           }
-
+        
         for (Serializable key : transaction.getLockedKeys())
           {
 
@@ -140,6 +142,8 @@ public class MVCC2PL implements Algorithm
                   }
 
                 lockingUnit.promote(key, transaction.getLocksForKey(key), Lock.COMMIT_LOCK);
+                transaction.setLock(key, Arrays.asList(Lock.COMMIT_LOCK));
+                
               }
           }
         versioningUnit.commit(xid);
@@ -167,16 +171,19 @@ public class MVCC2PL implements Algorithm
       {
 
         private int transactionId;
-        private HashMap<Serializable, List<LockType>> currentLocks;
-
-        public void addLock(Serializable key, LockType type)
+        private HashMap<Serializable, List<Lock>> currentLocks;
+        public void setLock(Serializable key, List<Lock> locks)
+          {
+            currentLocks.put(key,locks);
+          }
+        public void addLock(Serializable key, Lock type)
           {
             if (currentLocks.containsKey(key))
               {
                 currentLocks.get(key).add(type);
               } else
               {
-                currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(type)));
+                currentLocks.put(key, new LinkedList<Lock>(Arrays.asList(type)));
               }
           }
 
@@ -185,7 +192,7 @@ public class MVCC2PL implements Algorithm
             return currentLocks.keySet();
           }
 
-        public List<LockType> getLocksForKey(Serializable key)
+        public List<Lock> getLocksForKey(Serializable key)
           {
             return currentLocks.get(key);
           }
@@ -203,5 +210,4 @@ public class MVCC2PL implements Algorithm
 
       }
 
-    
   }
