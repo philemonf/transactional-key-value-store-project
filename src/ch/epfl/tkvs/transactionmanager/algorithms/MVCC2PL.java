@@ -199,6 +199,7 @@ public class MVCC2PL implements Algorithm {
 					incompatibleTransactions.addAll(heldLocks.get(key).get(
 							incompatibleLockType));
 				}
+				incompatibleTransactions.remove(transactionId);
 				if (graph
 						.isCyclicAfter(transactionId, incompatibleTransactions)) {
 					return true;
