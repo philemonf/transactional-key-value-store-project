@@ -16,7 +16,7 @@ public enum LockingUnit {
     instance;
 
     private LockCompatibilityTable lct;
-    private Map<Serializable, List<LockType>> currentLocks = new HashMap<Serializable, List<LockType>>();
+    private Map<Serializable, List<LockType>> locks = new HashMap<Serializable, List<LockType>>();
 
     private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
@@ -30,8 +30,8 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void init() {
-        currentLocks.clear();
-        waitingLists.clear();
+        locks = new HashMap<Serializable, List<LockType>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
         lct = new LockCompatibilityTable(false);
     }
 
@@ -42,8 +42,8 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void initOnlyExclusiveLock() {
-        currentLocks.clear();
-        waitingLists.clear();
+        locks = new HashMap<Serializable, List<LockType>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
         lct = new LockCompatibilityTable(true);
     }
 
@@ -57,8 +57,8 @@ public enum LockingUnit {
      * @param table the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
-        currentLocks.clear();
-        waitingLists.clear();
+    	locks = new HashMap<Serializable, List<LockType>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
 
         if (table == null) {
             log.warn("LockCompatibilityTable is null. Using default compatibility table.");
@@ -80,7 +80,7 @@ public enum LockingUnit {
             while (!isLockTypeCompatible(key, lockType)) {
                 waitOn(key, lockType);
             }
-            addToCurrentLocks(key, lockType);
+            addLocks(key, lockType);
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
@@ -115,10 +115,10 @@ public enum LockingUnit {
                 waitOn(key, newType);
             }
 
-            addToCurrentLocks(key, newType);
+            addLocks(key, newType);
 
             for (LockType oldType : oldTypes) {
-                removeFromCurrentLocks(key, oldType);
+                removeLocks(key, oldType);
             }
 
         } catch (InterruptedException e) {
@@ -137,29 +137,29 @@ public enum LockingUnit {
      */
     public void release(Serializable key, LockType lockType) {
         internalLock.lock();
-        removeFromCurrentLocks(key, lockType);
+        removeLocks(key, lockType);
         signalOn(key, lockType);
         internalLock.unlock();
     }
 
     private List<LockType> getCurrentLocks(Serializable key) {
-        if (currentLocks.containsKey(key)) {
-            return currentLocks.get(key);
+        if (locks.containsKey(key)) {
+            return locks.get(key);
         } else {
             return Collections.emptyList();
         }
     }
 
-    private void addToCurrentLocks(Serializable key, LockType lockType) {
-        if (currentLocks.containsKey(key)) {
-            currentLocks.get(key).add(lockType);
+    private void addLocks(Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            locks.get(key).add(lockType);
         } else {
-            currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(lockType)));
+            locks.put(key, new LinkedList<LockType>(Arrays.asList(lockType)));
         }
     }
 
-    private void removeFromCurrentLocks(Serializable key, LockType lockType) {
-        List<LockType> lockSet = currentLocks.get(key);
+    private void removeLocks(Serializable key, LockType lockType) {
+        List<LockType> lockSet = locks.get(key);
         if (lockSet != null) {
             lockSet.remove(lockType);
         }
@@ -201,9 +201,9 @@ public enum LockingUnit {
             return;
         }
 
-        for (LockType lock : em.keySet()) {
-            if (!lct.areCompatible(lockType, lock)) {
-                em.get(lock).signal();
+        for (LockType otherLockType : em.keySet()) {
+            if (!lct.areCompatible(lockType, otherLockType)) {
+                em.get(otherLockType).signal();
             }
         }
 
