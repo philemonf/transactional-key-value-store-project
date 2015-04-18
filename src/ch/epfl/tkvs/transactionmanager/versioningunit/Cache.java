@@ -79,7 +79,7 @@ public class Cache {
     }
 
     public void put(Serializable key, Serializable value) {
-    	KeyValueStore.instance.put(prefixKey(key), value);
+        KeyValueStore.instance.put(prefixKey(key), value);
         writtenKeys.add(key);
     }
 
@@ -90,8 +90,7 @@ public class Cache {
     public HashSet<Serializable> getWrittenKeys() {
         return new HashSet<Serializable>(writtenKeys);
     }
-    
-    
+
     @Override
     public String toString() {
         return prefix + getWrittenKeys();
