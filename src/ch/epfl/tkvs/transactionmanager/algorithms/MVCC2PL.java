@@ -88,6 +88,7 @@ public class MVCC2PL implements Algorithm
         Lock lock = Lock.WRITE_LOCK;
         if (deadlock.checkForDeadlock(xid, key, lock))
           {
+            deadlock.deadLockHandlingAtCommit(transaction);
             transactions.remove(xid);
             return new GenericSuccessResponse(false);
           }
@@ -130,7 +131,9 @@ public class MVCC2PL implements Algorithm
             if (transaction.getLocksForKey(key).contains(Lock.WRITE_LOCK))
               {
                 if (deadlock.checkForDeadlock(xid, key, Lock.COMMIT_LOCK))
+                    
                   {
+                    deadlock.deadLockHandlingAtCommit(transaction);
                     transactions.remove(xid);
                     return new GenericSuccessResponse(false);
                   }
