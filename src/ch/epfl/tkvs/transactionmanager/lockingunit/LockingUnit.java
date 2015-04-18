@@ -197,7 +197,7 @@ public enum LockingUnit {
     private void signalOn(Serializable key, LockType lockType) {
         HashMap<LockType, Condition> em = waitingLists.get(key);
 
-        if (em == null || !em.containsKey(lockType)) {
+        if (em == null) {
             return;
         }
 
