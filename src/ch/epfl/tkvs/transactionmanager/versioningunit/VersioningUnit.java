@@ -35,16 +35,81 @@ public enum VersioningUnit {
         backgroundCommitThread.start();
     }
 
-    private void stopBackgroundCommitThreadIfAlive() {
-        if (backgroundCommitThread != null && backgroundCommitThread.isAlive()) {
-            backgroundCommitThread.stopNow();
-            try {
-                backgroundCommitThread.join();
-            } catch (InterruptedException e) {
-                // TODO: think about it
-                e.printStackTrace();
+    /**
+     * Read the latest committed version of a key unless the current transaction has written it. In the latter case, it
+     * returns the latest written version
+     * @param xid the current transaction doing the read
+     * @param key the key to read
+     * @return the value associated with the key
+     */
+    public Serializable get(int xid, Serializable key) {
+        log.info("Get xid: " + xid + "- key: " + key);
+        Cache xactCache = caches.get(xid);
+
+        if (xactCache != null) {
+            Serializable value = xactCache.get(key);
+            if (value != null) {
+                return value;
             }
         }
+
+        for (Cache c : tmpPrimary) {
+            Serializable value = c.get(key);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        return primary.get(key);
+    }
+
+    /**
+     * Write a new version for a given key
+     * @param xid the current transaction doing the write
+     * @param key the key to be written
+     * @param value the value for the new version
+     */
+    public void put(int xid, Serializable key, Serializable value) {
+        log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
+        Cache xactCache = caches.get(xid);
+
+        if (xactCache == null) {
+            xactCache = new Cache(xid);
+
+            caches.put(xid, xactCache);
+        }
+
+        xactCache.put(key, value);
+
+    }
+
+    /**
+     * Commit the changes done by a transaction, it cannot fail The transaction SHOULD NOT do any other requests to the
+     * VersioningUnit
+     * @param xid the current transaction that wants to commit
+     */
+    public void commit(final int xid) {
+        log.info("Commit xid: " + xid);
+
+        if (caches.get(xid) != null) {
+            tmpPrimary.addFirst((caches.get(xid)));
+        }
+    }
+
+    /**
+     * Abort the current transaction The transaction SHOULD NOT do any other requests
+     * @param xid the transaction to be aborted
+     */
+    public void abort(int xid) {
+        caches.remove(xid);
+    }
+
+    /**
+     * Stop gracefully the VersioningUnit Must be call if one wants to restart the VersioningUnit No need to call it if
+     * the application is exiting
+     */
+    public void stopNow() {
+        stopBackgroundCommitThreadIfAlive();
     }
 
     private class BackgroundCommitThread extends Thread {
@@ -74,55 +139,16 @@ public enum VersioningUnit {
         }
     }
 
-    public Serializable get(int xid, Serializable key) {
-        log.info("Get xid: " + xid + "- key: " + key);
-        Cache xactCache = caches.get(xid);
-
-        if (xactCache != null) {
-            Serializable value = xactCache.get(key);
-            if (value != null) {
-                return value;
+    private void stopBackgroundCommitThreadIfAlive() {
+        if (backgroundCommitThread != null && backgroundCommitThread.isAlive()) {
+            backgroundCommitThread.stopNow();
+            try {
+                backgroundCommitThread.join();
+            } catch (InterruptedException e) {
+                // TODO: think about it
+                e.printStackTrace();
             }
         }
-
-        for (Cache c : tmpPrimary) {
-            Serializable value = c.get(key);
-            if (value != null) {
-                return value;
-            }
-        }
-
-        return primary.get(key);
-    }
-
-    public void put(int xid, Serializable key, Serializable value) {
-        log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
-        Cache xactCache = caches.get(xid);
-
-        if (xactCache == null) {
-            xactCache = new Cache(xid);
-
-            caches.put(xid, xactCache);
-        }
-
-        xactCache.put(key, value);
-
-    }
-
-    public void commit(final int xid) {
-        log.info("Commit xid: " + xid);
-
-        if (caches.get(xid) != null) {
-            tmpPrimary.addFirst((caches.get(xid)));
-        }
-    }
-
-    public void abort(int xid) {
-        caches.remove(xid);
-    }
-
-    public void stopNow() {
-        stopBackgroundCommitThreadIfAlive();
     }
 
 }
