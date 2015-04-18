@@ -1,7 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -31,7 +35,7 @@ public enum LockingUnit {
      */
     public void init() {
         locks = new HashMap<Serializable, List<LockType>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
         lct = new LockCompatibilityTable(false);
     }
 
@@ -43,7 +47,7 @@ public enum LockingUnit {
      */
     public void initOnlyExclusiveLock() {
         locks = new HashMap<Serializable, List<LockType>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
         lct = new LockCompatibilityTable(true);
     }
 
@@ -57,8 +61,8 @@ public enum LockingUnit {
      * @param table the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
-    	locks = new HashMap<Serializable, List<LockType>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType,Condition>>();
+        locks = new HashMap<Serializable, List<LockType>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
 
         if (table == null) {
             log.warn("LockCompatibilityTable is null. Using default compatibility table.");
@@ -77,10 +81,10 @@ public enum LockingUnit {
     public void lock(Serializable key, LockType lockType) {
         try {
             internalLock.lock();
-            while (!isLockTypeCompatible(key, lockType)) {
+            while (!canLock(key, lockType)) {
                 waitOn(key, lockType);
             }
-            addLocks(key, lockType);
+            addLock(key, lockType);
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
@@ -96,37 +100,44 @@ public enum LockingUnit {
      * @param oldTypes the lock types to promote
      * @param newType the new lock type
      */
-    public void promote(Serializable key, List<LockType> oldTypes, LockType newType) {
+    public <T extends LockType> void promote(Serializable key, List<T> oldTypes, LockType newType) {
         try {
             internalLock.lock();
+            if (locks.containsKey(key)) {
+                // Copy the list of current locks and remove the old types from the copy
+                List<LockType> theLocks = allLocksExcept(key, oldTypes);
+                
+                if (!theLocks.isEmpty()) {
+                    while (!lct.areCompatible(newType, theLocks)) {
+                        waitOn(key, newType);
+                        
+                        // Recompute the copy of the locks to avoid bug
+                        theLocks = allLocksExcept(key, oldTypes);
+                    }
+                }
+                
+                addLock(key, newType);
 
-            // Copy the list of current locks
-            List<LockType> locks = new LinkedList<LockType>();
-            for (LockType lt : getCurrentLocks(key)) {
-                locks.add(lt);
+                for (LockType oldType : oldTypes) {
+                    removeLock(key, oldType);
+                }
             }
-
-            //Remove the old types from the copy
-            for (LockType oldType: oldTypes) {
-                locks.remove(oldType);
-            }
-
-            while (!isLockTypeCompatible(key, newType, locks)) {
-                waitOn(key, newType);
-            }
-
-            addLocks(key, newType);
-
-            for (LockType oldType : oldTypes) {
-                removeLocks(key, oldType);
-            }
-
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
         } finally {
             internalLock.unlock();
         }
+    }
+    
+    private <T extends LockType> List<LockType> allLocksExcept(Serializable key, List<T> locksToExclude) {
+    	List<LockType> theLocks = new LinkedList<LockType>(locks.get(key));
+        
+        for (LockType lock : locksToExclude) {
+        	theLocks.remove(lock);
+        }
+        
+        return theLocks;
     }
 
     /**
@@ -137,20 +148,18 @@ public enum LockingUnit {
      */
     public void release(Serializable key, LockType lockType) {
         internalLock.lock();
-        removeLocks(key, lockType);
+        removeLock(key, lockType);
         signalOn(key, lockType);
         internalLock.unlock();
     }
 
-    private List<LockType> getCurrentLocks(Serializable key) {
-        if (locks.containsKey(key)) {
-            return locks.get(key);
-        } else {
-            return Collections.emptyList();
-        }
+    private boolean canLock(Serializable key, LockType lockType) {
+        if (locks.containsKey(key))
+            return lct.areCompatible(lockType, locks.get(key));
+        return true;
     }
 
-    private void addLocks(Serializable key, LockType lockType) {
+    private void addLock(Serializable key, LockType lockType) {
         if (locks.containsKey(key)) {
             locks.get(key).add(lockType);
         } else {
@@ -158,25 +167,14 @@ public enum LockingUnit {
         }
     }
 
-    private void removeLocks(Serializable key, LockType lockType) {
-        List<LockType> lockSet = locks.get(key);
-        if (lockSet != null) {
-            lockSet.remove(lockType);
+    private void removeLock(Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            locks.get(key).remove(lockType);
         }
-    }
-
-    private boolean isLockTypeCompatible(Serializable key, LockType lockType) {
-        return isLockTypeCompatible(key, lockType, getCurrentLocks(key));
-    }
-
-    private boolean isLockTypeCompatible(Serializable key, LockType lockType, List<LockType> locksToCheck) {
-
-     
-        boolean compatible = true;
-        for (LockType currLock : locksToCheck) {
-            compatible = compatible && lct.areCompatible(lockType, currLock);
+        
+        if (locks.get(key).isEmpty()) {
+            locks.remove(key);
         }
-        return compatible;
     }
 
     private void waitOn(Serializable key, LockType lockType) throws InterruptedException {

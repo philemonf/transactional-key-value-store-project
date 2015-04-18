@@ -2,6 +2,7 @@ package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ public class LockCompatibilityTable {
         } else {
             table = new HashMap<LockType, List<LockType>>();
             table.put(LockType.Default.READ_LOCK, newCompatibilityList(LockType.Default.READ_LOCK));
+            table.put(LockType.Default.WRITE_LOCK, Collections.emptyList());
         }
     }
 
@@ -42,11 +44,20 @@ public class LockCompatibilityTable {
     public boolean areCompatible(LockType l1, LockType l2) {
         if (exclusive || !table.containsKey(l1))
             return false;
-        for (LockType lt : table.get(l1)) {
-            if (lt.equals(l2))
-                return true;
-        }
-        return false;
+        return table.get(l1).contains(l2);
+    }
+
+    /**
+     * Returns true iff the lock is compatible with the list of locks.
+     *
+     * @param lock the lock
+     * @param llist the list of locks
+     * @return true iff the lock is compatible with the list.
+     */
+    public boolean areCompatible(LockType lock, List<LockType> llist) {
+        if (exclusive || !table.containsKey(lock))
+            return false;
+        return table.get(lock).containsAll(llist);
     }
 
 }
