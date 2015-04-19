@@ -2,9 +2,7 @@ package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +21,6 @@ public class LockCompatibilityTable {
         } else {
             table = new HashMap<LockType, List<LockType>>();
             table.put(LockType.Default.READ_LOCK, newCompatibilityList(LockType.Default.READ_LOCK));
-            table.put(LockType.Default.WRITE_LOCK, new LinkedList<LockType>());
         }
     }
 
@@ -56,6 +53,8 @@ public class LockCompatibilityTable {
      * @return true iff the lock is compatible with the list.
      */
     public boolean areCompatible(LockType lock, List<LockType> llist) {
+        if (llist.isEmpty())
+            return true;
         if (exclusive || !table.containsKey(lock))
             return false;
         return table.get(lock).containsAll(llist);
