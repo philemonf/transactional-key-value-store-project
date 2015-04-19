@@ -21,6 +21,7 @@ public class CommitRequest extends Message
     public CommitRequest(int transactionId)
       {
         this.transactionId = transactionId;
+        System.out.println("Commit "+transactionId);
       }
 
   }

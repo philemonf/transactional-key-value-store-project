@@ -20,6 +20,7 @@ public class BeginRequest extends Message {
     public BeginRequest(int transactionId)
       {
         this.transactionId = transactionId;
+        System.out.println("Begin "+transactionId);
       }
 
     

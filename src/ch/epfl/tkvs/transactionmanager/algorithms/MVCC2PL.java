@@ -6,6 +6,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
@@ -51,7 +52,7 @@ public class MVCC2PL implements Algorithm
       {
         int xid = request.getTransactionId();
         Serializable key = request.getEncodedKey();
-
+       
         Transaction transaction = transactions.get(xid);
 
         if (transaction == null)
@@ -135,6 +136,7 @@ public class MVCC2PL implements Algorithm
                 if (deadlock.checkForDeadlock(xid, key, Lock.COMMIT_LOCK))
 
                   {
+                    System.out.println("deadlock"+ xid);
                       terminate(transaction);
                     return new GenericSuccessResponse(false);
                   }
