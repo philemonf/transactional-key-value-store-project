@@ -35,6 +35,8 @@ public class MVCC2PL implements Algorithm
                 newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
         lockCompatibility.put(Lock.WRITE_LOCK,
                 newCompatibilityList(Lock.READ_LOCK));
+        lockCompatibility.put(Lock.COMMIT_LOCK,
+                newCompatibilityList());
         lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
 
         versioningUnit = VersioningUnit.instance;

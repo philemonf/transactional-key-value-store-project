@@ -254,7 +254,7 @@ public class MVCC2PLTest extends TestCase {
 		thread2.start();
 
 		try {
-			// thread1.join();
+			 thread1.join();
 			thread2.join();
 		} catch (InterruptedException ex) {
 			fail(ex.getLocalizedMessage());
