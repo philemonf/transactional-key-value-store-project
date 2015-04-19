@@ -59,7 +59,7 @@ public class MVCC2PL implements Algorithm
         Lock lock = Lock.READ_LOCK;
         if (deadlock.checkForDeadlock(xid, key, lock))
           {
-            transactions.remove(xid);
+            terminate(transaction);
             return new ReadResponse(false, null);
           }
 
@@ -88,7 +88,7 @@ public class MVCC2PL implements Algorithm
         Lock lock = Lock.WRITE_LOCK;
         if (deadlock.checkForDeadlock(xid, key, lock))
           {
-            deadlock.deadLockHandlingAtCommit(transaction);
+            terminate(transaction);
             transactions.remove(xid);
             return new GenericSuccessResponse(false);
           }
@@ -131,10 +131,9 @@ public class MVCC2PL implements Algorithm
             if (transaction.getLocksForKey(key).contains(Lock.WRITE_LOCK))
               {
                 if (deadlock.checkForDeadlock(xid, key, Lock.COMMIT_LOCK))
-                    
+
                   {
-                    deadlock.deadLockHandlingAtCommit(transaction);
-                    transactions.remove(xid);
+                      terminate(transaction);
                     return new GenericSuccessResponse(false);
                   }
 
@@ -144,15 +143,7 @@ public class MVCC2PL implements Algorithm
               }
           }
         versioningUnit.commit(xid);
-        deadlock.deadLockHandlingAtCommit(transaction);
-        for (Serializable key : transaction.getLockedKeys())
-          {
-            for (LockType lock : transaction.getLocksForKey(key))
-              {
-                lockingUnit.release(key, lock);
-              }
-          }
-        transactions.remove(xid);
+          terminate(transaction);
         return new GenericSuccessResponse(true);
       }
 
@@ -162,6 +153,19 @@ public class MVCC2PL implements Algorithm
       {
 
         READ_LOCK, WRITE_LOCK, COMMIT_LOCK
+      }
+
+    private void terminate(Transaction transaction)
+      {
+        deadlock.deadLockHandlingAtCommit(transaction);
+        for (Serializable key : transaction.getLockedKeys())
+          {
+            for (LockType lock : transaction.getLocksForKey(key))
+              {
+                lockingUnit.release(key, lock);
+              }
+          }
+        transactions.remove(transaction.transactionId);
       }
 
     private class Transaction
