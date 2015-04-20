@@ -106,16 +106,16 @@ public enum LockingUnit {
             if (locks.containsKey(key)) {
                 // Copy the list of current locks and remove the old types from the copy
                 List<LockType> theLocks = allLocksExcept(key, oldTypes);
-                
+
                 if (!theLocks.isEmpty()) {
                     while (!lct.areCompatible(newType, theLocks)) {
                         waitOn(key, newType);
-                        
+
                         // Recompute the copy of the locks to avoid bug
                         theLocks = allLocksExcept(key, oldTypes);
                     }
                 }
-                
+
                 addLock(key, newType);
 
                 for (LockType oldType : oldTypes) {
@@ -129,14 +129,11 @@ public enum LockingUnit {
             internalLock.unlock();
         }
     }
-    
+
     private <T extends LockType> List<LockType> allLocksExcept(Serializable key, List<T> locksToExclude) {
-    	List<LockType> theLocks = new LinkedList<LockType>(locks.get(key));
-        
-        for (LockType lock : locksToExclude) {
-        	theLocks.remove(lock);
-        }
-        
+        List<LockType> theLocks = new LinkedList<LockType>(locks.get(key));
+        for (LockType lock : locksToExclude)
+            theLocks.remove(lock);
         return theLocks;
     }
 
@@ -171,7 +168,7 @@ public enum LockingUnit {
         if (locks.containsKey(key)) {
             locks.get(key).remove(lockType);
         }
-        
+
         if (locks.get(key).isEmpty()) {
             locks.remove(key);
         }
