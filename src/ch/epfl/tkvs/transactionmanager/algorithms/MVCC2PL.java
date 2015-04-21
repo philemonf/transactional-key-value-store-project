@@ -6,7 +6,6 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
@@ -14,278 +13,149 @@ import static ch.epfl.tkvs.transactionmanager.lockingunit.LockCompatibilityTable
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MVCC2PL implements Algorithm
-  {
+public class MVCC2PL implements Algorithm {
 
-    private LockingUnit lockingUnit;
-    private VersioningUnit versioningUnit;
-    private DeadlockPreventionUnit deadlock;
+	private LockingUnit lockingUnit;
+	private VersioningUnit versioningUnit;
 
-    public MVCC2PL()
-      {
-        lockingUnit = LockingUnit.instance;
+	public MVCC2PL() {
+		lockingUnit = LockingUnit.instance;
 
-        HashMap<LockType, List<LockType>> lockCompatibility = new HashMap<>();
-        lockCompatibility.put(Lock.READ_LOCK,
-                newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
-        lockCompatibility.put(Lock.WRITE_LOCK,
-                newCompatibilityList(Lock.READ_LOCK));
-        lockCompatibility.put(Lock.COMMIT_LOCK,
-                newCompatibilityList());
-        lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
+		HashMap<LockType, List<LockType>> lockCompatibility = new HashMap<>();
+		lockCompatibility.put(Lock.READ_LOCK,
+				newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
+		lockCompatibility.put(Lock.WRITE_LOCK,
+				newCompatibilityList(Lock.READ_LOCK));
+		lockCompatibility.put(Lock.COMMIT_LOCK, newCompatibilityList());
+		lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
 
-        versioningUnit = VersioningUnit.instance;
-        versioningUnit.init();
+		versioningUnit = VersioningUnit.instance;
+		versioningUnit.init();
 
-        deadlock = new DeadlockPreventionUnit();
-        transactions = new ConcurrentHashMap<>();
-      }
+		transactions = new ConcurrentHashMap<>();
+	}
 
-    @Override
-    public ReadResponse read(ReadRequest request)
-      {
-        int xid = request.getTransactionId();
-        Serializable key = request.getEncodedKey();
-       
-        Transaction transaction = transactions.get(xid);
+	@Override
+	public ReadResponse read(ReadRequest request) {
+		int xid = request.getTransactionId();
+		Serializable key = request.getEncodedKey();
 
-        if (transaction == null)
-          {
-            return new ReadResponse(false, null);
-          }
-        Lock lock = Lock.READ_LOCK;
-        if (deadlock.checkForDeadlock(xid, key, lock))
-          {
-            terminate(transaction);
-            return new ReadResponse(false, null);
-          }
+		Transaction transaction = transactions.get(xid);
 
-        lockingUnit.lock(key, lock);
-        transaction.addLock(key, lock);
-        Serializable value = versioningUnit.get(xid, key);
+		if (transaction == null) {
+			return new ReadResponse(false, null);
+		}
+		Lock lock = Lock.READ_LOCK;
+		lockingUnit.lock(xid, key, lock);
+		transaction.addLock(key, lock);
+		Serializable value = versioningUnit.get(xid, key);
 
-        return new ReadResponse(true, (String) value);
+		return new ReadResponse(true, (String) value);
 
-      }
+	}
 
-    @Override
-    public GenericSuccessResponse write(WriteRequest request)
-      {
-        int xid = request.getTransactionId();
-        Serializable key = request.getEncodedKey();
-        Serializable value = request.getEncodedValue();
+	@Override
+	public GenericSuccessResponse write(WriteRequest request) {
+		int xid = request.getTransactionId();
+		Serializable key = request.getEncodedKey();
+		Serializable value = request.getEncodedValue();
 
-        Transaction transaction = transactions.get(xid);
+		Transaction transaction = transactions.get(xid);
 
-        if (transaction == null)
-          {
-            return new GenericSuccessResponse(false);
-          }
+		if (transaction == null) {
+			return new GenericSuccessResponse(false);
+		}
 
-        Lock lock = Lock.WRITE_LOCK;
-        if (deadlock.checkForDeadlock(xid, key, lock))
-          {
-            terminate(transaction);
-            transactions.remove(xid);
-            return new GenericSuccessResponse(false);
-          }
+		Lock lock = Lock.WRITE_LOCK;
+		lockingUnit.lock(xid, key, lock);
+		transaction.addLock(key, lock);
+		versioningUnit.put(xid, key, value);
+		return new GenericSuccessResponse(true);
 
-        lockingUnit.lock(key, lock);
-        transaction.addLock(key, lock);
-        versioningUnit.put(xid, key, value);
-        return new GenericSuccessResponse(true);
+	}
 
-      }
+	@Override
+	public GenericSuccessResponse begin(BeginRequest request) {
+		int xid = request.getTransactionId();
 
-    @Override
-    public GenericSuccessResponse begin(BeginRequest request)
-      {
-        int xid = request.getTransactionId();
+		if (transactions.containsKey(xid)) {
+			return new GenericSuccessResponse(false);
+		}
+		transactions.put(xid, new Transaction(xid));
 
-        if (transactions.containsKey(xid))
-          {
-            return new GenericSuccessResponse(false);
-          }
-        transactions.put(xid, new Transaction(xid));
+		return new GenericSuccessResponse(true);
+	}
 
-        return new GenericSuccessResponse(true);
-      }
+	@Override
+	public GenericSuccessResponse commit(CommitRequest request) {
+		int xid = request.getTransactionId();
 
-    @Override
-    public GenericSuccessResponse commit(CommitRequest request)
-      {
-        int xid = request.getTransactionId();
+		Transaction transaction = transactions.get(xid);
+		if (transaction == null) {
+			return new GenericSuccessResponse(false);
+		}
 
-        Transaction transaction = transactions.get(xid);
-        if (transaction == null)
-          {
-            return new GenericSuccessResponse(false);
-          }
+		for (Serializable key : transaction.getLockedKeys()) {
 
-        for (Serializable key : transaction.getLockedKeys())
-          {
+			if (transaction.getLocksForKey(key).contains(Lock.WRITE_LOCK)) {
+				lockingUnit.promote(xid, key, transaction.getLocksForKey(key),
+						Lock.COMMIT_LOCK);
+				transaction.setLock(key,
+						Arrays.asList((LockType) Lock.COMMIT_LOCK));
+			}
+		}
+		versioningUnit.commit(xid);
+		terminate(transaction);
+		return new GenericSuccessResponse(true);
+	}
 
-            if (transaction.getLocksForKey(key).contains(Lock.WRITE_LOCK))
-              {
-                if (deadlock.checkForDeadlock(xid, key, Lock.COMMIT_LOCK))
+	private ConcurrentHashMap<Integer, Transaction> transactions;
 
-                  {
-                    System.out.println("deadlock"+ xid);
-                      terminate(transaction);
-                    return new GenericSuccessResponse(false);
-                  }
+	private static enum Lock implements LockType {
 
-                lockingUnit.promote(key, transaction.getLocksForKey(key), Lock.COMMIT_LOCK);
-                transaction.setLock(key, Arrays.asList(Lock.COMMIT_LOCK));
+		READ_LOCK, WRITE_LOCK, COMMIT_LOCK
+	}
 
-              }
-          }
-        versioningUnit.commit(xid);
-          terminate(transaction);
-        return new GenericSuccessResponse(true);
-      }
+	private void terminate(Transaction transaction) {
+		lockingUnit.releaseAll(transaction.transactionId,
+				transaction.currentLocks);
+		transactions.remove(transaction.transactionId);
+	}
 
-    private ConcurrentHashMap<Integer, Transaction> transactions;
+	private class Transaction {
 
-    private static enum Lock implements LockType
-      {
+		private int transactionId;
+		private HashMap<Serializable, List<LockType>> currentLocks;
 
-        READ_LOCK, WRITE_LOCK, COMMIT_LOCK
-      }
+		public Transaction(int transactionId) {
+			this.transactionId = transactionId;
+			currentLocks = new HashMap<>();
+		}
 
-    private void terminate(Transaction transaction)
-      {
-        deadlock.deadLockHandlingAtCommit(transaction);
-        for (Serializable key : transaction.getLockedKeys())
-          {
-            for (LockType lock : transaction.getLocksForKey(key))
-              {
-                lockingUnit.release(key, lock);
-              }
-          }
-        transactions.remove(transaction.transactionId);
-      }
+		public void setLock(Serializable key, List<LockType> locks) {
+			currentLocks.put(key, locks);
+		}
 
-    private class Transaction
-      {
+		public void addLock(Serializable key, Lock type) {
+			if (currentLocks.containsKey(key)) {
+				currentLocks.get(key).add(type);
+			} else {
+				currentLocks.put(key,
+						new LinkedList<LockType>(Arrays.asList(type)));
+			}
+		}
 
-        private int transactionId;
-        private HashMap<Serializable, List<Lock>> currentLocks;
+		public Set<Serializable> getLockedKeys() {
+			return currentLocks.keySet();
+		}
 
-        public void setLock(Serializable key, List<Lock> locks)
-          {
-            currentLocks.put(key, locks);
-          }
-
-        public void addLock(Serializable key, Lock type)
-          {
-            if (currentLocks.containsKey(key))
-              {
-                currentLocks.get(key).add(type);
-              } else
-              {
-                currentLocks.put(key, new LinkedList<Lock>(Arrays.asList(type)));
-              }
-          }
-
-        public Set<Serializable> getLockedKeys()
-          {
-            return currentLocks.keySet();
-          }
-
-        public List<Lock> getLocksForKey(Serializable key)
-          {
-            return currentLocks.get(key);
-          }
-
-        public int getTransactionId()
-          {
-            return transactionId;
-          }
-
-        public Transaction(int transactionId)
-          {
-            this.transactionId = transactionId;
-            currentLocks = new HashMap<>();
-          }
-
-      }
-
-    private class DeadlockPreventionUnit
-      {
-
-        private DeadlockGraph graph;
-        private ConcurrentHashMap<Serializable, HashMap<LockType, HashSet<Integer>>> heldLocks;
-
-        public DeadlockPreventionUnit()
-          {
-            graph = new DeadlockGraph();
-            heldLocks = new ConcurrentHashMap<Serializable, HashMap<LockType, HashSet<Integer>>>();
-          }
-
-        public synchronized boolean checkForDeadlock(int transactionId,
-                Serializable key, Lock lockType)
-          {
-            if (heldLocks.containsKey(key))
-              {
-                List<Lock> incompatiblelockTypes = new LinkedList<Lock>();
-                switch (lockType)
-                  {
-                    case COMMIT_LOCK:
-                        incompatiblelockTypes.add(Lock.READ_LOCK);
-                    case WRITE_LOCK:
-                        incompatiblelockTypes.add(Lock.WRITE_LOCK);
-                    case READ_LOCK:
-                        incompatiblelockTypes.add(Lock.COMMIT_LOCK);
-                        break;
-                  }
-                HashSet<Integer> incompatibleTransactions = new HashSet<Integer>();
-                for (Lock incompatibleLockType : incompatiblelockTypes)
-                  {
-                    incompatibleTransactions.addAll(heldLocks.get(key).get(
-                            incompatibleLockType));
-                  }
-                incompatibleTransactions.remove(transactionId);
-                if (graph
-                        .isCyclicAfter(transactionId, incompatibleTransactions))
-                  {
-                    return true;
-                  } else
-                  {
-                    heldLocks.get(key).get(lockType).add(transactionId);
-                    return false;
-                  }
-              } else
-              { // if no lock is acquired on the key before
-                HashMap<LockType, HashSet<Integer>> hashMap = new HashMap<LockType, HashSet<Integer>>();
-                hashMap.put(Lock.READ_LOCK, new HashSet<Integer>());
-                hashMap.put(Lock.WRITE_LOCK, new HashSet<Integer>());
-                hashMap.put(Lock.COMMIT_LOCK, new HashSet<Integer>());
-                hashMap.get(lockType).add(transactionId);
-                heldLocks.put(key, hashMap);
-                return false;
-              }
-          }
-
-        public synchronized void deadLockHandlingAtCommit(
-                Transaction transaction)
-          {
-            for (Serializable key : transaction.getLockedKeys())
-              {
-                for (LockType lockType : transaction.getLocksForKey(key))
-                  {
-                    heldLocks.get(key).get(lockType)
-                            .remove(transaction.transactionId);
-                  }
-              }
-            graph.remove(transaction.transactionId);
-            return;
-          }
-      }
-  }
+		public List<LockType> getLocksForKey(Serializable key) {
+			return currentLocks.get(key);
+		}
+	}
+}
