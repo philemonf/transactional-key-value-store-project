@@ -1,11 +1,16 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import junit.framework.TestCase;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 
 
 public class VersioningUnitTest extends TestCase {
@@ -15,7 +20,6 @@ public class VersioningUnitTest extends TestCase {
     @Before
     public void setUp() throws Exception {
         V.init();
-
         KeyValueStore.instance.clear();
     }
 
@@ -172,7 +176,6 @@ public class VersioningUnitTest extends TestCase {
                 V.put(xid1, "key2", "value12");
                 V.put(xid1, "key3", "value13");
                 V.put(xid1, "key4", "value14");
-                V.commit(xid1);
 
             }
         });
@@ -186,7 +189,6 @@ public class VersioningUnitTest extends TestCase {
                 V.put(xid2, "key2", "value22");
                 V.put(xid2, "key3", "value23");
                 V.put(xid2, "key4", "value24");
-                V.commit(xid2);
             }
         });
 
@@ -199,9 +201,12 @@ public class VersioningUnitTest extends TestCase {
                 V.put(xid3, "key2", "value32");
                 V.put(xid3, "key3", "value33");
                 V.put(xid3, "key4", "value34");
-                V.commit(xid3);
             }
         });
+
+        t1.start();
+        t2.start();
+        t3.start();
 
         V.put(xid4, "key0", "value00");
         V.put(xid4, "key1", "value01");
@@ -209,19 +214,138 @@ public class VersioningUnitTest extends TestCase {
         V.put(xid4, "key3", "value03");
         V.commit(xid4);
 
-        // V.commit(xid5);
-        assertTrue(V.get(xid5, "key0").equals("value00"));
-        assertTrue(V.get(xid5, "key1").equals("value01"));
-        assertTrue(V.get(xid5, "key2").equals("value02"));
-        assertTrue(V.get(xid5, "key3").equals("value03"));
+        int i = 0;
+        assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
+        assertTrue(V.get(xid5, "key1").equals("value" + i + "1"));
+        assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
+        assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
 
-        t1.start();
-        t2.start();
-        t3.start();
+        V.commit(xid1);
+        i = 1;
+        assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
+        assertTrue(V.get(xid5, "key1").equals("value" + i + "1"));
+        assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
+        assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
+
+        V.commit(xid2);
+        i = 2;
+        assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
+        assertTrue(V.get(xid5, "key1").equals("value" + i + "1"));
+        assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
+        assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
+
+        V.commit(xid3);
+        i = 3;
+        assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
+        assertTrue(V.get(xid5, "key1").equals("value" + i + "1"));
+        assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
+        assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
 
         t1.join();
         t2.join();
         t3.join();
+
+    }
+
+    @Test
+    public void testWriteReadSemaphore() throws InterruptedException {
+        final int xid1 = 1, xid2 = 2, xid3 = 3, xid4 = 4, xid5 = 5, xid6 = 6, xid7 = 7, xid8 = 8;
+
+        final Semaphore sem1 = new Semaphore(0);
+        final Semaphore sem2 = new Semaphore(0);
+        final Semaphore sem3 = new Semaphore(0);
+        final Semaphore sem4 = new Semaphore(0);
+
+        final Thread t1 = new Thread(new Runnable() {
+
+            public void run() {
+                V.put(xid1, "key0", "value00");
+                V.put(xid1, "key1", "value01");
+
+                try {
+                    sem1.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                V.commit(xid1);
+
+            }
+        });
+
+        final Thread t2 = new Thread(new Runnable() {
+
+            public void run() {
+                V.put(xid2, "key0", "value20");
+                V.put(xid2, "key1", "value21");
+
+                try {
+                    sem2.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                V.commit(xid2);
+
+            }
+        });
+
+        final Thread t3 = new Thread(new Runnable() {
+
+            public void run() {
+                V.put(xid3, "key0", "value30");
+                V.put(xid3, "key1", "value31");
+
+                try {
+                    sem3.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
+        final Thread t4 = new Thread(new Runnable() {
+
+            public void run() {
+                V.put(xid4, "key0", "value40");
+                V.put(xid4, "key1", "value41");
+
+                try {
+                    sem4.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                V.commit(xid4);
+            }
+        });
+
+        t1.start();
+        t2.start();
+        t3.start();
+        t4.start();
+
+        sem1.release();
+        t1.join();
+        // T1 done
+        assertTrue(V.get(xid5, "key0").equals("value00"));
+        assertTrue(V.get(xid5, "key1").equals("value01"));
+
+        sem4.release();
+        t4.join();
+        assertTrue(V.get(xid8, "key0").equals("value40"));
+        assertTrue(V.get(xid8, "key1").equals("value41"));
+
+        sem3.release();
+        t3.join();
+        assertTrue(V.get(xid7, "key0").equals("value40"));
+        assertTrue(V.get(xid7, "key1").equals("value41"));
+
+        sem2.release();
+        t2.join();
+        assertTrue(V.get(xid6, "key0").equals("value20"));
+        assertTrue(V.get(xid6, "key1").equals("value21"));
 
     }
 
