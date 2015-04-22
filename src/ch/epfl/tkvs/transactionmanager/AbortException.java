@@ -1,4 +1,4 @@
-package ch.epfl.tkvs.user;
+package ch.epfl.tkvs.transactionmanager;
 
 public class AbortException extends Exception {
 

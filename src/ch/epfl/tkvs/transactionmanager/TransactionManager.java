@@ -18,8 +18,7 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
 /**
- * The TransactionManager is the deamon started by the {@link AppMaster} on many
- * nodes of the cluster.
+ * The TransactionManager is the deamon started by the {@link AppMaster} on many nodes of the cluster.
  * 
  * It is mainly a server which answers the client requests.
  *
@@ -60,9 +59,6 @@ public class TransactionManager {
         SlavesConfig slaveConfig = new SlavesConfig();
         // Create TM Server
         server = new ServerSocket(slaveConfig.getPortForHost(hostname));
-        
-        //TODO Call init of LockingUnit?
-        //TODO setup versioningUnit
         
         concurrencyController = new MVCC2PL();
 

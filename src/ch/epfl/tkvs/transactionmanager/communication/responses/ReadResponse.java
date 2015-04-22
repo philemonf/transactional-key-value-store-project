@@ -30,6 +30,8 @@ public class ReadResponse extends Message {
     }
 
     public Serializable getValue() throws IOException {
+       if(encodedValue == null)
+           return null;
         try {
             return Base64Utils.convertFromBase64(encodedValue);
         } catch (ClassNotFoundException e) {

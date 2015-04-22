@@ -1,28 +1,30 @@
 package ch.epfl.tkvs.keyvaluestore;
 
-import java.util.HashMap;
+import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * <Key,Value> Store
  */
-public class KeyValueStore {
+public enum KeyValueStore {
+	instance;
+	
+    public ConcurrentHashMap<Serializable, Serializable> store = new ConcurrentHashMap<Serializable, Serializable>();
 
-    public HashMap<String, String> store;
-
-    public KeyValueStore() {
-        store = new HashMap<String, String>();
+    public void clear() {
+    	store.clear();
     }
-
-    public void put(String key, String value) {
+    
+    public void put(Serializable key, Serializable value) {
         store.put(key, value);
     }
 
-    public String get(String key) {
+    public Serializable get(Serializable key) {
         return store.get(key);
     }
 
-    public void remove(String key) {
+    public void remove(Serializable key) {
         store.remove(key);
     }
 }

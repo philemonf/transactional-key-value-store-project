@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.user;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
@@ -54,8 +55,7 @@ public class Transaction<K extends Key>
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
             JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));
-            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse,
-                    TransactionManagerResponse.class);
+            TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
 
             tmHost = response.getHost();
             tmPort = response.getPort();

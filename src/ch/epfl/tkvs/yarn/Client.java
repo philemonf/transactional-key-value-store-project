@@ -28,7 +28,8 @@ import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.SlavesConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
-import ch.epfl.tkvs.transactionmanager.LockingUnitTest_2;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
 
 
 public class Client {
@@ -58,9 +59,7 @@ public class Client {
 
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX
-                + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR
-                + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -99,8 +98,7 @@ public class Client {
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
         boolean listening = true;
-        while (listening && appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED
-                && appState != YarnApplicationState.FAILED) {
+        while (listening && appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
             String input = System.console().readLine("> ");
             switch (input) {
@@ -147,15 +145,18 @@ public class Client {
     }
 
     private static void runTestCases() {
-        log.info("Running LockingUnitTest...");
-        runTestCase(LockingUnitTest_2.class);
+        log.info("Running LockingUnitTest... (might take a while)");
+        runTestCase(LockingUnitTest.class);
+
+        log.info("Running VersioningUnitTest...");
+        runTestCase(VersioningUnitTest.class);
     }
 
     private static void runTestCase(Class<?> testCase) {
         Result res = JUnitCore.runClasses(testCase);
 
         if (res.getFailureCount() == 0) {
-            log.info("All tests passed for " + testCase.getClass().getSimpleName());
+            log.info("All tests passed for " + testCase.getSimpleName());
         }
 
         for (Failure failure : res.getFailures()) {

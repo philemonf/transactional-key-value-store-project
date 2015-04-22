@@ -12,14 +12,14 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 
-/**
- *
- * @author sachin
- */
-public interface Algorithm
-  {
+
+public interface Algorithm {
+
     ReadResponse read(ReadRequest request);
+
     GenericSuccessResponse write(WriteRequest request);
+
     GenericSuccessResponse begin(BeginRequest request);
+
     GenericSuccessResponse commit(CommitRequest request);
-  }
+}

@@ -30,8 +30,7 @@ public class JSON2MessageConverter {
         }
     }
 
-    public static Message parseJSON(JSONObject json, Class<? extends Message> messageClass)
-            throws InvalidMessageException {
+    public static Message parseJSON(JSONObject json, Class<? extends Message> messageClass) throws InvalidMessageException {
         if (json == null) {
             throw new InvalidMessageException("json is null.");
         }
@@ -97,8 +96,7 @@ public class JSON2MessageConverter {
 
             return message;
 
-        } catch (JSONException | InstantiationException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
+        } catch (JSONException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             e.printStackTrace();
             throw new InvalidMessageException(e);
         }

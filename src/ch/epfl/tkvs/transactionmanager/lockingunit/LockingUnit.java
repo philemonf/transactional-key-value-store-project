@@ -1,9 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
 import java.io.Serializable;
-import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
@@ -16,112 +18,85 @@ import org.apache.log4j.Logger;
 /**
  * Locking Unit Singleton Call a function with LockingUnit.instance.fun(args)
  */
-@SuppressWarnings({ "rawtypes", "unchecked" })
 public enum LockingUnit {
+
     instance;
 
-    private LockCompatibilityTable lockCompatibilityTable;
-    private Map<Serializable, EnumSet> currentLockTypes = new HashMap<Serializable, EnumSet>();
+    private LockCompatibilityTable lct;
+    private Map<Serializable, HashMap<LockType, List<Integer>>> locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
 
-    private Map<Serializable, EnumMap<? extends Enum, Condition>> waitingLists = new HashMap<Serializable, EnumMap<? extends Enum, Condition>>();
+    private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
     private Lock internalLock = new ReentrantLock();
+    private DeadlockGraph graph = new DeadlockGraph();
 
     private static Logger log = Logger.getLogger(LockingUnit.class.getName());
 
     /**
-     * The default lock type of the unit. READ_LOCK is only compatible with
-     * itself. All other combinations are not compatible.
-     */
-    public static enum DefaultLockType {
-        READ_LOCK, WRITE_LOCK
-    }
-
-    public static enum ExclusiveLockType {
-        LOCK
-    }
-
-    private static LockCompatibilityTable defaultCompatibilityTable() {
-        return new LockCompatibilityTable() {
-
-            @Override
-            public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-                log.info("Test compatibility between " + lock1 + " and " + lock2);
-                return lock1.equals(DefaultLockType.READ_LOCK) && lock2.equals(DefaultLockType.READ_LOCK);
-            }
-        };
-    }
-
-    /**
-     * MUST be called before use to specify the default 2PL lock compatibility
-     * table. To check whether lockTypeA is compatible with lockTypeB, the unit
-     * will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
+     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
      */
     public void init() {
-        currentLockTypes.clear();
-        waitingLists.clear();
-        lockCompatibilityTable = defaultCompatibilityTable();
+        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        graph = new DeadlockGraph();
+        lct = new LockCompatibilityTable(false);
     }
 
     /**
-     * MUST be called before use to specify the default 2PL lock compatibility
-     * table. To check whether lockTypeA is compatible with lockTypeB, the unit
-     * will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
+     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
      */
     public void initOnlyExclusiveLock() {
-        currentLockTypes.clear();
-        waitingLists.clear();
-        lockCompatibilityTable = new LockCompatibilityTable() {
-
-            @Override
-            public <E extends Enum<E>> boolean areCompatible(E lock1, E lock2) {
-                return false; // if there is a lock there is no compatibility.
-            }
-        };
+        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        graph = new DeadlockGraph();
+        lct = new LockCompatibilityTable(true);
     }
 
     /**
-     * MUST be called before use to specify the lock compatibility table. By
-     * default, the lock compatibility table of 2PL is set. To check whether
-     * lockTypeA is compatible with lockTypeB, the unit will do
+     * MUST be called before use to specify the lock compatibility table. By default, the lock compatibility table of
+     * 2PL is set. To check whether lockTypeA is compatible with lockTypeB, the unit will do
      * table.areCompatible(lockTypeA, lockTypeB).
      *
      * For simplicity, please call this method before running the threads.
-     * 
-     * @param table
-     *            the lock compatibility table - if null, use default parameter
+     *
+     * @param table the lock compatibility table - if null, use default parameter
      */
-    public void initWithLockCompatibilityTable(LockCompatibilityTable table) {
-        currentLockTypes.clear();
-        waitingLists.clear();
-
+    public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
+        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
+        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        graph = new DeadlockGraph();
         if (table == null) {
             log.warn("LockCompatibilityTable is null. Using default compatibility table.");
-            lockCompatibilityTable = defaultCompatibilityTable();
+            lct = new LockCompatibilityTable(false);
         } else {
-            lockCompatibilityTable = table;
+            lct = new LockCompatibilityTable(table);
         }
     }
 
     /**
-     * Locks an object. Remember to init the module with the right lock
-     * compatibility table.
-     * 
-     * @param key
-     *            the key of the object to lock
-     * @param lockType
-     *            the lock type
+     * Locks an object. Remember to init the module with the right lock compatibility table.
+     *
+     * @param transactionID ID of the transaction that requests the locks
+     * @param key the key of the object to lock
+     * @param lockType the lock type
+     * @throws Exception
      */
-    public <E extends Enum<E>> void lock(Serializable key, E lockType) {
+    public void lock(int transactionID, Serializable key, LockType lockType) throws AbortException {
         try {
             internalLock.lock();
-            while (!isLockTypeCompatible(key, lockType)) {
+            while (!canLock(key, lockType)) {
+                if (checkforDeadlock(transactionID, key, lockType)) {
+                    throw new AbortException("Deadlock");
+                }
+
                 waitOn(key, lockType);
             }
-            addToCurrentLocks(key, lockType);
+            addLock(transactionID, key, lockType);
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
@@ -131,83 +106,177 @@ public enum LockingUnit {
     }
 
     /**
-     * Release/Unlock an object.
-     * 
-     * @param key
-     *            the key of the object to unlock
-     * @param lockType
-     *            the lock type, be careful to init the module with the right
-     *            lock compatibility table.
+     * Promotes a lock on an object atomically.
+     *
+     * @param transactionID ID of the transaction that promotes its lock(s)
+     * @param key the key of the object associated with the lock
+     * @param oldTypes the lock types to promote
+     * @param newType the new lock type
+     * @throws Exception
      */
-    public <E extends Enum<E>> void release(Serializable key, E lockType) {
+    public <T extends LockType> void promote(int transactionID, Serializable key, List<T> oldTypes, LockType newType) throws AbortException {
+        try {
+            internalLock.lock();
+            if (locks.containsKey(key)) {
+                HashMap<LockType, List<Integer>> theLocks = allLocksExcept(transactionID, key, oldTypes);
+
+                if (!theLocks.isEmpty()) {
+                    while (!lct.areCompatible(newType, theLocks.keySet())) {
+                        if (checkforDeadlock(transactionID, key, newType)) {
+                            throw new AbortException("Deadlock");
+                        }
+
+                        waitOn(key, newType);
+                        // Recompute the copy of the locks to avoid bug
+                        theLocks = allLocksExcept(transactionID, key, oldTypes);
+                    }
+                }
+
+                addLock(transactionID, key, newType);
+
+                for (LockType oldType : oldTypes) {
+                    removeLock(transactionID, key, oldType);
+                }
+            }
+        } catch (InterruptedException e) {
+            // TODO: something
+            log.error("Shit happens...");
+        } finally {
+            internalLock.unlock();
+        }
+    }
+
+    private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
+        HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();
+        for (LockType lockType : lct.getLockTypes()) {
+            theLocks.put(lockType, new LinkedList<Integer>(locks.get(key).get(lockType)));
+        }
+        for (LockType lockType : locksToExclude) {
+            theLocks.get(lockType).remove(new Integer(transactionID));
+        }
+        for (LockType lockType : lct.getLockTypes()) {
+            if (theLocks.get(lockType).isEmpty()) {
+                theLocks.remove(lockType);
+            }
+        }
+        return theLocks;
+    }
+
+    /**
+     * Releases all locks held by a transaction and removes the transaction from Deadlock graph.
+     *
+     * @param transactionID ID of the transaction whose locks are to be released
+     * @param heldLocks the map of key to list of lock types, be careful to init the module with the right lock
+     * compatibility table.
+     */
+    public void releaseAll(int transactionID, HashMap<Serializable, List<LockType>> heldLocks) {
         internalLock.lock();
-        removeFromCurrentLocks(key, lockType);
-        signalOn(key, lockType);
+
+        for (Serializable key : heldLocks.keySet()) {
+            for (LockType lockType : heldLocks.get(key)) {
+                removeLock(transactionID, key, lockType);
+                signalOn(key, lockType);
+            }
+        }
+        graph.removeTransaction(transactionID);
         internalLock.unlock();
     }
 
-    private Set<? extends Enum> getCurrentLocks(Serializable key, Class<? extends Enum> lockTypes) {
-        if (currentLockTypes.containsKey(key)) {
-            return currentLockTypes.get(key);
+    private boolean canLock(Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            for (LockType lt : locks.get(key).keySet()) {
+                if (!locks.get(key).get(lt).isEmpty() && !lct.areCompatible(lockType, lt)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private void addLock(int transactionID, Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            locks.get(key).get(lockType).add(transactionID);
         } else {
-            return EnumSet.noneOf(lockTypes);
+            HashMap<LockType, List<Integer>> hashMap = new HashMap<LockType, List<Integer>>();
+            for (LockType lt : lct.getLockTypes()) {
+                hashMap.put(lt, new LinkedList<Integer>());
+            }
+            hashMap.get(lockType).add(transactionID);
+            locks.put(key, hashMap);
         }
     }
 
-    private <E extends Enum<E>> void addToCurrentLocks(Serializable key, E lockType) {
-        if (currentLockTypes.containsKey(key)) {
-            currentLockTypes.get(key).add(lockType);
-        } else {
-            currentLockTypes.put(key, EnumSet.of(lockType));
+    private void removeLock(int transactionID, Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            locks.get(key).get(lockType).remove(new Integer(transactionID));
         }
-        log.info("SHOULD NOT BE EMPTY: " + currentLockTypes.get(key));
+        // remove the key from locks if there is not a lock on it.
+        for (LockType lt : locks.get(key).keySet()) {
+            if (!locks.get(key).get(lt).isEmpty()) {
+                return;
+            }
+        }
+        locks.remove(key);
     }
 
-    private <E extends Enum<E>> void removeFromCurrentLocks(Serializable key, E lockType) {
-        EnumSet lockSet = currentLockTypes.get(key);
-        if (lockSet != null && lockSet.contains(lockType)) {
-            lockSet.remove(lockType);
-        }
-    }
-
-    private <E extends Enum<E>> boolean isLockTypeCompatible(Serializable key, E lockType) {
-        Set<? extends Enum> currentLocksOnKey = getCurrentLocks(key, lockType.getClass());
-        log.info(currentLocksOnKey);
-
-        boolean compatible = true;
-        for (Enum currLock : currentLocksOnKey) {
-            compatible = compatible && lockCompatibilityTable.areCompatible(lockType, currLock);
-        }
-        return compatible;
-    }
-
-    private <E extends Enum<E>> void waitOn(Serializable key, E lockType) throws InterruptedException {
-        EnumMap<? extends Enum, Condition> em = waitingLists.get(key);
-
+    private void waitOn(Serializable key, LockType lockType) throws InterruptedException {
+        HashMap<LockType, Condition> em = waitingLists.get(key);
         if (em == null) {
-            em = waitingLists.put(key, new EnumMap(lockType.getClass()));
+            waitingLists.put(key, new HashMap<LockType, Condition>());
+            em = waitingLists.get(key);
         }
-
         if (!em.containsKey(lockType)) {
-            EnumMap waitList = waitingLists.get(key);
-            waitList.put(lockType, internalLock.newCondition());
+            em.put(lockType, internalLock.newCondition());
         }
-
         em.get(lockType).await();
     }
 
-    private <E extends Enum<E>> void signalOn(Serializable key, E lockType) {
-        EnumMap<? extends Enum, Condition> em = waitingLists.get(key);
-
-        if (em == null || !em.containsKey(lockType)) {
+    private void signalOn(Serializable key, LockType lockType) {
+        HashMap<LockType, Condition> em = waitingLists.get(key);
+        if (em == null) {
             return;
         }
-
-        for (Enum otherLockType : em.keySet()) {
-            if (!lockCompatibilityTable.areCompatible(lockType, otherLockType)) {
-                em.get(otherLockType).signal();
+        for (LockType otherLockType : em.keySet()) {
+            if (!lct.areCompatible(lockType, otherLockType)) {
+                em.get(otherLockType).signalAll();
             }
         }
+    }
 
+    /**
+     * Checks if requesting for a new lock causes deadlock
+     * @param transactionID ID of the transaction requesting new lock
+     * @param key key on which the lock is requested
+     * @param lockType the type of the new lock requested
+     * @return
+     */
+    private boolean checkforDeadlock(int transactionID, Serializable key, LockType lockType) {
+        if (locks.containsKey(key)) {
+            HashSet<Integer> incompatibleTransactions = getIncompatibleTransactions(transactionID, key, lockType);
+            if (graph.isCyclicAfter(transactionID, incompatibleTransactions)) {
+                return true;
+            } else {
+                return false;
+            }
+        } else { // if no lock is acquired on the key before
+            return false;
+        }
+    }
+
+    /**
+     * Gets transactions holding locks that are incompatible with new lock requested by another transaction
+     * @param transactionID the id of the new transaction requesting lock
+     * @param key the key on which lock is requested
+     * @param lockType the type of the lock which is requested
+     * @return
+     */
+    private HashSet<Integer> getIncompatibleTransactions(int transactionID, Serializable key, LockType lockType) {
+        Set<LockType> incompatiblelockTypes = lct.getIncompatibleLocks(lockType);
+        HashSet<Integer> incompatibleTransactions = new HashSet<Integer>();
+        for (LockType incompatibleLockType : incompatiblelockTypes) {
+            incompatibleTransactions.addAll(locks.get(key).get(incompatibleLockType));
+        }
+        incompatibleTransactions.remove(transactionID);
+        return incompatibleTransactions;
     }
 }
