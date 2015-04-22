@@ -1,6 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
+import java.io.Serializable;
+import java.util.Arrays;
 import static java.util.Arrays.asList;
+import java.util.HashMap;
+import java.util.List;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -14,6 +19,14 @@ public class LockingUnitTest extends TestCase {
 
     private static boolean check = true;
 
+    private HashMap<Serializable, List<LockType>> hashMapify(Serializable key, LockType lock) {
+        HashMap<Serializable, List<LockType>> locks = new HashMap<>();
+
+        locks.put(key, Arrays.asList(lock));
+        return locks;
+
+    }
+
     @Test
     public void testExclusiveLock() throws Exception {
         LockingUnit.instance.initOnlyExclusiveLock();
@@ -23,14 +36,16 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Exclusive.LOCK);
                 try {
+                    LockingUnit.instance.lock(1, "test", LockType.Exclusive.LOCK);
                     Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    fail();
+
+                    check = true;
+
+                    LockingUnit.instance.releaseAll(1, hashMapify("test", LockType.Exclusive.LOCK));
+                } catch (InterruptedException | AbortException ex) {
+                    fail("Abort");
                 }
-                check = true;
-                LockingUnit.instance.release("test", LockType.Exclusive.LOCK);
             }
         });
 
@@ -38,9 +53,13 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Exclusive.LOCK);
-                assertEquals("Thread1 did not block Thread2", check, true);
-                LockingUnit.instance.release("test", LockType.Exclusive.LOCK);
+                try {
+                    LockingUnit.instance.lock(2, "test", LockType.Exclusive.LOCK);
+                    assertEquals("Thread1 did not block Thread2", check, true);
+                    LockingUnit.instance.releaseAll(2, hashMapify("test", LockType.Exclusive.LOCK));
+                } catch (AbortException ex) {
+                    fail("Abort");
+                }
             }
         });
 
@@ -63,16 +82,18 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
-                LockingUnit.instance.lock("test11", LockType.Default.READ_LOCK);
                 try {
-                    if (!sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS))
+                    LockingUnit.instance.lock(1, "test", LockType.Default.READ_LOCK);
+                    LockingUnit.instance.lock(1, "test11", LockType.Default.READ_LOCK);
+                    if (!sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS)) {
                         fail("Thread2 did not release the semaphore and was blocked on the read lock");
-                } catch (InterruptedException e) {
-                    fail();
+                    }
+
+                    LockingUnit.instance.releaseAll(1, hashMapify("test11", LockType.Default.READ_LOCK));
+                    LockingUnit.instance.releaseAll(1, hashMapify("test", LockType.Default.READ_LOCK));
+                } catch (AbortException | InterruptedException ex) {
+                    fail("Abort");
                 }
-                LockingUnit.instance.release("test11", LockType.Default.READ_LOCK);
-                LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
             }
         });
 
@@ -80,11 +101,15 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test22", LockType.Default.READ_LOCK);
-                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
-                sem.release();
-                LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
-                LockingUnit.instance.release("test22", LockType.Default.READ_LOCK);
+                try {
+                    LockingUnit.instance.lock(2, "test22", LockType.Default.READ_LOCK);
+                    LockingUnit.instance.lock(2, "test", LockType.Default.READ_LOCK);
+                    sem.release();
+                    LockingUnit.instance.releaseAll(2, hashMapify("test", LockType.Default.READ_LOCK));
+                    LockingUnit.instance.releaseAll(2, hashMapify("test22", LockType.Default.READ_LOCK));
+                } catch (AbortException ex) {
+                    fail("Abort");
+                }
             }
         });
 
@@ -106,14 +131,16 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.WRITE_LOCK);
                 try {
-                    if (sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS))
+                    LockingUnit.instance.lock(1, "test", LockType.Default.WRITE_LOCK);
+
+                    if (sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS)) {
                         fail("Thread2 could release the semaphore and was not blocked on the write lock");
-                } catch (InterruptedException e) {
+                    }
+                } catch (AbortException | InterruptedException e) {
                     fail();
                 }
-                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
+                LockingUnit.instance.releaseAll(1, hashMapify("test", LockType.Default.WRITE_LOCK));
             }
         });
 
@@ -121,9 +148,13 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.WRITE_LOCK);
-                sem.release();
-                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
+                try {
+                    LockingUnit.instance.lock(2, "test", LockType.Default.WRITE_LOCK);
+                    sem.release();
+                    LockingUnit.instance.releaseAll(2, hashMapify("test", LockType.Default.WRITE_LOCK));
+                } catch (AbortException ex) {
+                    fail();
+                }
             }
         });
 
@@ -145,24 +176,28 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
-                LockingUnit.instance.promote("test", asList(LockType.Default.READ_LOCK), LockType.Default.WRITE_LOCK);
-                t1Started.release();
-
                 try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
+                    LockingUnit.instance.lock(1, "test", LockType.Default.READ_LOCK);
+                    LockingUnit.instance.promote(1, "test", asList(LockType.Default.READ_LOCK), LockType.Default.WRITE_LOCK);
+                    t1Started.release();
 
-                try {
-                    if (sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS)) {
-                        fail("Thread2 released the semaphore during promotion!");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
                     }
-                } catch (InterruptedException e) {
+
+                    try {
+                        if (sem.tryAcquire(1, 1000, TimeUnit.MILLISECONDS)) {
+                            fail("Thread2 released the semaphore during promotion!");
+                        }
+                    } catch (InterruptedException e) {
+                        fail();
+                    }
+                    LockingUnit.instance.releaseAll(1, hashMapify("test", LockType.Default.WRITE_LOCK));
+                } catch (AbortException ex) {
                     fail();
                 }
-                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
             }
         });
 
@@ -170,9 +205,13 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
-                sem.release();
-                LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
+                try {
+                    LockingUnit.instance.lock(2, "test", LockType.Default.READ_LOCK);
+                    sem.release();
+                    LockingUnit.instance.releaseAll(2, hashMapify("test", LockType.Default.READ_LOCK));
+                } catch (AbortException ex) {
+                    fail();
+                }
             }
         });
 
@@ -194,18 +233,19 @@ public class LockingUnitTest extends TestCase {
 
             @Override
             public void run() {
-                LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
                 try {
+                    LockingUnit.instance.lock(1, "test", LockType.Default.READ_LOCK);
+
                     t2AcquiredTheLockSem.acquire();
-                    LockingUnit.instance.promote("test", asList(LockType.Default.READ_LOCK), LockType.Default.WRITE_LOCK);
+                    LockingUnit.instance.promote(1, "test", asList(LockType.Default.READ_LOCK), LockType.Default.WRITE_LOCK);
 
                     if (!t2ReleasedTheLockSem.tryAcquire()) {
                         fail("Thread1 could promote while t2 had the lock.");
                     }
-                } catch (InterruptedException e1) {
+                } catch (InterruptedException | AbortException e1) {
                     fail();
                 }
-                LockingUnit.instance.release("test", LockType.Default.WRITE_LOCK);
+                LockingUnit.instance.releaseAll(1, hashMapify("test", LockType.Default.WRITE_LOCK));
             }
         });
 
@@ -214,14 +254,14 @@ public class LockingUnitTest extends TestCase {
             @Override
             public void run() {
                 try {
-                    LockingUnit.instance.lock("test", LockType.Default.READ_LOCK);
+                    LockingUnit.instance.lock(2, "test", LockType.Default.READ_LOCK);
                     t2AcquiredTheLockSem.release();
 
                     Thread.sleep(1500);
 
-                    LockingUnit.instance.release("test", LockType.Default.READ_LOCK);
+                    LockingUnit.instance.releaseAll(2, hashMapify("test", LockType.Default.READ_LOCK));
                     t2ReleasedTheLockSem.release();
-                } catch (InterruptedException e) {
+                } catch (InterruptedException | AbortException e) {
                     fail();
                 }
             }

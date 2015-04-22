@@ -147,7 +147,7 @@ public class Client {
     private static void runTestCases() {
         log.info("Running LockingUnitTest... (might take a while)");
         runTestCase(LockingUnitTest.class);
-        
+
         log.info("Running VersioningUnitTest...");
         runTestCase(VersioningUnitTest.class);
     }

@@ -31,7 +31,6 @@ public class WriteRequest extends Message {
         this.encodedKey = Base64Utils.convertToBase64(key);
         this.encodedValue = Base64Utils.convertToBase64(value);
         this.hash = hash;
-        System.out.println("Write "+transactionId+"  "+key);
     }
 
     public int getTransactionId() {

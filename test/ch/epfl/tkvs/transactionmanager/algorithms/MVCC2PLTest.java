@@ -14,25 +14,20 @@ import static junit.framework.TestCase.fail;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MVCC2PLTest extends TestCase
-  {
+
+public class MVCC2PLTest extends TestCase {
 
     private static MVCC2PL instance = new MVCC2PL();
 
     @Before
-    public void setUp() throws Exception
-      {
-        System.out.println("Setting up");
+    public void setUp() throws Exception {
+
         instance = new MVCC2PL();
-      }
-
-
+    }
 
     @Test
-    public void testRead()
-      {
-        try
-          {
+    public void testRead() {
+        try {
 
             ReadRequest request = new ReadRequest(0, 0, 0);
 
@@ -47,21 +42,18 @@ public class MVCC2PLTest extends TestCase
             assertEquals(true, result.getSuccess());
             assertEquals(null, result.getValue());
 
-          } catch (IOException ex)
-          {
+        } catch (IOException ex) {
             fail(ex.getLocalizedMessage());
-          }
-      }
+        }
+    }
 
     /**
      * Test of write method, of class MVCC2PL.
      */
     @Test
-    public void testWrite()
-      {
+    public void testWrite() {
 
-        try
-          {
+        try {
             WriteRequest request = new WriteRequest(0, 0, 0, 0);
 
             GenericSuccessResponse result = instance.write(request);
@@ -74,18 +66,16 @@ public class MVCC2PLTest extends TestCase
             result = instance.write(request);
             assertEquals(true, result.getSuccess());
 
-          } catch (IOException ex)
-          {
+        } catch (IOException ex) {
             fail(ex.getLocalizedMessage());
-          }
-      }
+        }
+    }
 
     /**
      * Test of begin method, of class MVCC2PL.
      */
     @Test
-    public void testBegin()
-      {
+    public void testBegin() {
 
         BeginRequest request = new BeginRequest(0);
 
@@ -94,17 +84,15 @@ public class MVCC2PLTest extends TestCase
 
         result = instance.begin(request);
         assertEquals(false, result.getSuccess());
-      }
+    }
 
     /**
      * Test of commit method, of class MVCC2PL.
      */
     @Test
-    public void testCommit()
-      {
+    public void testCommit() {
 
-        try
-          {
+        try {
             CommitRequest request = new CommitRequest(0);
 
             GenericSuccessResponse result = instance.commit(request);
@@ -131,24 +119,20 @@ public class MVCC2PLTest extends TestCase
             result = instance.begin(new BeginRequest(0));
             assertEquals(true, result.getSuccess());
 
-          } catch (IOException ex)
-          {
+        } catch (IOException ex) {
             fail(ex.getLocalizedMessage());
-          }
+        }
 
-      }
+    }
 
     @Test
-    public void testSingle()
-      {
-        try
-          {
+    public void testSingle() {
+        try {
 
             GenericSuccessResponse br = instance.begin(new BeginRequest(1));
             assertEquals(true, br.getSuccess());
 
-            GenericSuccessResponse wr = instance.write(new WriteRequest(1, 0,
-                    "zero", 0));
+            GenericSuccessResponse wr = instance.write(new WriteRequest(1, 0, "zero", 0));
             assertEquals(true, wr.getSuccess());
 
             ReadResponse rr = instance.read(new ReadRequest(1, 0, 0));
@@ -158,18 +142,15 @@ public class MVCC2PLTest extends TestCase
             GenericSuccessResponse cr = instance.commit(new CommitRequest(1));
             assertEquals(true, cr.getSuccess());
 
-          } catch (IOException ex)
-          {
+        } catch (IOException ex) {
             fail(ex.getLocalizedMessage());
-          }
+        }
 
-      }
+    }
 
     @Test
-    public void testSerial()
-      {
-        try
-          {
+    public void testSerial() {
+        try {
 
             GenericSuccessResponse gsr = instance.begin(new BeginRequest(0));
             assertEquals(true, gsr.getSuccess());
@@ -196,25 +177,20 @@ public class MVCC2PLTest extends TestCase
 
             gsr = instance.commit(new CommitRequest(1));
             assertEquals(true, gsr.getSuccess());
-          } catch (IOException ex)
-          {
+        } catch (IOException ex) {
             fail(ex.getLocalizedMessage());
-          }
+        }
 
-      }
+    }
 
     @Test
-    public void testDeadlock()
-      {
+    public void testDeadlock() {
 
-        Thread thread1 = new Thread(new Runnable()
-          {
+        Thread thread1 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
                     ReadResponse rr;
 
@@ -227,8 +203,7 @@ public class MVCC2PLTest extends TestCase
 
                     Thread.sleep(2000);
 
-                    gsr = instance.write(new WriteRequest(1, 2, "y1",
-                            0));
+                    gsr = instance.write(new WriteRequest(1, 2, "y1", 0));
                     assertEquals(true, gsr.getSuccess());
 
                     Thread.sleep(2000);
@@ -236,21 +211,17 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(1));
                     assertEquals(true, gsr.getSuccess());
 
-                  } catch (Exception ex)
-                  {
+                } catch (IOException | InterruptedException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
-              }
-          });
+                }
+            }
+        });
 
-        Thread thread2 = new Thread(new Runnable()
-          {
+        Thread thread2 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
                     ReadResponse rr;
 
@@ -265,8 +236,7 @@ public class MVCC2PLTest extends TestCase
 
                     Thread.sleep(2000);
 
-                    gsr = instance.write(new WriteRequest(2, 1, "x2",
-                            0));
+                    gsr = instance.write(new WriteRequest(2, 1, "x2", 0));
                     assertEquals(true, gsr.getSuccess());
 
                     Thread.sleep(10000); // I make it wait long to make sure
@@ -275,37 +245,30 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(2));
                     assertEquals(false, gsr.getSuccess());
 
-                  } catch (Exception ex)
-                  {
+                } catch (IOException | InterruptedException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
-              }
-          });
+                }
+            }
+        });
 
         thread1.start();
         thread2.start();
 
-        try
-          {
+        try {
             thread1.join();
             thread2.join();
-          } catch (InterruptedException ex)
-          {
+        } catch (InterruptedException ex) {
             fail(ex.getLocalizedMessage());
-          }
-      }
+        }
+    }
 
     @Test
-    public void testComplex()
-      {
-        Thread t1 = new Thread(new Runnable()
-          {
+    public void testComplex() {
+        Thread t1 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
                     ReadResponse rr;
 
@@ -328,22 +291,18 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(1));
                     assertEquals(gsr.getSuccess(), true);
 
-                  } catch (IOException | InterruptedException ex)
-                  {
+                } catch (IOException | InterruptedException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
+                }
 
-              }
-          });
+            }
+        });
 
-        Thread t2 = new Thread(new Runnable()
-          {
+        Thread t2 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
 
                     gsr = instance.begin(new BeginRequest(2));
@@ -358,22 +317,18 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(2));
                     assertEquals(gsr.getSuccess(), true);
 
-                  } catch (IOException | InterruptedException ex)
-                  {
+                } catch (IOException | InterruptedException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
+                }
 
-              }
-          });
+            }
+        });
 
-        Thread t3 = new Thread(new Runnable()
-          {
+        Thread t3 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
                     ReadResponse rr;
 
@@ -394,22 +349,18 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(3));
                     assertEquals(gsr.getSuccess(), true);
 
-                  } catch (IOException | InterruptedException ex)
-                  {
+                } catch (IOException | InterruptedException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
+                }
 
-              }
-          });
+            }
+        });
 
-        Thread t4 = new Thread(new Runnable()
-          {
+        Thread t4 = new Thread(new Runnable() {
 
             @Override
-            public void run()
-              {
-                try
-                  {
+            public void run() {
+                try {
                     GenericSuccessResponse gsr;
 
                     gsr = instance.begin(new BeginRequest(4));
@@ -421,32 +372,29 @@ public class MVCC2PLTest extends TestCase
                     gsr = instance.commit(new CommitRequest(4));
                     assertEquals(gsr.getSuccess(), true);
 
-                  } catch (IOException ex)
-                  {
+                } catch (IOException ex) {
                     fail(ex.getLocalizedMessage());
-                  }
+                }
 
-              }
-          });
-        try
-          {
+            }
+        });
+        try {
 
-//            t1.start();
+            t1.start();
             Thread.sleep(500);
-//            t2.start();
+            t2.start();
             Thread.sleep(3000);
             t3.start();
             Thread.sleep(2000);
             t4.start();
 
-//            t1.join();
-//            t2.join();
+            t1.join();
+            t2.join();
             t3.join();
             t4.join();
 
-          } catch (Exception ex)
-          {
+        } catch (Exception ex) {
             fail(ex.getLocalizedMessage());
-          }
-      }
-  }
+        }
+    }
+}

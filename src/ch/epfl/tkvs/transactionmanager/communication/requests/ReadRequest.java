@@ -24,7 +24,6 @@ public class ReadRequest extends Message {
     private int hash;
 
     public ReadRequest(int transactionId, Serializable key, int hash) throws IOException {
-        System.out.println("Read "+transactionId+"  "+key);
         this.transactionId = transactionId;
         this.encodedKey = Base64Utils.convertToBase64(key);
         this.hash = hash;

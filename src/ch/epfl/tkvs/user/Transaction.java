@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.user;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
