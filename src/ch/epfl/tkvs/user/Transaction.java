@@ -28,14 +28,13 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Transaction<K extends Key>
-  {
 
-    public enum TransactionStatus
-      {
+public class Transaction<K extends Key> {
+
+    public enum TransactionStatus {
 
         live, aborted, commited
-      }
+    }
 
     private static String amHost;
     private static int amPort;
@@ -44,10 +43,8 @@ public class Transaction<K extends Key>
     private int transactionID;
     private TransactionStatus status;
 
-    public Transaction(K key) throws AbortException
-      {
-        try
-          {
+    public Transaction(K key) throws AbortException {
+        try {
             // TODO: Find how to deal with that.
             amHost = new SlavesConfig().waitForAppMasterHostname();
             amPort = SlavesConfig.AM_DEFAULT_PORT;
@@ -63,26 +60,21 @@ public class Transaction<K extends Key>
             BeginRequest request = new BeginRequest(transactionID);
             JSONObject jsonBeginResponse = sendRequest(tmHost, tmPort, toJSON(request));
             boolean isSuccess = jsonBeginResponse.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
-            if (!isSuccess)
-              {
+            if (!isSuccess) {
                 status = TransactionStatus.aborted;
                 throw new AbortException("Abort");
-              } else
-              {
+            } else {
                 status = TransactionStatus.live;
-              }
+            }
 
-          } catch (Exception e)
-          {
+        } catch (Exception e) {
             tmHost = null;
             e.printStackTrace();
-          }
-      }
+        }
+    }
 
-    private JSONObject sendRequest(String hostName, int portNumber, JSONObject request)
-      {
-        try
-          {
+    private JSONObject sendRequest(String hostName, int portNumber, JSONObject request) {
+        try {
             Socket sock = new Socket(hostName, portNumber);
 
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
@@ -100,99 +92,81 @@ public class Transaction<K extends Key>
             sock.close();
             return new JSONObject(inputStr);
 
-          } catch (UnknownHostException e)
-          {
+        } catch (UnknownHostException e) {
             System.err.println("Don't know about host " + hostName);
             System.exit(1);
-          } catch (IOException e)
-          {
+        } catch (IOException e) {
             System.err.println("Couldn't get I/O for the connection to " + hostName + ":" + portNumber);
             e.printStackTrace();
             System.exit(1);
-          } catch (JSONException e)
-          {
+        } catch (JSONException e) {
             e.printStackTrace();
-          }
+        }
         return null;
-      }
+    }
 
-    public Serializable read(K key) throws AbortException
-      {
+    public Serializable read(K key) throws AbortException {
 
-        try
-          {
-            if (status != TransactionStatus.live)
-              {
+        try {
+            if (status != TransactionStatus.live) {
                 throw new AbortException("Transaction is no longer live");
-              }
-            
+            }
+
             ReadRequest request = new ReadRequest(transactionID, key, key.getHash());
-            
+
             JSONObject json = sendRequest(tmHost, tmPort, toJSON(request));
             ReadResponse response = (ReadResponse) parseJSON(json, ReadResponse.class);
-            
-            if (!response.getSuccess())
-              {
+
+            if (!response.getSuccess()) {
                 status = TransactionStatus.aborted;
                 throw new AbortException("Abort");
-              }
-            
+            }
+
             return response.getValue();
-          } catch (IOException | InvalidMessageException | JSONException ex)
-          {
+        } catch (IOException | InvalidMessageException | JSONException ex) {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
             throw new AbortException(ex.getLocalizedMessage());
-          }
-    
-      }
+        }
 
-    public void write(K key, Serializable value) throws AbortException
-      {
+    }
 
-        try
-          {
-            if (status != TransactionStatus.live)
-              {
+    public void write(K key, Serializable value) throws AbortException {
+
+        try {
+            if (status != TransactionStatus.live) {
                 throw new AbortException("Transaction is no longer live");
-              }
+            }
             WriteRequest request = new WriteRequest(transactionID, key, value, key.getHash());
             JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
-            
+
             boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
-            if (!isSuccess)
-              {
+            if (!isSuccess) {
                 status = TransactionStatus.aborted;
                 throw new AbortException("Abort");
-              }
-          } catch (IOException | JSONException ex)
-          {
+            }
+        } catch (IOException | JSONException ex) {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
             throw new AbortException(ex.getLocalizedMessage());
-          }
-      }
+        }
+    }
 
-    private void commit() throws AbortException
-      {
+    public void commit() throws AbortException {
 
-        try
-          {
-            if (status != TransactionStatus.live)
-              {
+        try {
+            if (status != TransactionStatus.live) {
                 throw new AbortException("Transaction is no longer live");
-              }
+            }
             CommitRequest request = new CommitRequest(transactionID);
             JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
             boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
-            if (!isSuccess)
-              {
+            if (!isSuccess) {
                 status = TransactionStatus.aborted;
                 throw new AbortException("Abort");
-              }
-          } catch (JSONException ex)
-          {
+            }
+        } catch (JSONException ex) {
             Logger.getLogger(Transaction.class.getName()).log(Level.SEVERE, null, ex);
             throw new AbortException(ex.getLocalizedMessage());
-          }
-      }
+        }
+    }
 
-  }
+}
