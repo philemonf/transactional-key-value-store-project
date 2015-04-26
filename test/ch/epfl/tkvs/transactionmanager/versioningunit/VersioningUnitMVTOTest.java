@@ -54,6 +54,93 @@ public class VersioningUnitMVTOTest {
         executeSchedule(schedule, expectedResults, maxLen);
     }
 
+    @Test
+    public void test2() {
+        log.println("----------- Test 2 -----------");
+        int[][][] schedule = new int[][][] {
+        /* T1: */{ W(1), __C_ },
+        /* T2: */{ ____, ____, R(1), ____, ____, W(1), R(1), __C_ },
+        /* T3: */{ ____, ____, ____, W(1), __C_ },
+        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, R(1), __C_ } };
+
+        // T(1):W(1,4)
+        // T(1):COMMIT SUCCESSFUL
+        // T(2):R(1) => 4
+        // T(3):W(1,10)
+        // T(3):R(1) => 10
+        // T(3):COMMIT SUCCESSFUL
+        // T(2):W(1,12)
+        // T(2):R(1) => 12
+        // T(2):COMMIT SUCCESSFUL
+        // T(4):R(1) => 10
+        // T(4):COMMIT SUCCESSFUL
+        int maxLen = analyzeSchedule(schedule);
+        printSchedule(schedule);
+        Object[][] expectedResults = new Object[schedule.length][maxLen];
+        expectedResults[T(2)][STEP(3)] = STEP(1);
+        expectedResults[T(2)][STEP(7)] = STEP(6);
+        expectedResults[T(4)][STEP(9)] = STEP(4);
+        executeSchedule(schedule, expectedResults, maxLen);
+    }
+
+    @Test
+    public void test3() {
+        log.println("----------- Test 3 -----------");
+        int[][][] schedule = new int[][][] {
+        /* T1: */{ W(1), __C_ },
+        /* T2: */{ ____, ____, R(1), ____, ____, W(1), __C_ },
+        /* T3: */{ ____, ____, ____, R(1), __C_ },
+        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, R(1), __C_ } };
+
+        // T(1):W(1,4)
+        // T(1):COMMIT SUCCESSFUL
+        // T(2):R(1) => 4
+        // T(3):R(1) => 4
+        // T(3):COMMIT SUCCESSFUL
+        // T(2):W(1,12)
+        // T(2):ABORT
+        // T(4):R(1) => 4
+        // T(4):COMMIT SUCCESSFUL
+        int maxLen = analyzeSchedule(schedule);
+        printSchedule(schedule);
+        Object[][] expectedResults = new Object[schedule.length][maxLen];
+        expectedResults[T(2)][STEP(3)] = STEP(1);
+        expectedResults[T(3)][STEP(4)] = STEP(1);
+        expectedResults[T(4)][STEP(8)] = STEP(1);
+        executeSchedule(schedule, expectedResults, maxLen);
+    }
+
+    @Test
+    public void test4() {
+        log.println("----------- Test 4 -----------");
+        int[][][] schedule = new int[][][] {
+        /* T1: */{ W(1), __C_ },
+        /* T2: */{ ____, ____, R(1), W(1), ____, ____, R(1), W(1), __C_ },
+        /* T3: */{ ____, ____, ____, ____, R(1), W(1), ____, ____, ____, __C_ },
+        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, R(1), __C_ } };
+
+        // T(1):W(1,4)
+        // T(1):COMMIT SUCCESSFUL
+        // T(2):R(1) => 4
+        // T(2):W(1,10)
+        // T(3):R(1) => 10
+        // T(3):W(1,14)
+        // T(2):R(1) => 10
+        // T(2):W(1,18)
+        // T(2):ABORT
+        // T(3):ABORT
+        // T(4):R(1) => 4
+        // T(4):COMMIT SUCCESSFUL
+        int maxLen = analyzeSchedule(schedule);
+        printSchedule(schedule);
+        Object[][] expectedResults = new Object[schedule.length][maxLen];
+        expectedResults[T(2)][STEP(3)] = STEP(1);
+        expectedResults[T(3)][STEP(5)] = STEP(4);
+        expectedResults[T(2)][STEP(7)] = STEP(4);
+        expectedResults[T(4)][STEP(11)] = STEP(1);
+        executeSchedule(schedule, expectedResults, maxLen);
+    }
+
     /**
      * This method is for executing a schedule.
      * 
