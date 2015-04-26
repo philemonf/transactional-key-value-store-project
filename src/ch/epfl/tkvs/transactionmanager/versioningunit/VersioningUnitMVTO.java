@@ -11,6 +11,7 @@ import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 public enum VersioningUnitMVTO implements IVersioningUnit {
     instance;
 
+    // testing-purpose only
     private int testing_max_xact = 0;
 
     // The Timestamp on which a Serializable key was last read
@@ -40,20 +41,20 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
 
     /**
      * Tell the versioning unit about a new transaction
-     * @param xact the ID or timestamp of the transaction If the xact is -1, then the VU should generate a xact (testing
+     * @param xid the ID or timestamp of the transaction If the xact is -1, then the VU should generate a xact (testing
      * purpose only)
      */
-    public int begin_transaction(int xact) {
+    public int begin_transaction(int xid) {
 
         // If we are testing the VU
-        if (xact == -1) {
+        if (xid == -1) {
             return ++testing_max_xact;
         }
 
         // Initialize data structures for the new transaction
         // TODO
 
-        return xact;
+        return xid;
     }
 
     @Override
@@ -64,24 +65,20 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     @Override
     public void put(int xid, Serializable key, Serializable value) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public void commit(int xid) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     public void stopNow() {
         // TODO Auto-generated method stub
-
     }
 
-    public void abort(int xact) {
+    public void abort(int xid) {
         // TODO Auto-generated method stub
-
     }
 
 }
