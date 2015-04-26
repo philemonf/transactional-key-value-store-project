@@ -2,6 +2,8 @@ package ch.epfl.tkvs.transactionmanager.versioningunit;
 
 import java.io.Serializable;
 
+import ch.epfl.tkvs.user.AbortException;
+
 
 public interface IVersioningUnit {
 
@@ -23,8 +25,9 @@ public interface IVersioningUnit {
      * @param xid the current transaction (= Xact timestamp) doing the write
      * @param key the key to be written
      * @param value the value for the new version
+     * @throws AbortException
      */
-    public void put(int xid, Serializable key, Serializable value);
+    public void put(int xid, Serializable key, Serializable value) throws AbortException;
 
     /**
      * Commit the changes done by a transaction The transaction SHOULD NOT do any other requests to the VersioningUnit
