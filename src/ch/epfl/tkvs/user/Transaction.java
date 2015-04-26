@@ -49,7 +49,7 @@ public class Transaction<K extends Key>
         try
           {
             // TODO: Find how to deal with that.
-            amHost = "localhost";
+            amHost = new SlavesConfig().waitForAppMasterHostname();
             amPort = SlavesConfig.AM_DEFAULT_PORT;
 
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
@@ -72,7 +72,7 @@ public class Transaction<K extends Key>
                 status = TransactionStatus.live;
               }
 
-          } catch (JSONException | InvalidMessageException e)
+          } catch (Exception e)
           {
             tmHost = null;
             e.printStackTrace();
