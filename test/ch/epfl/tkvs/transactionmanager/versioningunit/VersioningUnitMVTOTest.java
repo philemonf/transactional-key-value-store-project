@@ -25,151 +25,32 @@ public class VersioningUnitMVTOTest {
 
     private static PrintStream log = System.out;
 
-    /**
-     * Tests WR conflict (reading uncommitted data)
-     */
     @Test
     public void test1() {
         log.println("----------- Test 1 -----------");
-        /*
-         * Example schedule: T1: W(3),W(1), C T2: R(1),W(1), R(3),W(3), A T3: R(1),W(1), C T4: R(1),R(3), C
-         */
         int[][][] schedule = new int[][][] {
-        /* T1: */{ W(3), W(1), __C_ },
-        /* T2: */{ ____, ____, ____, R(1), W(1), ____, ____, ____, R(3), W(3), __A_ },
-        /* T3: */{ ____, ____, ____, ____, ____, R(1), W(1), __C_ },
-        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, R(1), R(3), __C_ } };
-        // T(1):W(3,4)
-        // T(1):W(1,6)
+        /* T1: */{ W(1), __C_ },
+        /* T2: */{ ____, ____, R(1), ____, R(1), ____, __C_ },
+        /* T3: */{ ____, ____, ____, W(1), ____, R(1), ____, __C_ },
+        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, R(1), __C_}};
+        
+        // T(1):W(1,4)
         // T(1):COMMIT SUCCESSFUL
-        // T(2):R(1) => 6
-        // T(2):W(1,12)
-        // T(3):R(1) => 6
-        // T(3):W(1,16)
+        // T(2):R(1) => 4
+        // T(3):W(1,10)
+        // T(2):R(1) => 4
+        // T(3):R(1) => 10
+        // T(2):COMMIT SUCCESSFUL
         // T(3):COMMIT SUCCESSFUL
-        // T(2):R(3)
-        // T(2) HAD A CONFLICT AND ROLLED BACK
-        // T(4):R(1) => 16
-        // T(4):R(3) => 4
+        // T(4):R(1) => 10
         // T(4):COMMIT SUCCESSFUL
         int maxLen = analyzeSchedule(schedule);
         printSchedule(schedule);
         Object[][] expectedResults = new Object[schedule.length][maxLen];
-        expectedResults[T(2)][STEP(4)] = STEP(2);
-        expectedResults[T(3)][STEP(6)] = STEP(2);
-        expectedResults[T(2)][STEP(9)] = STEP(1);
-        expectedResults[T(4)][STEP(12)] = STEP(7);
-        expectedResults[T(4)][STEP(13)] = STEP(1);
-        executeSchedule(schedule, expectedResults, maxLen);
-    }
-
-    /**
-     * Tests RW conflict (unrepeatable reads)
-     */
-    @Test
-    public void test2() {
-        log.println("----------- Test 2 -----------");
-        /*
-         * Example schedule: T1: W(4),W(2), C T2: R(2), R(2),W(4), C T3: R(2),W(2), C T4: R(2),R(4), C
-         */
-        int[][][] schedule = new int[][][] {
-        /* T1: */{ W(4), W(2), __C_ },
-        /* T2: */{ ____, ____, ____, R(2), ____, ____, ____, R(2), W(4), __C_ },
-        /* T3: */{ ____, ____, ____, ____, R(2), W(2), __C_ },
-        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, R(2), R(4), __C_ } };
-        // T(1):W(4,4)
-        // T(1):W(2,6)
-        // T(1):COMMIT SUCCESSFUL
-        // T(2):R(2) => 6
-        // T(3):R(2) => 6
-        // T(3):W(2,14)
-        // T(3):COMMIT SUCCESSFUL
-        // T(2):R(2) => 6
-        // T(2):W(4,20)
-        // T(2):COMMIT SUCCESSFUL
-        // T(4):R(2) => 14
-        // T(4):R(4) => 20
-        // T(4):COMMIT SUCCESSFUL
-        int maxLen = analyzeSchedule(schedule);
-        printSchedule(schedule);
-        Object[][] expectedResults = new Object[schedule.length][maxLen];
-        expectedResults[T(2)][STEP(4)] = STEP(2);
-        expectedResults[T(3)][STEP(5)] = STEP(2);
-        expectedResults[T(2)][STEP(8)] = STEP(2);
-        expectedResults[T(4)][STEP(11)] = STEP(6);
-        expectedResults[T(4)][STEP(12)] = STEP(9);
-        executeSchedule(schedule, expectedResults, maxLen);
-    }
-
-    /**
-     * Tests WW conflict (overwriting uncommitted data)
-     */
-    @Test
-    public void test3() {
-        log.println("----------- Test 3 -----------");
-        /*
-         * Example schedule: T1: W(2), W(3), C T2: W(2),W(3), C T3: R(2),R(3), C
-         */
-        int[][][] schedule = new int[][][] {
-        /* T1: */{ W(2), ____, ____, ____, W(3), __C_ },
-        /* T2: */{ ____, W(2), W(3), __C_ },
-        /* T3: */{ ____, ____, ____, ____, ____, ____, R(2), R(3), __C_ } };
-        // T(1):W(2,4)
-        // T(2):W(2,6)
-        // T(2):W(3,8)
-        // T(2):COMMIT SUCCESSFUL
-        // T(1):W(3,12)
-        // T(1) HAD A CONFLICT AND ROLLED BACK
-        // T(3):R(2) => 6
-        // T(3):R(3) => 8
-        // T(3):COMMIT SUCCESSFUL
-        int maxLen = analyzeSchedule(schedule);
-        printSchedule(schedule);
-        Object[][] expectedResults = new Object[schedule.length][maxLen];
-        expectedResults[T(3)][STEP(7)] = STEP(2);
-        expectedResults[T(3)][STEP(8)] = STEP(3);
-        executeSchedule(schedule, expectedResults, maxLen);
-    }
-
-    @Test
-    public void test4() {
-        log.println("----------- Test 4 -----------");
-        /*
-         * Example schedule: T1: W(2),W(3),W(9), C T2: R(9),W(2),W(9), R(2),W(9), C , T3: R(9),W(3),W(9), C T4:
-         * R(2),R(3), C
-         */
-        int[][][] schedule = new int[][][] {
-        /* T1: */{ W(2), W(3), W(9), __C_ },
-        /* T2: */{ ____, ____, ____, ____, R(9), W(2), W(9), ____, ____, ____, R(2), W(9), __C_, ____, ____ },
-        /* T3: */{ ____, ____, ____, ____, ____, ____, ____, R(9), W(3), W(9), ____, ____, ____, ____, ____, __C_ },
-        /* T4: */{ ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, ____, R(2), R(3), ____, __C_ } };
-        // T(1):W(2,4)
-        // T(1):W(3,6)
-        // T(1):W(9,8)
-        // T(1):COMMIT SUCCESSFUL
-        // T(2):R(9) => 8
-        // T(2):W(2,14)
-        // T(2):W(9,16)
-        // T(3):R(9) => 8
-        // T(3):W(3,20)
-        // T(3):W(9,22)
-        // T(2):R(2) => 14
-        // T(2):W(9,26)
-        // T(2):COMMIT SUCCESSFUL
-        // T(4):R(2) => 14
-        // T(4):R(3) => 6
-        // T(3):COMMIT FAILED
-        // T(3) HAD A CONFLICT AND ROLLED BACK
-        // T(4):COMMIT SUCCESSFUL
-        // TEST 2: PASSED
-        int maxLen = analyzeSchedule(schedule);
-        printSchedule(schedule);
-        Object[][] expectedResults = new Object[schedule.length][maxLen];
-        expectedResults[T(2)][STEP(5)] = STEP(3);
-        expectedResults[T(3)][STEP(8)] = STEP(3);
-        expectedResults[T(2)][STEP(11)] = STEP(6);
-        expectedResults[T(4)][STEP(14)] = STEP(6);
-        expectedResults[T(4)][STEP(15)] = STEP(2);
+        expectedResults[T(2)][STEP(3)] = STEP(1);
+        expectedResults[T(2)][STEP(5)] = STEP(1);
+        expectedResults[T(3)][STEP(6)] = STEP(4);
+        expectedResults[T(4)][STEP(9)] = STEP(4);
         executeSchedule(schedule, expectedResults, maxLen);
     }
 
@@ -216,7 +97,7 @@ public class VersioningUnitMVTOTest {
                                 VersioningUnitMVTO.instance.put(xact, xactOps[1], getValue(step));
                                 break;
                             case READ: {
-                                int readValue = 6;
+                                int readValue = 0;
                                 Serializable readValueTmp = VersioningUnitMVTO.instance.get(xact, xactOps[1]);
                                 if (readValueTmp != null) {
                                     readValue = (int) readValueTmp;
