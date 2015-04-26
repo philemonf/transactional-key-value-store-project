@@ -7,8 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public enum VersioningUnitMVTO implements IVersioningUnit {
     instance;
-    
-    // The Timestamp on which a Serializable key  was last read
+
+    // The Timestamp on which a Serializable key was last read
     private Map<Serializable, Integer> RTS;
     // The Timestamp on which a Serializable key was last written
     private Map<Serializable, Integer> WTS;
@@ -49,7 +49,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
 
     public void abort(int xact) {
         // TODO Auto-generated method stub
-        
+
     }
 
 }
