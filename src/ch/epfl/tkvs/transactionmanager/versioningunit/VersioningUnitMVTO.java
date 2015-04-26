@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class VersioningUnitMVTO implements IVersioningUnit {
+public enum VersioningUnitMVTO implements IVersioningUnit {
+    instance;
     
     // The Timestamp on which a Serializable key  was last read
     private Map<Serializable, Integer> RTS;
@@ -20,9 +21,6 @@ public class VersioningUnitMVTO implements IVersioningUnit {
 
     @Override
     public Serializable get(int xid, Serializable key) {
-        if(xid < WTS.get(key)) {
-            //TODO abort
-        }
         return null;
     }
 
@@ -39,15 +37,19 @@ public class VersioningUnitMVTO implements IVersioningUnit {
     }
 
     @Override
-    public void abort(int xid) {
+    public void stopNow() {
         // TODO Auto-generated method stub
 
     }
 
-    @Override
-    public void stopNow() {
+    public int begin_transaction(int xact) {
         // TODO Auto-generated method stub
+        return 0;
+    }
 
+    public void abort(int xact) {
+        // TODO Auto-generated method stub
+        
     }
 
 }
