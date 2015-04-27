@@ -20,7 +20,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     private KeyValueStore KVS = KeyValueStore.instance;
 
     // The Timestamp on which a Serializable key was last read
-    private Map<Serializable, Integer> RTS;
+    private Map<Serializable, Integer> RTS; //TODO: Think about keeping a list of the RTS in case of abort
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
 
