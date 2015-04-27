@@ -19,7 +19,7 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
     public ScheduledBlockingCommand L() {
         return new ScheduledBlockingCommand() {
             @Override
-            void perform() {
+            public void perform() {
                 lock.lock();
             }
         };
@@ -28,7 +28,7 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
     public ScheduledCommand U() {
         return new ScheduledCommand() {
             @Override
-            void perform() {
+            public void perform() {
                 lock.unlock();
             }
         };

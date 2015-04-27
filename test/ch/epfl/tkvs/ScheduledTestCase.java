@@ -24,7 +24,7 @@ public abstract class ScheduledTestCase extends TestCase {
             return this.schedule;
         }
 
-        abstract void perform();
+        public abstract void perform();
 
         protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
             perform();
@@ -33,13 +33,15 @@ public abstract class ScheduledTestCase extends TestCase {
     }
 
     public static abstract class ScheduledCommandWithAssertion extends ScheduledCommand {
-        abstract void assertBefore();
-        abstract void assertAfter();
+        public abstract void assertBefore();
+        public abstract void assertAfter();
 
         @Override
         protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
+            assertBefore();
             perform();
             barrier.await();
+            assertAfter();
         }
     }
 
@@ -72,7 +74,7 @@ public abstract class ScheduledTestCase extends TestCase {
 
     public static final ScheduledCommand ___ = new ScheduledCommand() {
         @Override
-        void perform() {
+        public void perform() {
 
         }
     };
