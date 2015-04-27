@@ -25,7 +25,7 @@ public class VersioningUnitMVTOTest {
 
     private static PrintStream log = System.out;
 
-    @Test
+    //@Test
     public void test1() {
         log.println("----------- Test 1 -----------");
         int[][][] schedule = new int[][][] {
@@ -54,7 +54,7 @@ public class VersioningUnitMVTOTest {
         executeSchedule(schedule, expectedResults, maxLen);
     }
 
-    @Test
+    //@Test
     public void test2() {
         log.println("----------- Test 2 -----------");
         int[][][] schedule = new int[][][] {
@@ -83,7 +83,7 @@ public class VersioningUnitMVTOTest {
         executeSchedule(schedule, expectedResults, maxLen);
     }
 
-    @Test
+    //@Test
     public void test3() {
         log.println("----------- Test 3 -----------");
         int[][][] schedule = new int[][][] {
@@ -110,7 +110,7 @@ public class VersioningUnitMVTOTest {
         executeSchedule(schedule, expectedResults, maxLen);
     }
 
-    @Test
+    //@Test
     public void test4() {
         log.println("----------- Test 4 -----------");
         int[][][] schedule = new int[][][] {

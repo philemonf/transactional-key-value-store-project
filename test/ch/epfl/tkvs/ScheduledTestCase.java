@@ -12,7 +12,7 @@ import java.util.concurrent.CyclicBarrier;
  * Time: 20:24
  * To change this template use File | Settings | File Templates.
  */
-public class ScheduledTestCase extends TestCase {
+public abstract class ScheduledTestCase extends TestCase {
     public static abstract class ScheduledCommand {
         private ScheduledCommand[][] schedule;
 
