@@ -4,11 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,6 +38,8 @@ import ch.epfl.tkvs.yarn.Utils;
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
+    private static String hostname;
+    
     private YarnConfiguration conf;
 
     private static final int MAX_NUMBER_OF_WORKERS = 10;
@@ -49,10 +51,19 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static boolean listening = true;
     private ServerSocket server;
+    
+    public static final int HOSTNAME_SERVER_PORT = 8989;
 
     public static void main(String[] args) {
+    	
         try {
             log.info("Initializing...");
+            
+            // Compute hostname
+            hostname = InetAddress.getLocalHost().getCanonicalHostName();
+            log.info("AppMaster hostname: " + hostname);
+            
+            
             new AppMaster().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn app master", ex);
@@ -90,7 +101,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
         // Request Containers from RM
         SlavesConfig conf = new SlavesConfig();
-        LinkedHashMap<String, Integer> tmHosts = conf.getTMs();
+        Map<String, Integer> tmHosts = conf.getTMs();
 
         for (String host : tmHosts.keySet()) {
             log.info("Requesting Container at " + host);
@@ -100,6 +111,11 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
         log.info("Starting server...");
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
+        
+        // Write its host name to HDFS
+        SlavesConfig slavesConf = new SlavesConfig();
+        slavesConf.writeAppMasterHostname(hostname);
+        
         while (listening) {
             try {
                 Socket sock = server.accept();

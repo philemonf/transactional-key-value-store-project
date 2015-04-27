@@ -1,9 +1,9 @@
 package ch.epfl.tkvs.transactionmanager;
 
-import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 
 import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
@@ -27,16 +28,16 @@ public class TransactionManager {
 
     private static final int THREAD_POOL_SIZE = 15;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-
+    
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     private static boolean listening = true;
     private ServerSocket server;
     private String hostname;
-
  
     private static Algorithm concurrencyController;
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+    	
         log.info("Initializing...");
         try {
             new TransactionManager().run();
@@ -48,15 +49,14 @@ public class TransactionManager {
     }
 
     public TransactionManager() throws UnknownHostException {
-        // TODO: Fix this when tested on cluster!
-        // this.hostname = InetAddress.getLocalHost().getCanonicalHostName();
-        this.hostname = "localhost";
+        this.hostname = InetAddress.getLocalHost().getCanonicalHostName();
     }
 
     public void run() throws Exception {
         log.info("Host Name: " + hostname);
 
         SlavesConfig slaveConfig = new SlavesConfig();
+        
         // Create TM Server
         server = new ServerSocket(slaveConfig.getPortForHost(hostname));
         

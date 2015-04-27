@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
 public class Client {
 
     private static Logger log = Logger.getLogger(Client.class.getName());
+    private static String AMHostname = null;
     private YarnConfiguration conf;
 
     public static void main(String[] args) {
@@ -48,15 +50,19 @@ public class Client {
 
     private void run() throws Exception {
         conf = new YarnConfiguration();
+        
+        SlavesConfig slavesConfig = new SlavesConfig();
+        slavesConfig.cleanUpOldRuns();
 
         // Create Yarn Client
         YarnClient client = YarnClient.createYarnClient();
         client.init(conf);
         client.start();
 
+        
         // Create Application
         YarnClientApplication app = client.createApplication();
-
+        
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
         amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
@@ -82,21 +88,31 @@ public class Client {
         appContext.setQueue("default");
         appContext.setAMContainerSpec(amCLC);
         appContext.setResource(res);
-
+        
+        
         // Submit Application
         ApplicationId id = appContext.getApplicationId();
         log.info("Submitting " + id);
         client.submitApplication(appContext);
-
+        
+        // Write the id of the app in a hidden file
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
         writer.write(id.toString());
         writer.close();
-
+        
+        // The AppMaster will write its host name to HDFS as soon as it is ready
+        AMHostname = slavesConfig.waitForAppMasterHostname();
+        if (AMHostname == null) {
+        	throw new Exception("no hostname for the AppMaster");
+        } else {
+        	log.info("YARN client just received the AppMaster hostname: " + AMHostname);
+        }
+        
         // REPL
-        Thread.sleep(5000);
         System.out.println("\nClient REPL:");
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
+        
         boolean listening = true;
         while (listening && appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
@@ -104,10 +120,7 @@ public class Client {
             switch (input) {
             case ":exit":
                 log.info("Stopping gracefully " + id);
-                // listening = false;
-                // TODO: How to know the hostname of the AM???
-                // XXX: FIX ME! "localhost"
-                Socket exitSock = new Socket("localhost", SlavesConfig.AM_DEFAULT_PORT);
+                Socket exitSock = new Socket(AMHostname, SlavesConfig.AM_DEFAULT_PORT);
                 PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
                 out.println(input);
                 out.close();
@@ -147,7 +160,7 @@ public class Client {
     private static void runTestCases() {
         log.info("Running LockingUnitTest... (might take a while)");
         runTestCase(LockingUnitTest.class);
-        
+
         log.info("Running VersioningUnitTest...");
         runTestCase(VersioningUnitTest.class);
     }

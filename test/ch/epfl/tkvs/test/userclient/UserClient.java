@@ -13,6 +13,7 @@ public class UserClient implements Runnable {
             Transaction t = new Transaction<MyKey>(k0);
             t.write(k0, "myValue");
             System.out.println((String) t.read(k0));
+            t.commit();
         } catch (Exception e) {
             e.printStackTrace();
         }

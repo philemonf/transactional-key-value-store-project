@@ -1,4 +1,4 @@
-src/*.class
+*.class
 .*
 
 # Mobile Tools for Java (J2ME)
@@ -15,3 +15,9 @@ hs_err_pid*
 /nbproject/private/
 /build
 /tkvs
+/dist/
+
+#netbeans project
+nbproject/
+build.xml
+manifest.mf  
