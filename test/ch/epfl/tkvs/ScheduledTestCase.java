@@ -106,7 +106,7 @@ public class ScheduledTestCase extends TestCase {
         private ScheduledCommand[][] schedule;
 
         public ScheduleExecutor(ScheduledCommand[][] schedule) {
-            if (this.schedule.length < 1) {
+            if (schedule.length < 1) {
                 throw new IllegalArgumentException("The schedule shouldn't be empty.");
             }
 
@@ -129,6 +129,7 @@ public class ScheduledTestCase extends TestCase {
                     public void run() {
                         try {
                             for (int step = 0; step < numSteps; ++step) {
+                                schedule[tid][step].setSchedule(schedule);
                                 schedule[tid][step].internalPerform(barrier);
                             }
                         } catch (InterruptedException e) {

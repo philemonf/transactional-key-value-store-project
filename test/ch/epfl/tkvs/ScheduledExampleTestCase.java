@@ -1,9 +1,9 @@
 package ch.epfl.tkvs;
 
-import junit.framework.Test;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.junit.Test;
 
 /**
  * Created with IntelliJ IDEA.
@@ -33,7 +33,6 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
             }
         };
     }
-
 
     @Test
     public void test() {
