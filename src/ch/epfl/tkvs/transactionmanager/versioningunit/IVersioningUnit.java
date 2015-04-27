@@ -32,8 +32,9 @@ public interface IVersioningUnit {
     /**
      * Commit the changes done by a transaction The transaction SHOULD NOT do any other requests to the VersioningUnit
      * @param xid the current transaction (=Xact timestamp) that wants to commit
+     * @throws AbortException
      */
-    public void commit(final int xid);
+    public void commit(final int xid) throws AbortException;
 
     /**
      * Abort the current transaction The transaction SHOULD NOT do any other requests

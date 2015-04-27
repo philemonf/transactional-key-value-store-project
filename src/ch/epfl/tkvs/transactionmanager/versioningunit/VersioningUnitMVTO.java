@@ -2,8 +2,11 @@ package ch.epfl.tkvs.transactionmanager.versioningunit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
@@ -20,6 +23,13 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     private Map<Serializable, Integer> RTS;
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
+
+    // Contains the transactions from which a given transaction has read
+    private Map<Integer, Set<Integer>> readFromXacts;
+    // Contains the uncommitted transactions
+    private Set<Integer> uncommitted;
+    // Contains the aborted transactions
+    private Set<Integer> abortedXacts;
 
     // testing-purpose only
     private int testing_max_xact = 0;
@@ -46,6 +56,9 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         // Flush data structures
         RTS = new ConcurrentHashMap<Serializable, Integer>();
         versions = new ConcurrentHashMap<Serializable, List<Version>>();
+        readFromXacts = new ConcurrentHashMap<Integer, Set<Integer>>();
+        uncommitted = new HashSet<Integer>();
+        abortedXacts = new HashSet<Integer>();
     }
 
     /**
@@ -61,7 +74,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
 
         // Initialize data structures for the new transaction
-        // TODO
+        uncommitted.add(xid);
 
         return xid;
     }
@@ -79,9 +92,16 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
             return null;
         }
 
-        // Read written verstion with largest timestamp older than xid
+        // Read written version with largest timestamp older than xid
         for (Version v : versions.get(key)) {
             if (v.WTS <= xid) {
+                Set<Integer> readList = readFromXacts.get(xid);
+                if (readList == null) {
+                    readList = new HashSet<Integer>();
+                }
+                readList.add(v.WTS);
+                // TODO: Is the get put needed?!
+                readFromXacts.put(xid, readList);
                 return KVS.get(v.key);
             }
         }
@@ -95,6 +115,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
 
         // Is the write possible ?
         if (RTS.get(key) != null && xid < RTS.get(key)) {
+            abort(xid);
             throw new AbortException("Abort xact " + xid + " as it wanted to write " + key + " with value " + value + " but RTS is " + RTS.get(key));
         }
 
@@ -127,8 +148,27 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     }
 
     @Override
-    public synchronized void commit(int xid) {
-        // TODO Auto-generated method stub
+    public synchronized void commit(int xid) throws AbortException {
+
+        // TODO: optimize the notification of the correct waiting transaction
+        try {
+            while (readFromXacts.get(xid) != null && !Collections.disjoint(uncommitted, readFromXacts.get(xid))) {
+                wait();
+            }
+        } catch (InterruptedException e) {
+            // TODO Handle the exception
+            e.printStackTrace();
+        }
+
+        if (readFromXacts.get(xid) != null && !Collections.disjoint(abortedXacts, readFromXacts.get(xid))) {
+            Set<Integer> copy = new HashSet<Integer>(abortedXacts);
+            abort(xid);
+            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + copy.retainAll(readFromXacts.get(xid)));
+        }
+
+        // Commit successful
+        uncommitted.remove(xid);
+        notifyAll();
     }
 
     @Override
@@ -137,7 +177,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     }
 
     public synchronized void abort(int xid) {
-        // TODO Auto-generated method stub
+
     }
 
 }
