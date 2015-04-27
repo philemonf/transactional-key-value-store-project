@@ -95,7 +95,7 @@ public class ScheduledTestCase extends TestCase {
         }
     }
 
-    public static ScheduledCommand W(int tid, int step) {
+    public static ScheduledCommand Wt(int tid, int step) {
         return new ShouldWaitScheduledCommand(tid, step);
     }
 
