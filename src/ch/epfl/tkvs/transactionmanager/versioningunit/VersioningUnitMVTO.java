@@ -31,6 +31,9 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     // Contains the aborted transactions
     private Set<Integer> abortedXacts;
 
+    // The objects a given transaction has written
+    private Map<Integer, Set<Serializable>> writtenKeys;
+
     // testing-purpose only
     private int testing_max_xact = 0;
 
@@ -59,6 +62,8 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         readFromXacts = new ConcurrentHashMap<Integer, Set<Integer>>();
         uncommitted = new HashSet<Integer>();
         abortedXacts = new HashSet<Integer>();
+
+        writtenKeys = new ConcurrentHashMap<Integer, Set<Serializable>>();
     }
 
     /**
@@ -75,6 +80,8 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
 
         // Initialize data structures for the new transaction
         uncommitted.add(xid);
+        writtenKeys.put(xid, new HashSet<Serializable>());
+        readFromXacts.put(xid, new HashSet<Integer>());
 
         return xid;
     }
@@ -96,9 +103,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         for (Version v : versions.get(key)) {
             if (v.WTS <= xid) {
                 Set<Integer> readList = readFromXacts.get(xid);
-                if (readList == null) {
-                    readList = new HashSet<Integer>();
-                }
                 readList.add(v.WTS);
                 // TODO: Is the get put needed?!
                 readFromXacts.put(xid, readList);
@@ -123,6 +127,8 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         // It can overwrite a previous version by the same xid
         Version newVersion = new Version(new PrefixedKey("Version" + xid, key), xid);
         KVS.put(newVersion.key, value);
+
+        writtenKeys.get(xid).add(key);
 
         // Insert it at the correct place in the version's list
         List<Version> listOfVersions = versions.get(key);
@@ -163,6 +169,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         if (readFromXacts.get(xid) != null && !Collections.disjoint(abortedXacts, readFromXacts.get(xid))) {
             Set<Integer> copy = new HashSet<Integer>(abortedXacts);
             abort(xid);
+            notifyAll();
             throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + copy.retainAll(readFromXacts.get(xid)));
         }
 
@@ -177,6 +184,22 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     }
 
     public synchronized void abort(int xid) {
+
+        abortedXacts.add(xid);
+        uncommitted.remove(xid);
+        readFromXacts.remove(xid);
+
+        // Rollback everything that the xact read and wrote
+        for (Serializable key : writtenKeys.get(xid)) {
+
+            for (Version version : versions.get(key)) {
+                if (version.WTS == xid) {
+                    // TODO: break since we only have one version
+                    KeyValueStore.instance.remove(version.key);
+                }
+            }
+
+        }
 
     }
 
