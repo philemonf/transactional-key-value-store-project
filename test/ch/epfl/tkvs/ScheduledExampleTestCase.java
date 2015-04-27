@@ -1,7 +1,6 @@
 package ch.epfl.tkvs;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.Semaphore;
 
 import org.junit.Test;
 
@@ -14,13 +13,16 @@ import org.junit.Test;
  */
 public class ScheduledExampleTestCase extends ScheduledTestCase {
 
-    final Lock lock = new ReentrantLock();
+    final Semaphore sem = new Semaphore(1);
 
     public ScheduledBlockingCommand L() {
         return new ScheduledBlockingCommand() {
             @Override
             public void perform() {
-                lock.lock();
+                try {
+                    sem.acquire();
+                } catch (InterruptedException e) {
+                }
             }
         };
     }
@@ -29,7 +31,7 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
         return new ScheduledCommand() {
             @Override
             public void perform() {
-                lock.unlock();
+                sem.release();
             }
         };
     }

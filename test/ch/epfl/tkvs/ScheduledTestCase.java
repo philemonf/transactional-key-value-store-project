@@ -93,7 +93,7 @@ public abstract class ScheduledTestCase extends TestCase {
 
             ScheduledBlockingCommand blockingCommand = (ScheduledBlockingCommand) getSchedule()[tid][step];
 
-            assertEquals(blockingCommand.getPerformThread().isAlive(), true);
+            assertEquals(true, blockingCommand.getPerformThread().isAlive());
         }
     }
 
@@ -141,6 +141,19 @@ public abstract class ScheduledTestCase extends TestCase {
                         }
                     }
                 });
+            }
+            
+            for (int i = 0; i < numThreads; i++) {
+                executorThreads[i].start();
+            }
+            
+            for (int i = 0; i < numThreads; i++) {
+                try {
+                    executorThreads[i].join();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
         }
     }
