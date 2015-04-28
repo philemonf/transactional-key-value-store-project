@@ -39,8 +39,8 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
     @Test
     public void test() {
         ScheduledCommand[][] schedule = {
-            {   L(),   Wt(0,0),        U(),     ___ },
-            {   ___,     L()  ,    Wt(1,1),     U() }
+            {   L(),	___,	___,		U(),	___ },
+            {   ___,	L(),	Wt(1,1),	___,	U() }
         };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();

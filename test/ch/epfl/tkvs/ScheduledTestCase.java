@@ -1,9 +1,13 @@
 package ch.epfl.tkvs;
 
+import static java.util.Arrays.asList;
 import junit.framework.TestCase;
 
+import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+
+import apple.laf.JRSUIConstants.State;
 
 /**
  * Created with IntelliJ IDEA.
@@ -27,8 +31,12 @@ public abstract class ScheduledTestCase extends TestCase {
         public abstract void perform();
 
         protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
-            perform();
+        	perform();
             barrier.await();
+        }
+        
+        protected int getOrder() {
+        	return 0;
         }
     }
 
@@ -62,6 +70,10 @@ public abstract class ScheduledTestCase extends TestCase {
             });
 
             performThread.start();
+            
+            // Wait a bit hoping that the thread will be blocked or to terminate
+            Thread.sleep(5000);
+            
             barrier.await();
         }
 
@@ -69,8 +81,6 @@ public abstract class ScheduledTestCase extends TestCase {
             return performThread;
         }
     }
-
-
 
     public static final ScheduledCommand ___ = new ScheduledCommand() {
         @Override
@@ -93,6 +103,10 @@ public abstract class ScheduledTestCase extends TestCase {
 
             ScheduledBlockingCommand blockingCommand = (ScheduledBlockingCommand) getSchedule()[tid][step];
 
+            if (!blockingCommand.getPerformThread().isAlive()) {
+            	System.out.println("SHIIT");
+            }
+            
             assertEquals(true, blockingCommand.getPerformThread().isAlive());
         }
     }
