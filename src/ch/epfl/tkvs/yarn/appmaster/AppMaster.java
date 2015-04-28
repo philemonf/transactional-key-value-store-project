@@ -56,6 +56,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         } catch (Exception ex) {
             log.fatal("Could not run yarn app master", ex);
         }
+        log.info("Finished");
+        System.exit(0);
     }
 
     public void run() throws Exception {
@@ -138,11 +140,9 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             Thread.sleep(1000);
         }
 
-        log.info("Unregistered");
-        nmClient.stop();
         server.close();
+        log.info("Unregistering");
         rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
-        rmClient.stop();
     }
 
     @Override

@@ -99,8 +99,8 @@ public class Client {
         }
 
         // REPL
-        System.out.println("\nClient REPL:");
         Thread.sleep(2000);
+        System.out.println("\nClient REPL:");
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
@@ -142,7 +142,7 @@ public class Client {
             appState = appReport.getYarnApplicationState();
             Thread.sleep(300);
         }
-        log.info("Application Stopped");
+        log.info("Application Stopped with state: " + appState.toString());
         client.stop();
     }
 
