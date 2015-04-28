@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.user.AbortException;
+import ch.epfl.tkvs.transactionmanager.AbortException;
 
 
 public enum VersioningUnitMVTO implements IVersioningUnit {

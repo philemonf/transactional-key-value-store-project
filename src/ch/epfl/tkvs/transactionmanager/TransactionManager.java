@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
@@ -28,14 +28,12 @@ public class TransactionManager {
 
     private static final int THREAD_POOL_SIZE = 15;
     private static final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-    
+
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
-    private static boolean listening = true;
     private ServerSocket server;
     private String hostname;
- 
-    private static Algorithm concurrencyController;
+
     public static void main(String[] args) throws Exception {
     	
         log.info("Initializing...");
@@ -49,23 +47,26 @@ public class TransactionManager {
     }
 
     public TransactionManager() throws UnknownHostException {
-        this.hostname = InetAddress.getLocalHost().getCanonicalHostName();
+        this.hostname = InetAddress.getLocalHost().getHostName();
     }
 
     public void run() throws Exception {
         log.info("Host Name: " + hostname);
 
-        SlavesConfig slaveConfig = new SlavesConfig();
+        NetConfig slaveConfig = new NetConfig();
         
         // Create TM Server
-        server = new ServerSocket(slaveConfig.getPortForHost(hostname));
-        
-        concurrencyController = new MVCC2PL();
+        int port = slaveConfig.getPortForHost(hostname);
+        server = new ServerSocket(port);
 
-        log.info("Starting server...");
-        while (listening) {
+        Algorithm concurrencyController = new MVCC2PL();
+
+        log.info("Starting server at " + hostname + ":" + port);
+        while (!server.isClosed()) {
             try {
+                log.info("Waiting for message...");
                 Socket sock = server.accept();
+                log.info("Processing message...");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -73,9 +74,9 @@ public class TransactionManager {
                 switch (input) {
                 case ":exit":
                     log.info("Stopping Server");
-                    listening = false;
                     sock.close();
                     server.close();
+                    threadPool.shutdown();
                     break;
                 default:
                     threadPool.execute(new TMWorker(input, sock, concurrencyController));
@@ -84,7 +85,6 @@ public class TransactionManager {
                 log.error("sock.accept ", e);
             }
         }
-
         log.info("Finalizing");
         server.close();
         // TODO: write KV store to disk ?

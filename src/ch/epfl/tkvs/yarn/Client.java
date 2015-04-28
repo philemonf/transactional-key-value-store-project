@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,7 +26,7 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
@@ -51,8 +50,8 @@ public class Client {
     private void run() throws Exception {
         conf = new YarnConfiguration();
         
-        SlavesConfig slavesConfig = new SlavesConfig();
-        slavesConfig.cleanUpOldRuns();
+        NetConfig netConfig = new NetConfig();
+        netConfig.cleanUpOldRuns();
 
         // Create Yarn Client
         YarnClient client = YarnClient.createYarnClient();
@@ -101,7 +100,7 @@ public class Client {
         writer.close();
         
         // The AppMaster will write its host name to HDFS as soon as it is ready
-        AMHostname = slavesConfig.waitForAppMasterHostname();
+        AMHostname = netConfig.waitForAppMasterHostname();
         if (AMHostname == null) {
         	throw new Exception("no hostname for the AppMaster");
         } else {
@@ -110,34 +109,31 @@ public class Client {
         
         // REPL
         System.out.println("\nClient REPL:");
+        Thread.sleep(2000);
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
-        
-        boolean listening = true;
-        while (listening && appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
+        while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
             String input = System.console().readLine("> ");
-            switch (input) {
-            case ":exit":
+            if (input.equals(":exit")) {
                 log.info("Stopping gracefully " + id);
-                Socket exitSock = new Socket(AMHostname, SlavesConfig.AM_DEFAULT_PORT);
+                Socket exitSock = new Socket(AMHostname, NetConfig.AM_DEFAULT_PORT);
                 PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
                 out.println(input);
                 out.close();
                 exitSock.close();
                 break;
-            // case ":kill":
-            // log.info("Killing " + id);
-            // listening = false;
-            // client.killApplication(id);
-            // break;
+            }
+
+            // TODO: support more commands with more cases ..
+            switch (input) {
             case ":test":
                 System.out.println("Running test client...\n");
 
                 log.info("Running example client program...");
                 new UserClient().run();
 
-                runTestCases();
+                //runTestCases();
 
                 System.out.println();
                 break;
@@ -147,13 +143,16 @@ public class Client {
                 System.out.println("Command Not Found!");
             }
 
-            // TODO: support more commands with more cases ..
-
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
         }
 
-        log.info(id + " state " + appState);
+        while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
+            appReport = client.getApplicationReport(id);
+            appState = appReport.getYarnApplicationState();
+            Thread.sleep(300);
+        }
+        log.info("Application Stopped");
         client.stop();
     }
 

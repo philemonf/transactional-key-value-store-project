@@ -1,9 +1,8 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
+
 import java.io.Serializable;
-
-import ch.epfl.tkvs.user.AbortException;
-
 
 public interface IVersioningUnit {
 

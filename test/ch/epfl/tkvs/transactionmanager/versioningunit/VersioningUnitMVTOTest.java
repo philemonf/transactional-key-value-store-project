@@ -1,11 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import ch.epfl.tkvs.ScheduledTestCase;
-import ch.epfl.tkvs.user.AbortException;
 
 
 public class VersioningUnitMVTOTest extends ScheduledTestCase {

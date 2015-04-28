@@ -17,7 +17,7 @@ import org.apache.hadoop.fs.Path;
 import ch.epfl.tkvs.yarn.Utils;
 
 
-public class SlavesConfig {
+public class NetConfig {
 
     public static final int AM_DEFAULT_PORT = 31299;
     public static final int TM_DEFAULT_PORT = 31200;
@@ -26,16 +26,14 @@ public class SlavesConfig {
     LinkedHashMap<String, Integer> tms = new LinkedHashMap<String, Integer>();
     ArrayList<String> hosts = new ArrayList<String>();
 
-    public SlavesConfig() throws IOException {
+    public NetConfig() throws IOException {
         Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
         FileSystem fs = slavesPath.getFileSystem(new Configuration());
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(slavesPath)));
 
-        String line;
-        do {
-
-            line = reader.readLine();
-            if (line != null && !line.startsWith("#") && line.length() > 0) {
+        String line = reader.readLine();
+        while (line != null) {
+            if (line.length() > 0 && !line.startsWith("#")) {
                 int indexOfColumn = line.indexOf(':');
 
                 String host = line;
@@ -50,7 +48,8 @@ public class SlavesConfig {
                 }
                 tms.put(host, port);
             }
-        } while (line != null);
+            line = reader.readLine();
+        }
 
         hosts.addAll(tms.keySet());
         reader.close();
