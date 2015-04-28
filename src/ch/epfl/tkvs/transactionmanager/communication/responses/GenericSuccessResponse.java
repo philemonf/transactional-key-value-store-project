@@ -10,14 +10,12 @@ public class GenericSuccessResponse extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_SUCCESS)
     private boolean success;
 
-    public GenericSuccessResponse(boolean success)
-      {
+    public GenericSuccessResponse(boolean success) {
         this.success = success;
-      }
-
-    public boolean getSuccess()
-      {
-        return success;
-      }
-
     }
+
+    public boolean getSuccess() {
+        return success;
+    }
+
+}

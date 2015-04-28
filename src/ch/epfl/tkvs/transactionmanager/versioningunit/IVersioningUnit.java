@@ -4,6 +4,7 @@ import ch.epfl.tkvs.transactionmanager.AbortException;
 
 import java.io.Serializable;
 
+
 public interface IVersioningUnit {
 
     /**

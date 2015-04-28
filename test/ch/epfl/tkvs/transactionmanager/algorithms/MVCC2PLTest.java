@@ -6,13 +6,11 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
-import java.io.IOException;
-
 import junit.framework.TestCase;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
 
 
 public class MVCC2PLTest extends TestCase {

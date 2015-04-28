@@ -1,18 +1,17 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import junit.framework.TestCase;
+import org.junit.Test;
+
 import java.io.Serializable;
 import java.util.Arrays;
-import static java.util.Arrays.asList;
 import java.util.HashMap;
 import java.util.List;
-
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-
-import org.junit.Test;
+import static java.util.Arrays.asList;
 
 
 public class LockingUnitTest extends TestCase {

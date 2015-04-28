@@ -17,7 +17,11 @@ hs_err_pid*
 /tkvs
 /dist/
 
+#intellij
+*.iml
+/out/
+
 #netbeans project
 nbproject/
 build.xml
-manifest.mf  
+manifest.mf

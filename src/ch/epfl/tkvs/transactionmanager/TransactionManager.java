@@ -1,5 +1,11 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -9,13 +15,6 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.apache.log4j.Logger;
-
-import ch.epfl.tkvs.config.NetConfig;
-import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
-import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
 /**
@@ -35,7 +34,7 @@ public class TransactionManager {
     private String hostname;
 
     public static void main(String[] args) throws Exception {
-    	
+
         log.info("Initializing...");
         try {
             new TransactionManager().run();
@@ -54,7 +53,7 @@ public class TransactionManager {
         log.info("Host Name: " + hostname);
 
         NetConfig slaveConfig = new NetConfig();
-        
+
         // Create TM Server
         int port = slaveConfig.getPortForHost(hostname);
         server = new ServerSocket(port);

@@ -1,11 +1,9 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import junit.framework.TestCase;
-
 import org.junit.Before;
 import org.junit.Test;
-
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class VersioningUnitTest extends TestCase {

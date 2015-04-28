@@ -1,12 +1,12 @@
 package ch.epfl.tkvs.transactionmanager.communication.responses;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+
+import java.io.IOException;
+import java.io.Serializable;
 
 
 public class ReadResponse extends Message {
@@ -30,8 +30,8 @@ public class ReadResponse extends Message {
     }
 
     public Serializable getValue() throws IOException {
-       if(encodedValue == null)
-           return null;
+        if (encodedValue == null)
+            return null;
         try {
             return Base64Utils.convertFromBase64(encodedValue);
         } catch (ClassNotFoundException e) {

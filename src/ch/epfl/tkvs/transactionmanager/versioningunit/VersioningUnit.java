@@ -1,12 +1,12 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import org.apache.log4j.Logger;
+
 import java.io.Serializable;
 import java.util.Deque;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
-
-import org.apache.log4j.Logger;
 
 
 public enum VersioningUnit implements IVersioningUnit {

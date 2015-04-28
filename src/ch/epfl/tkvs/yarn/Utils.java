@@ -1,8 +1,5 @@
 package ch.epfl.tkvs.yarn;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -14,6 +11,9 @@ import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+
+import java.io.IOException;
+import java.util.Map;
 
 
 public class Utils {

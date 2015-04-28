@@ -1,22 +1,11 @@
 package ch.epfl.tkvs.yarn;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
+import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.test.userclient.UserClient;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.api.records.ApplicationReport;
-import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
-import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.api.records.LocalResource;
-import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.api.records.YarnApplicationState;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -26,11 +15,14 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import ch.epfl.tkvs.config.NetConfig;
-import ch.epfl.tkvs.test.userclient.UserClient;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PLTest;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
-import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class Client {
@@ -50,7 +42,7 @@ public class Client {
 
     private void run() throws Exception {
         conf = new YarnConfiguration();
-        
+
         NetConfig netConfig = new NetConfig();
         netConfig.cleanUpOldRuns();
 
@@ -59,10 +51,9 @@ public class Client {
         client.init(conf);
         client.start();
 
-        
         // Create Application
         YarnClientApplication app = client.createApplication();
-        
+
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
         amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
@@ -88,26 +79,25 @@ public class Client {
         appContext.setQueue("default");
         appContext.setAMContainerSpec(amCLC);
         appContext.setResource(res);
-        
-        
+
         // Submit Application
         ApplicationId id = appContext.getApplicationId();
         log.info("Submitting " + id);
         client.submitApplication(appContext);
-        
+
         // Write the id of the app in a hidden file
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
         writer.write(id.toString());
         writer.close();
-        
+
         // The AppMaster will write its host name to HDFS as soon as it is ready
         AMHostname = netConfig.waitForAppMasterHostname();
         if (AMHostname == null) {
-        	throw new Exception("no hostname for the AppMaster");
+            throw new Exception("no hostname for the AppMaster");
         } else {
-        	log.info("YARN client just received the AppMaster hostname: " + AMHostname);
+            log.info("YARN client just received the AppMaster hostname: " + AMHostname);
         }
-        
+
         // REPL
         System.out.println("\nClient REPL:");
         Thread.sleep(2000);
@@ -162,9 +152,9 @@ public class Client {
 
         log.info("Running VersioningUnitTest...");
         runTestCase(VersioningUnitTest.class);
-        
-        //log.info("Running MVCC2PLTest...");
-        //runTestCase(MVCC2PLTest.class);
+
+        // log.info("Running MVCC2PLTest...");
+        // runTestCase(MVCC2PLTest.class);
     }
 
     private static void runTestCase(Class<?> testCase) {

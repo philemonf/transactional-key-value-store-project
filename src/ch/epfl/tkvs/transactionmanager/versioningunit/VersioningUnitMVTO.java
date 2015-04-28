@@ -1,16 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public enum VersioningUnitMVTO implements IVersioningUnit {
@@ -20,7 +15,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     private KeyValueStore KVS = KeyValueStore.instance;
 
     // The Timestamp on which a Serializable key was last read
-    private Map<Serializable, Integer> RTS; //TODO: Think about keeping a list of the RTS in case of abort
+    private Map<Serializable, Integer> RTS; // TODO: Think about keeping a list of the RTS in case of abort
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
 

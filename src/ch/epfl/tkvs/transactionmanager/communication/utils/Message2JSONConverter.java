@@ -1,12 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.communication.utils;
 
-import java.lang.reflect.Field;
-
+import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
-import ch.epfl.tkvs.transactionmanager.communication.Message;
+import java.lang.reflect.Field;
 
 
 public class Message2JSONConverter {

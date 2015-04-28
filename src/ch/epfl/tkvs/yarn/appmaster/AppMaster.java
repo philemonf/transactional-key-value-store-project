@@ -1,5 +1,16 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.yarn.Utils;
+import org.apache.hadoop.yarn.api.ApplicationConstants;
+import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
+import org.apache.hadoop.yarn.client.api.NMClient;
+import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
+import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.util.Records;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,25 +25,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.api.records.ContainerStatus;
-import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
-import org.apache.hadoop.yarn.api.records.LocalResource;
-import org.apache.hadoop.yarn.api.records.NodeReport;
-import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
-import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
-import org.apache.hadoop.yarn.client.api.NMClient;
-import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.util.Records;
-import org.apache.log4j.Logger;
-
-import ch.epfl.tkvs.config.NetConfig;
-import ch.epfl.tkvs.yarn.Utils;
 
 
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
@@ -59,7 +51,6 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             // Compute hostname
             hostname = InetAddress.getLocalHost().getHostName();
             log.info("AppMaster hostname: " + hostname);
-
 
             new AppMaster().run();
         } catch (Exception ex) {
@@ -106,7 +97,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             containerCount += 1;
         }
 
-        log.info("Starting server at " +  hostname + ":" + NetConfig.AM_DEFAULT_PORT);
+        log.info("Starting server at " + hostname + ":" + NetConfig.AM_DEFAULT_PORT);
         conf.writeAppMasterHostname(hostname); // Write its host name to HDFS
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
 

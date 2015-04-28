@@ -1,12 +1,12 @@
 package ch.epfl.tkvs.transactionmanager.communication.requests;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+
+import java.io.IOException;
+import java.io.Serializable;
 
 
 public class WriteRequest extends Message {

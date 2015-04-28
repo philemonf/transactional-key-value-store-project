@@ -8,14 +8,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * <Key,Value> Store
  */
 public enum KeyValueStore {
-	instance;
-	
+    instance;
+
     public ConcurrentHashMap<Serializable, Serializable> store = new ConcurrentHashMap<Serializable, Serializable>();
 
     public void clear() {
-    	store.clear();
+        store.clear();
     }
-    
+
     public void put(Serializable key, Serializable value) {
         store.put(key, value);
     }
