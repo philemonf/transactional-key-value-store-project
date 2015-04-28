@@ -59,7 +59,7 @@ public class MVCC2PL implements Algorithm {
             Serializable value = versioningUnit.get(xid, key);
             return new ReadResponse(true, (String) value);
         } catch (AbortException e) {
-            terminate(transaction);
+            terminate(transaction, false);
             return new ReadResponse(false, null);
         }
 
@@ -85,7 +85,7 @@ public class MVCC2PL implements Algorithm {
             versioningUnit.put(xid, key, value);
             return new GenericSuccessResponse(true);
         } catch (AbortException e) {
-            terminate(transaction);
+            terminate(transaction, false);
             return new GenericSuccessResponse(false);
         }
     }
@@ -124,11 +124,11 @@ public class MVCC2PL implements Algorithm {
                     transaction.setLock(key, Arrays.asList((LockType) Lock.COMMIT_LOCK));
                 }
             }
-            versioningUnit.commit(xid);
-            terminate(transaction);
+
+            terminate(transaction, true);
             return new GenericSuccessResponse(true);
         } catch (AbortException e) {
-            terminate(transaction);
+            terminate(transaction, false);
             return new GenericSuccessResponse(false);
         }
     }
@@ -141,7 +141,11 @@ public class MVCC2PL implements Algorithm {
     }
 
     // Does cleaning up after end of transaction
-    private void terminate(Transaction transaction) {
+    private void terminate(Transaction transaction, boolean success) {
+        if (success)
+            versioningUnit.commit(transaction.transactionId);
+        else
+            versioningUnit.abort(transaction.transactionId);
         lockingUnit.releaseAll(transaction.transactionId, transaction.currentLocks);
         transactions.remove(transaction.transactionId);
     }
