@@ -11,8 +11,10 @@ import java.util.Map;
 
 import org.apache.commons.math3.util.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.mortbay.log.Log;
 
 import ch.epfl.tkvs.yarn.Utils;
 
@@ -105,7 +107,8 @@ public class NetConfig {
         
         // Active wait until the file gets created
         while (!fs.exists(path)) {
-        	Thread.sleep(100); // wait 100 ms before trying again
+        	Log.info("Waiting for AppMaster hostname");
+        	Thread.sleep(3000); // wait 3 s before trying again
         }
         
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(path)));
@@ -121,11 +124,12 @@ public class NetConfig {
     	Path path = getAMHostNameConfigPath("_tmp");
         FileSystem fs = path.getFileSystem(new Configuration());
         
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(fs.create(path)));
+        FSDataOutputStream dos = fs.create(path);
         try {
-        	writer.write(hostname);
+        	dos.writeBytes(hostname);
+        	dos.hsync();
         } finally {
-        	writer.close();
+        	dos.close();
         }
         
         // Rename the file once it has content

@@ -28,6 +28,7 @@ import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
 
@@ -132,8 +133,7 @@ public class Client {
 
                 log.info("Running example client program...");
                 new UserClient().run();
-
-                //runTestCases();
+                runTestCases();
 
                 System.out.println();
                 break;
@@ -162,6 +162,9 @@ public class Client {
 
         log.info("Running VersioningUnitTest...");
         runTestCase(VersioningUnitTest.class);
+        
+        log.info("Running MVCC2PLTest...");
+        //runTestCase(MVCC2PLTest.class);
     }
 
     private static void runTestCase(Class<?> testCase) {
