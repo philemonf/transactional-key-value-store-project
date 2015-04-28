@@ -1,18 +1,13 @@
 package ch.epfl.tkvs.transactionmanager.communication.utils;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.LinkedList;
-import java.util.List;
-
+import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
-import ch.epfl.tkvs.transactionmanager.communication.Message;
+import java.lang.reflect.*;
+import java.util.LinkedList;
+import java.util.List;
 
 
 public class JSON2MessageConverter {
@@ -30,8 +25,7 @@ public class JSON2MessageConverter {
         }
     }
 
-    public static Message parseJSON(JSONObject json, Class<? extends Message> messageClass)
-            throws InvalidMessageException {
+    public static Message parseJSON(JSONObject json, Class<? extends Message> messageClass) throws InvalidMessageException {
         if (json == null) {
             throw new InvalidMessageException("json is null.");
         }
@@ -97,8 +91,7 @@ public class JSON2MessageConverter {
 
             return message;
 
-        } catch (JSONException | InstantiationException | IllegalAccessException | IllegalArgumentException
-                | InvocationTargetException e) {
+        } catch (JSONException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
             e.printStackTrace();
             throw new InvalidMessageException(e);
         }

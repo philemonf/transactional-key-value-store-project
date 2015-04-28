@@ -1,22 +1,21 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
-import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.Socket;
-
+import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import org.apache.commons.math3.util.Pair;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.config.SlavesConfig;
-import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
-import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
-import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 
 public class AMWorker extends Thread {
@@ -39,8 +38,7 @@ public class AMWorker extends Thread {
             switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
 
             case TransactionManagerRequest.MESSAGE_TYPE:
-                TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest,
-                        TransactionManagerRequest.class);
+                TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
                 response = getResponseForRequest(request);
                 break;
             }
@@ -64,7 +62,7 @@ public class AMWorker extends Thread {
         int hash = 0;
 
         // Get the hostName and portNumber for that hash.
-        SlavesConfig conf = new SlavesConfig();
+        NetConfig conf = new NetConfig();
         conf.getTMbyHash(hash);
         Pair<String, Integer> tm = conf.getTMbyHash(hash);
 

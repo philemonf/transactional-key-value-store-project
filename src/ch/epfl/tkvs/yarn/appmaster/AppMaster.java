@@ -1,29 +1,9 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.yarn.Utils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.api.records.ContainerStatus;
-import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
-import org.apache.hadoop.yarn.api.records.LocalResource;
-import org.apache.hadoop.yarn.api.records.NodeReport;
-import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
 import org.apache.hadoop.yarn.client.api.NMClient;
 import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
@@ -31,13 +11,27 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.config.SlavesConfig;
-import ch.epfl.tkvs.yarn.Utils;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
+    private static String hostname;
+
     private YarnConfiguration conf;
 
     private static final int MAX_NUMBER_OF_WORKERS = 10;
@@ -47,23 +41,30 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private int containerCount = 0;
 
-    private static boolean listening = true;
     private ServerSocket server;
 
     public static void main(String[] args) {
+
         try {
             log.info("Initializing...");
+
+            // Compute hostname
+            hostname = InetAddress.getLocalHost().getHostName();
+            log.info("AppMaster hostname: " + hostname);
+
             new AppMaster().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn app master", ex);
         }
+        log.info("Finished");
+        System.exit(0);
     }
 
     public void run() throws Exception {
         conf = new YarnConfiguration();
 
         // Create AM Socket
-        server = new ServerSocket(SlavesConfig.AM_DEFAULT_PORT);
+        server = new ServerSocket(NetConfig.AM_DEFAULT_PORT);
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -89,8 +90,8 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setVirtualCores(1);
 
         // Request Containers from RM
-        SlavesConfig conf = new SlavesConfig();
-        LinkedHashMap<String, Integer> tmHosts = conf.getTMs();
+        NetConfig conf = new NetConfig();
+        Map<String, Integer> tmHosts = conf.getTMs();
 
         for (String host : tmHosts.keySet()) {
             log.info("Requesting Container at " + host);
@@ -98,11 +99,15 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             containerCount += 1;
         }
 
-        log.info("Starting server...");
+        log.info("Starting server at " + hostname + ":" + NetConfig.AM_DEFAULT_PORT);
+        conf.writeAppMasterHostname(hostname); // Write its host name to HDFS
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
-        while (listening) {
+
+        while (!server.isClosed() && containerCount > 0) {
             try {
+                log.info("Waiting for message...");
                 Socket sock = server.accept();
+                log.info("Processing message...");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -110,7 +115,6 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                 switch (input) {
                 case ":exit":
                     log.info("Stopping Server");
-                    listening = false;
                     sock.close();
                     server.close();
 
@@ -136,11 +140,9 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             Thread.sleep(1000);
         }
 
-        log.info("Unregistered");
-        nmClient.stop();
         server.close();
+        log.info("Unregistering");
         rmClient.unregisterApplicationMaster(FinalApplicationStatus.SUCCEEDED, "", "");
-        rmClient.stop();
     }
 
     @Override
@@ -159,10 +161,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         try {
             // Create Container Context
             ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-            cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX
-                    + " ch.epfl.tkvs.transactionmanager.TransactionManager " + " 1>"
-                    + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>"
-                    + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+            cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX + " ch.epfl.tkvs.transactionmanager.TransactionManager " + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
             // Set Container jar
             LocalResource jar = Records.newRecord(LocalResource.class);

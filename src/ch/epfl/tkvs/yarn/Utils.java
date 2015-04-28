@@ -1,8 +1,5 @@
 package ch.epfl.tkvs.yarn;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -15,6 +12,9 @@ import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 
+import java.io.IOException;
+import java.util.Map;
+
 
 public class Utils {
 
@@ -25,10 +25,8 @@ public class Utils {
     public static final Path TKVS_JAR_PATH = new Path("hdfs:///projects/transaction-manager/" + TKVS_JAR_NAME);
 
     public static void setUpEnv(Map<String, String> env, YarnConfiguration conf) {
-        StringBuilder classPathEnv = new StringBuilder(Environment.CLASSPATH.$$()).append(
-                ApplicationConstants.CLASS_PATH_SEPARATOR).append("./*");
-        for (String c : conf.getStrings(YarnConfiguration.YARN_APPLICATION_CLASSPATH,
-                YarnConfiguration.DEFAULT_YARN_CROSS_PLATFORM_APPLICATION_CLASSPATH)) {
+        StringBuilder classPathEnv = new StringBuilder(Environment.CLASSPATH.$$()).append(ApplicationConstants.CLASS_PATH_SEPARATOR).append("./*");
+        for (String c : conf.getStrings(YarnConfiguration.YARN_APPLICATION_CLASSPATH, YarnConfiguration.DEFAULT_YARN_CROSS_PLATFORM_APPLICATION_CLASSPATH)) {
             classPathEnv.append(ApplicationConstants.CLASS_PATH_SEPARATOR);
             classPathEnv.append(c.trim());
         }

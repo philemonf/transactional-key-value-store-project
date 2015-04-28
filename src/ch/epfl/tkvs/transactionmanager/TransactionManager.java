@@ -1,25 +1,24 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.Logger;
-
-import ch.epfl.tkvs.config.SlavesConfig;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
-import ch.epfl.tkvs.yarn.appmaster.AppMaster;
-
 
 /**
- * The TransactionManager is the deamon started by the {@link AppMaster} on many
- * nodes of the cluster.
+ * The TransactionManager is the deamon started by the {@link AppMaster} on many nodes of the cluster.
  * 
  * It is mainly a server which answers the client requests.
  *
@@ -31,13 +30,11 @@ public class TransactionManager {
 
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
-    private static boolean listening = true;
     private ServerSocket server;
     private String hostname;
 
- 
-    private static Algorithm concurrencyController;
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
         log.info("Initializing...");
         try {
             new TransactionManager().run();
@@ -49,27 +46,26 @@ public class TransactionManager {
     }
 
     public TransactionManager() throws UnknownHostException {
-        // TODO: Fix this when tested on cluster!
-        // this.hostname = InetAddress.getLocalHost().getCanonicalHostName();
-        this.hostname = "localhost";
+        this.hostname = InetAddress.getLocalHost().getHostName();
     }
 
     public void run() throws Exception {
         log.info("Host Name: " + hostname);
 
-        SlavesConfig slaveConfig = new SlavesConfig();
-        // Create TM Server
-        server = new ServerSocket(slaveConfig.getPortForHost(hostname));
-        
-        //TODO Call init of LockingUnit?
-        //TODO setup versioningUnit
-        
-        concurrencyController = new MVCC2PL();
+        NetConfig slaveConfig = new NetConfig();
 
-        log.info("Starting server...");
-        while (listening) {
+        // Create TM Server
+        int port = slaveConfig.getPortForHost(hostname);
+        server = new ServerSocket(port);
+
+        Algorithm concurrencyController = new MVCC2PL();
+
+        log.info("Starting server at " + hostname + ":" + port);
+        while (!server.isClosed()) {
             try {
+                log.info("Waiting for message...");
                 Socket sock = server.accept();
+                log.info("Processing message...");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -77,9 +73,9 @@ public class TransactionManager {
                 switch (input) {
                 case ":exit":
                     log.info("Stopping Server");
-                    listening = false;
                     sock.close();
                     server.close();
+                    threadPool.shutdown();
                     break;
                 default:
                     threadPool.execute(new TMWorker(input, sock, concurrencyController));
@@ -88,7 +84,6 @@ public class TransactionManager {
                 log.error("sock.accept ", e);
             }
         }
-
         log.info("Finalizing");
         server.close();
         // TODO: write KV store to disk ?
