@@ -163,7 +163,7 @@ public class Client {
         log.info("Running VersioningUnitTest...");
         runTestCase(VersioningUnitTest.class);
         
-        log.info("Running MVCC2PLTest...");
+        //log.info("Running MVCC2PLTest...");
         //runTestCase(MVCC2PLTest.class);
     }
 
