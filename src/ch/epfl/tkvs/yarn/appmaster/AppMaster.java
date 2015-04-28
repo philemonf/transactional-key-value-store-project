@@ -31,7 +31,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.yarn.Utils;
 
 
@@ -39,7 +39,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private static String hostname;
-    
+
     private YarnConfiguration conf;
 
     private static final int MAX_NUMBER_OF_WORKERS = 10;
@@ -49,21 +49,18 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private int containerCount = 0;
 
-    private static boolean listening = true;
     private ServerSocket server;
-    
-    public static final int HOSTNAME_SERVER_PORT = 8989;
 
     public static void main(String[] args) {
-    	
+
         try {
             log.info("Initializing...");
-            
+
             // Compute hostname
-            hostname = InetAddress.getLocalHost().getCanonicalHostName();
+            hostname = InetAddress.getLocalHost().getHostName();
             log.info("AppMaster hostname: " + hostname);
-            
-            
+
+
             new AppMaster().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn app master", ex);
@@ -74,7 +71,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         conf = new YarnConfiguration();
 
         // Create AM Socket
-        server = new ServerSocket(SlavesConfig.AM_DEFAULT_PORT);
+        server = new ServerSocket(NetConfig.AM_DEFAULT_PORT);
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -100,7 +97,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setVirtualCores(1);
 
         // Request Containers from RM
-        SlavesConfig conf = new SlavesConfig();
+        NetConfig conf = new NetConfig();
         Map<String, Integer> tmHosts = conf.getTMs();
 
         for (String host : tmHosts.keySet()) {
@@ -109,16 +106,15 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             containerCount += 1;
         }
 
-        log.info("Starting server...");
+        log.info("Starting server at " +  hostname + ":" + NetConfig.AM_DEFAULT_PORT);
+        conf.writeAppMasterHostname(hostname); // Write its host name to HDFS
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
-        
-        // Write its host name to HDFS
-        SlavesConfig slavesConf = new SlavesConfig();
-        slavesConf.writeAppMasterHostname(hostname);
-        
-        while (listening) {
+
+        while (!server.isClosed() && containerCount > 0) {
             try {
+                log.info("Waiting for message...");
                 Socket sock = server.accept();
+                log.info("Processing message...");
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -126,7 +122,6 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                 switch (input) {
                 case ":exit":
                     log.info("Stopping Server");
-                    listening = false;
                     sock.close();
                     server.close();
 

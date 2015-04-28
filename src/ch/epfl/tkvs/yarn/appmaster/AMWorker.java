@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
@@ -63,7 +63,7 @@ public class AMWorker extends Thread {
         int hash = 0;
 
         // Get the hostName and portNumber for that hash.
-        SlavesConfig conf = new SlavesConfig();
+        NetConfig conf = new NetConfig();
         conf.getTMbyHash(hash);
         Pair<String, Integer> tm = conf.getTMbyHash(hash);
 

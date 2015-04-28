@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.log4j.Logger;
 
 
-public enum VersioningUnit {
+public enum VersioningUnit implements IVersioningUnit {
     instance;
 
     private static Logger log = Logger.getLogger(VersioningUnit.class.getName());

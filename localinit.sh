@@ -4,7 +4,7 @@ echo "Looking for a free TCP port..."
 
 # FIND PORT
 PORT=-1
-for i in $(seq 1025 65535)
+for i in $(seq 10001 65535)
 do
     TMP=$(lsof -iTCP:$i)
 

@@ -15,7 +15,7 @@ import java.net.UnknownHostException;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.config.SlavesConfig;
+import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -46,8 +46,8 @@ public class Transaction<K extends Key> {
     public Transaction(K key) throws AbortException {
         try {
             // TODO: Find how to deal with that.
-            amHost = new SlavesConfig().waitForAppMasterHostname();
-            amPort = SlavesConfig.AM_DEFAULT_PORT;
+            amHost = new NetConfig().waitForAppMasterHostname();
+            amPort = NetConfig.AM_DEFAULT_PORT;
 
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
