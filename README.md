@@ -13,4 +13,4 @@ For now it only run properly in local HDFS/YARN.
 
 You can look at the example client source code in `test/ch/epfl/tkvs/userclient/UserClient.java`
 
-Before first local run, you might want to run `./localinit.sh` once to configure the app.
+Note: For the first run, `./start.sh local` to configure the slaves file.
