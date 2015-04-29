@@ -46,7 +46,6 @@ public class DeadlockGraph {
 				}
 				if (!incomingEdges.get(incompatible).contains(transactionID)) {
 					incomingEdges.get(incompatible).add(transactionID);
-					newDependencies.add(incompatible);
 				}
 			}
 			return false;
@@ -75,11 +74,9 @@ public class DeadlockGraph {
 		if (!outgoingEdges.containsKey(transactionID)) {
 			outgoingEdges.put(transactionID, new HashSet<Integer>());
 		}
-		HashSet<Integer> newDependencies = new HashSet<Integer>();
 		for (Integer incompatible : incompatibleTransactions) {
 			if (!outgoingEdges.get(transactionID).contains(incompatible)) {
 				outgoingEdges.get(transactionID).add(incompatible);
-				newDependencies.add(incompatible);
 			}
 		}
 		for (Integer incompatible : incompatibleTransactions) {
@@ -88,7 +85,6 @@ public class DeadlockGraph {
 			}
 			if (!incomingEdges.get(incompatible).contains(transactionID)) {
 				incomingEdges.get(incompatible).add(transactionID);
-				newDependencies.add(incompatible);
 			}
 		}
 	}
