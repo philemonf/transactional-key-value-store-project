@@ -1,7 +1,6 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
 
@@ -9,8 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 
 
 public class VersioningUnitTest extends TestCase {
