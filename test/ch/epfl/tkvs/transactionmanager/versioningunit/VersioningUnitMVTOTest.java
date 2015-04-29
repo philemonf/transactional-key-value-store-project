@@ -98,4 +98,16 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
     }
+
+    @Test
+    public void test3() {
+
+        ScheduledCommand[][] schedule = {
+        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______},
+        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), _______, _______, W(1, 2), CMMIT(), _______, _______, _______, _______},
+        /* T3: */{ _______, _______, _______, _______, _______, BEGIN(), R(1, 1), _______, _______, CMMIT(), _______, _______, _______},
+        /* T4: */{ _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 1), CMMIT() } };
+        ScheduleExecutor executor = new ScheduleExecutor(schedule);
+        executor.execute();
+    }
 }

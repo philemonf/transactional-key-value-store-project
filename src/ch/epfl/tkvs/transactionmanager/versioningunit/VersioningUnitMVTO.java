@@ -151,6 +151,10 @@ public enum VersioningUnitMVTO {
 
     public synchronized void prepareCommit(int xid) throws AbortException {
 
+        if(abortedXacts.contains(xid)) {
+            return;
+        }
+
         // TODO: optimize the notification of the correct waiting transaction
         try {
             while (readFromXacts.get(xid) != null && !Collections.disjoint(uncommitted, readFromXacts.get(xid))) {
@@ -170,6 +174,11 @@ public enum VersioningUnitMVTO {
     }
 
     public synchronized void commit(int xid) {
+
+        if(abortedXacts.contains(xid)) {
+            return;
+        }
+
         // Commit successful
         uncommitted.remove(xid);
         notifyAll();
