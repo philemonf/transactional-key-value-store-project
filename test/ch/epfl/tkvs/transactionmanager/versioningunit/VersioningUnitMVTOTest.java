@@ -53,6 +53,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         return new ScheduledCommand() {
             public void perform() {
                 try {
+                    V.prepareCommit(xid);
                     V.commit(xid);
                 } catch (AbortException e) {
                 }
@@ -64,6 +65,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         return new ScheduledBlockingCommand() {
             public void perform() {
                 try {
+                    V.prepareCommit(xid);
                     V.commit(xid);
                 } catch (AbortException e) {
                 }

@@ -13,7 +13,7 @@ import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
 
 
-public enum VersioningUnitMVTO implements IVersioningUnit {
+public enum VersioningUnitMVTO {
     instance;
 
     // The key-value storage where versions are stored
@@ -50,7 +50,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
     }
 
-    @Override
     public synchronized void init() {
         // TODO Init and Flush KVStore ?
         KVS.clear();
@@ -86,7 +85,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         return xid;
     }
 
-    @Override
     public synchronized Serializable get(int xid, Serializable key) {
 
         // Update RTS
@@ -113,7 +111,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         return null;
     }
 
-    @Override
     public synchronized void put(int xid, Serializable key, Serializable value) throws AbortException {
 
         // Is the write possible ?
@@ -152,8 +149,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
     }
 
-    @Override
-    public synchronized void commit(int xid) throws AbortException {
+    public synchronized void prepareCommit(int xid) throws AbortException {
 
         // TODO: optimize the notification of the correct waiting transaction
         try {
@@ -171,15 +167,12 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
             notifyAll();
             throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + copy.retainAll(readFromXacts.get(xid)));
         }
+    }
 
+    public synchronized void commit(int xid) {
         // Commit successful
         uncommitted.remove(xid);
         notifyAll();
-    }
-
-    @Override
-    public synchronized void stopNow() {
-        // TODO Auto-generated method stub
     }
 
     public synchronized void abort(int xid) {
