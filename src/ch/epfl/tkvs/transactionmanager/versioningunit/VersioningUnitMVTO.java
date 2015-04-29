@@ -34,9 +34,6 @@ public enum VersioningUnitMVTO {
     // The objects a given transaction has written
     private Map<Integer, Set<Serializable>> writtenKeys;
 
-    // testing-purpose only
-    private int testing_max_xact = 0;
-
     private class Version {
 
         // key to access this version in the KVStore
@@ -50,10 +47,12 @@ public enum VersioningUnitMVTO {
         }
     }
 
+    /**
+     * You MUST first call this before any other methods
+     */
     public synchronized void init() {
         // TODO Init and Flush KVStore ?
         KVS.clear();
-        testing_max_xact = 0;
 
         // Flush data structures
         RTS = new ConcurrentHashMap<Serializable, Integer>();
@@ -66,17 +65,11 @@ public enum VersioningUnitMVTO {
     }
 
     /**
-     * Tell the versioning unit about a new transaction
-     * @param xid the ID or timestamp of the transaction If the xact is -1, then the VU should generate a xact (testing
-     * purpose only)
+     * Tell the versioning unit about a new transaction You MUST call this before any other methods about a specific
+     * transaction
+     * @param xid the ID or timestamp of the transaction
      */
     public synchronized int begin_transaction(int xid) {
-
-        // If we are testing the VU
-        if (xid == -1) {
-            xid = ++testing_max_xact;
-        }
-
         // Initialize data structures for the new transaction
         uncommitted.add(xid);
         writtenKeys.put(xid, new HashSet<Serializable>());
@@ -111,6 +104,9 @@ public enum VersioningUnitMVTO {
         return null;
     }
 
+    /**
+     * @throws AbortException if the write is not possible
+     */
     public synchronized void put(int xid, Serializable key, Serializable value) throws AbortException {
 
         // Is the write possible ?
@@ -149,9 +145,13 @@ public enum VersioningUnitMVTO {
         }
     }
 
+    /**
+     * You MUST call this before calling commit(xid) Can block until other transactions commit or abort
+     * @throws AbortException if the commmit is not possible
+     */
     public synchronized void prepareCommit(int xid) throws AbortException {
 
-        if(abortedXacts.contains(xid)) {
+        if (abortedXacts.contains(xid)) {
             return;
         }
 
@@ -173,9 +173,12 @@ public enum VersioningUnitMVTO {
         }
     }
 
+    /**
+     * Real commit, you MUST call this after a successful call to prepareCommit(xid)
+     */
     public synchronized void commit(int xid) {
 
-        if(abortedXacts.contains(xid)) {
+        if (abortedXacts.contains(xid)) {
             return;
         }
 
@@ -199,9 +202,7 @@ public enum VersioningUnitMVTO {
                     KeyValueStore.instance.remove(version.key);
                 }
             }
-
         }
-
     }
 
 }
