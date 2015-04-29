@@ -10,7 +10,7 @@ import ch.epfl.tkvs.transactionmanager.AbortException;
 
 public class VersioningUnitMVTOTest extends ScheduledTestCase {
 
-    private VersioningUnitMVTO V = VersioningUnitMVTO.instance;
+    private VersioningUnitMVTO V = VersioningUnitMVTO.getInstance();
 
     @Before
     public void setUp() throws Exception {
@@ -103,9 +103,9 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     public void test3() {
 
         ScheduledCommand[][] schedule = {
-        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______},
-        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), _______, _______, W(1, 2), CMMIT(), _______, _______, _______, _______},
-        /* T3: */{ _______, _______, _______, _______, _______, BEGIN(), R(1, 1), _______, _______, CMMIT(), _______, _______, _______},
+        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ },
+        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), _______, _______, W(1, 2), CMMIT(), _______, _______, _______, _______ },
+        /* T3: */{ _______, _______, _______, _______, _______, BEGIN(), R(1, 1), _______, _______, CMMIT(), _______, _______, _______ },
         /* T4: */{ _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 1), CMMIT() } };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
