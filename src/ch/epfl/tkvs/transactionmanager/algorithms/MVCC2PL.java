@@ -34,7 +34,7 @@ public class MVCC2PL implements Algorithm {
         lockCompatibility.put(Lock.COMMIT_LOCK, newCompatibilityList());
         lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
 
-        versioningUnit = VersioningUnit.instance;
+        versioningUnit = VersioningUnit.getInstance();
         versioningUnit.init();
 
         transactions = new ConcurrentHashMap<>();
