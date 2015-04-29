@@ -13,8 +13,7 @@ import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
 
 
-public enum VersioningUnitMVTO {
-    instance;
+public class VersioningUnitMVTO {
 
     // The key-value storage where versions are stored
     private KeyValueStore KVS = KeyValueStore.instance;
@@ -45,6 +44,31 @@ public enum VersioningUnitMVTO {
             this.key = key;
             this.WTS = WTS;
         }
+    }
+
+    /** Unique instance of the VersioningUnitMVTO class */
+    private static VersioningUnitMVTO instance = null;
+
+    /**
+     * Private constructor of the Singleton
+     */
+    private VersioningUnitMVTO() {
+        // Exists only to defeat instantiation
+    }
+
+    /**
+     * Double-checked locking method to return the unique object
+     * @return singleton VersioningUnitMVTO
+     */
+    public static VersioningUnitMVTO getInstance() {
+        if (instance == null) {
+            synchronized (VersioningUnit.class) {
+                if (instance == null) {
+                    instance = new VersioningUnitMVTO();
+                }
+            }
+        }
+        return instance;
     }
 
     /**
@@ -188,8 +212,8 @@ public enum VersioningUnitMVTO {
     }
 
     public synchronized void abort(int xid) {
-        
-        if(abortedXacts.contains(xid)) {
+
+        if (abortedXacts.contains(xid)) {
             return; // already aborted
         }
 
