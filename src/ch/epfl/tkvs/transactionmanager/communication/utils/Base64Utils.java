@@ -11,9 +11,7 @@ public class Base64Utils {
         byte[] buf = Base64.decodeBase64(base64);
         ByteArrayInputStream bis = new ByteArrayInputStream(buf);
         ObjectInputStream ois = new ObjectInputStream(bis);
-
-        Serializable object = (Serializable) ois.readObject();
-        return object;
+        return (Serializable) ois.readObject();
     }
 
     public static String convertToBase64(Serializable data) throws IOException {
@@ -26,6 +24,6 @@ public class Base64Utils {
         byte[] bytes = bos.toByteArray();
         bos.close();
 
-        return Base64.encodeBase64String(bytes);
+        return Base64.encodeBase64String(bytes).replaceAll("[\r\n]+", "");
     }
 }

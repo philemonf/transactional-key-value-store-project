@@ -4,6 +4,7 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.RoutingTable;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -11,7 +12,6 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map.Entry;
 
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
@@ -20,13 +20,13 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 
 public class AMWorker extends Thread {
 
-    private HashMap<String, Integer> tmHostPorts;
+    private RoutingTable routing;
     private String input;
     private Socket sock;
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
-    public AMWorker(HashMap<String, Integer> tmHostPorts, String input, Socket sock) {
-        this.tmHostPorts = tmHostPorts;
+    public AMWorker(RoutingTable routing, String input, Socket sock) {
+        this.routing = routing;
         this.input = input;
         this.sock = sock;
     }
@@ -64,7 +64,7 @@ public class AMWorker extends Thread {
         int hash = 0;
 
         // TODO: get by hash. Now it just get the 1st.
-        Entry<String, Integer> tm = tmHostPorts.entrySet().iterator().next();
+        Entry<String, Integer> tm = routing.getTMs().entrySet().iterator().next();
 
         // TODO: Create a unique transactionID
         int transactionID = 0;

@@ -1,8 +1,10 @@
 package ch.epfl.tkvs.transactionmanager;
 
-import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.log4j.Logger;
@@ -28,6 +30,7 @@ public class TransactionManager {
     private static final int THREAD_POOL_SIZE = 15;
     private static String tmHost;
     private static int tmPort;
+    private static RoutingTable routing;
 
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
@@ -35,15 +38,15 @@ public class TransactionManager {
 
         log.info("Initializing...");
         try {
-            String amHost = args[0];
-            int amPort = Integer.parseInt(args[1]);
+            String amIp = System.getenv("AM_IP");
+            int amPort = Integer.parseInt(System.getenv("AM_PORT"));
             tmPort = NetUtils.getFreeSocketPort();
-            tmHost = NetConfig.getOnlyHostname(NetUtils.getHostname());
+            tmHost = Utils.extractIP(NetUtils.getHostname());
 
             log.info("Sending Host:Port to AppMaster");
-            Socket sock = new Socket(amHost, amPort);
+            Socket sock = new Socket(amIp, amPort);
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.println("registertm:" + tmHost + ":" + tmPort);
+            out.println(tmHost + ":" + tmPort);
             out.close();
             sock.close();
 
@@ -59,16 +62,21 @@ public class TransactionManager {
         log.info("Starting server at " + tmHost + ":" + tmPort);
         ServerSocket server = new ServerSocket(tmPort);
 
+        Socket sock = server.accept();
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        String input = in.readLine();
+        routing = (RoutingTable) Base64Utils.convertFromBase64(input);
+
         Algorithm concurrencyController = new MVCC2PL();
         ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         while (!server.isClosed()) {
             try {
                 log.info("Waiting for message...");
-                Socket sock = server.accept();
+                sock = server.accept();
                 log.info("Processing message...");
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-                String input = in.readLine();
+                in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                input = in.readLine();
 
                 switch (input) {
                 case ":exit":

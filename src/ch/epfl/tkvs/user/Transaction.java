@@ -1,12 +1,12 @@
 package ch.epfl.tkvs.user;
 
-import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.AbortException;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.*;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.Utils;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -34,7 +34,7 @@ public class Transaction<K extends Key> {
 
     public Transaction(K key) throws AbortException {
         try {
-            InetSocketAddress amAddress = new NetConfig().getAMAddress();
+            InetSocketAddress amAddress = Utils.readAMAddress();
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
             JSONObject jsonResponse = sendRequest(amAddress.getHostName(), amAddress.getPort(), toJSON(req));
