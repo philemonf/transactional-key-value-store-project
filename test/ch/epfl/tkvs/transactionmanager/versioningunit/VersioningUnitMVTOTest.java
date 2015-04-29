@@ -29,10 +29,10 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         };
     }
     
-    public ScheduledCommand R(final int xid, final int key) {
+    public ScheduledCommand R(final int xid, final int key, final int expected) {
         return new ScheduledCommand() {
             public void perform() {
-                V.get(xid, key);
+                assertEquals(expected, V.get(xid, key));
             }
         };
     }
@@ -75,9 +75,9 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     public void test1() {        
         ScheduledCommand[][] schedule = {
             /* T1: */ { B(1),  ___,      ___, W(1,1,1),    C(1),    ___,      ___,    ___,    ___,  ___,  ___,    ___,    ___,  ___ },
-            /* T2: */ {  ___, B(2),      ___,      ___,     ___, R(2,1),      ___, R(2,1),    ___, C(2),  ___,    ___,    ___,  ___ },
-            /* T3: */ {  ___,  ___,     B(3),      ___,     ___,    ___, W(3,1,5),    ___, R(3,1),  ___, C(3),    ___,    ___,  ___ },
-            /* T4: */ {  ___,  ___,      ___,      ___,     ___,    ___,      ___,    ___,    ___,  ___,  ___,   B(4), R(4,1), C(4) }
+            /* T2: */ {  ___, B(2),      ___,      ___,     ___, R(2,1,1),      ___, R(2,1,1),    ___, C(2),  ___,    ___,    ___,  ___ },
+            /* T3: */ {  ___,  ___,     B(3),      ___,     ___,    ___, W(3,1,5),    ___, R(3,1,5),  ___, C(3),    ___,    ___,  ___ },
+            /* T4: */ {  ___,  ___,      ___,      ___,     ___,    ___,      ___,    ___,    ___,  ___,  ___,   B(4), R(4,1,5), C(4) }
         };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
@@ -88,7 +88,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         
         ScheduledCommand[][] schedule = {
             /* T1: */ { B(1),  ___, W(1,1,1),    ___,   ___,      ___,  C(1)  },
-            /* T2: */ {  ___, B(2),      ___, R(2,1), CB(2),  Wt(1,4),   ___  }
+            /* T2: */ {  ___, B(2),      ___, R(2,1,1), CB(2),  Wt(1,4),   ___  }
         };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
