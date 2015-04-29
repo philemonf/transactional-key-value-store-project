@@ -52,8 +52,10 @@ public class MVCC2PL implements Algorithm {
 
         Lock lock = Lock.READ_LOCK;
         try {
-            lockingUnit.lock(xid, key, lock);
-            transaction.addLock(key, lock);
+            if (!transaction.checkLock(key, lock)) {
+                lockingUnit.lock(xid, key, lock);
+                transaction.addLock(key, lock);
+            }
             Serializable value = versioningUnit.get(xid, key);
             return new ReadResponse(true, (String) value);
         } catch (AbortException e) {
@@ -78,8 +80,10 @@ public class MVCC2PL implements Algorithm {
 
         Lock lock = Lock.WRITE_LOCK;
         try {
-            lockingUnit.lock(xid, key, lock);
-            transaction.addLock(key, lock);
+            if (!transaction.checkLock(key, lock)) {
+                lockingUnit.lock(xid, key, lock);
+                transaction.addLock(key, lock);
+            }
             versioningUnit.put(xid, key, value);
             return new GenericSuccessResponse(true);
         } catch (AbortException e) {
@@ -93,7 +97,6 @@ public class MVCC2PL implements Algorithm {
         int xid = request.getTransactionId();
 
         // Transaction with duplicate id
-
         if (transactions.containsKey(xid)) {
             return new GenericSuccessResponse(false);
         }
@@ -140,10 +143,11 @@ public class MVCC2PL implements Algorithm {
 
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
-        if (success)
+        if (success) {
             versioningUnit.commit(transaction.transactionId);
-        else
+        } else {
             versioningUnit.abort(transaction.transactionId);
+        }
         lockingUnit.releaseAll(transaction.transactionId, transaction.currentLocks);
         transactions.remove(transaction.transactionId);
     }
@@ -160,6 +164,7 @@ public class MVCC2PL implements Algorithm {
 
         /**
          * Replaces old locks for a key with new locks
+         *
          * @param key
          * @param newLocks
          */
@@ -169,6 +174,7 @@ public class MVCC2PL implements Algorithm {
 
         /**
          * Adds lock of type lockType for a key
+         *
          * @param key
          * @param lockType
          */
@@ -178,6 +184,10 @@ public class MVCC2PL implements Algorithm {
             } else {
                 currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(lockType)));
             }
+        }
+
+        public boolean checkLock(Serializable key, Lock lockType) {
+            return currentLocks.get(key) != null && currentLocks.get(key).contains(lockType);
         }
 
         public Set<Serializable> getLockedKeys() {

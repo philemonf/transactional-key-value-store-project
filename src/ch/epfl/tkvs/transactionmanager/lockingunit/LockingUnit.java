@@ -166,15 +166,17 @@ public enum LockingUnit {
      */
     public void releaseAll(int transactionID, HashMap<Serializable, List<LockType>> heldLocks) {
         internalLock.lock();
-
-        for (Serializable key : heldLocks.keySet()) {
-            for (LockType lockType : heldLocks.get(key)) {
-                removeLock(transactionID, key, lockType);
-                signalOn(key, lockType);
+        try {
+            for (Serializable key : heldLocks.keySet()) {
+                for (LockType lockType : heldLocks.get(key)) {
+                    removeLock(transactionID, key, lockType);
+                    signalOn(key, lockType);
+                }
             }
+            graph.removeTransaction(transactionID);
+        } finally {
+            internalLock.unlock();
         }
-        graph.removeTransaction(transactionID);
-        internalLock.unlock();
     }
 
     private boolean canLock(Serializable key, LockType lockType) {

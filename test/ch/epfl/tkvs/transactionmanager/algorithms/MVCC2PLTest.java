@@ -156,6 +156,9 @@ public class MVCC2PLTest extends TestCase {
             gsr = instance.write(new WriteRequest(0, 0, "zero", 0));
             assertEquals(true, gsr.getSuccess());
 
+            gsr = instance.write(new WriteRequest(0, 1, "ONE", 0));
+            assertEquals(true, gsr.getSuccess());
+
             gsr = instance.write(new WriteRequest(0, 1, "one", 0));
             assertEquals(true, gsr.getSuccess());
 
@@ -255,7 +258,22 @@ public class MVCC2PLTest extends TestCase {
         try {
             thread1.join();
             thread2.join();
-        } catch (InterruptedException ex) {
+
+            GenericSuccessResponse gsr;
+            ReadResponse rr;
+            gsr = instance.begin(new BeginRequest(3));
+            assertEquals(true, gsr.getSuccess());
+
+            rr = instance.read(new ReadRequest(3, 1, 0));
+            assertEquals(true, rr.getSuccess());
+            assertEquals(null, rr.getValue());
+            rr = instance.read(new ReadRequest(3, 2, 0));
+            assertEquals(true, rr.getSuccess());
+            assertEquals("y1", (String) rr.getValue());
+
+            gsr = instance.commit(new CommitRequest(3));
+            assertEquals(true, gsr.getSuccess());
+        } catch (Exception ex) {
             fail(ex.getLocalizedMessage());
         }
     }
