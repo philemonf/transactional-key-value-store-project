@@ -1,6 +1,5 @@
 package ch.epfl.tkvs.yarn;
 
-import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.test.userclient.UserClient;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
@@ -28,8 +27,6 @@ import java.util.Map;
 public class Client {
 
     private static Logger log = Logger.getLogger(Client.class.getName());
-    private static String AMHostname = null;
-    private YarnConfiguration conf;
 
     public static void main(String[] args) {
         try {
@@ -41,10 +38,7 @@ public class Client {
     }
 
     private void run() throws Exception {
-        conf = new YarnConfiguration();
-
-        NetConfig netConfig = new NetConfig();
-        netConfig.cleanUpOldRuns();
+        YarnConfiguration conf = new YarnConfiguration();
 
         // Create Yarn Client
         YarnClient client = YarnClient.createYarnClient();
@@ -90,25 +84,24 @@ public class Client {
         writer.write(id.toString());
         writer.close();
 
-        // The AppMaster will write its host name to HDFS as soon as it is ready
-        AMHostname = netConfig.waitForAppMasterHostname();
-        if (AMHostname == null) {
-            throw new Exception("no hostname for the AppMaster");
-        } else {
-            log.info("YARN client just received the AppMaster hostname: " + AMHostname);
-        }
-
         // REPL
-        Thread.sleep(2000);
-        System.out.println("\nClient REPL:");
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
+
+        // Wait until Client knows AM's host:port
+        while (appReport.getRpcPort() == -1) {
+            appReport = client.getApplicationReport(id);
+            Thread.sleep(100);
+        }
+
+        Thread.sleep(2000); // Wait a bit until everything is set up.
+        System.out.println("\nClient REPL: ");
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
             String input = System.console().readLine("> ");
             if (input.equals(":exit")) {
                 log.info("Stopping gracefully " + id);
-                Socket exitSock = new Socket(AMHostname, NetConfig.AM_DEFAULT_PORT);
+                Socket exitSock = new Socket(appReport.getHost(), appReport.getRpcPort());
                 PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
                 out.println(input);
                 out.close();

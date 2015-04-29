@@ -11,6 +11,7 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
@@ -23,12 +24,9 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 public class Transaction<K extends Key> {
 
     public enum TransactionStatus {
-
         live, aborted, commited
     }
 
-    private static String amHost;
-    private static int amPort;
     private String tmHost;
     private int tmPort;
     private int transactionID;
@@ -36,13 +34,10 @@ public class Transaction<K extends Key> {
 
     public Transaction(K key) throws AbortException {
         try {
-            // TODO: Find how to deal with that.
-            amHost = new NetConfig().waitForAppMasterHostname();
-            amPort = NetConfig.AM_DEFAULT_PORT;
-
+            InetSocketAddress amAddress = new NetConfig().getAMAddress();
             TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
 
-            JSONObject jsonResponse = sendRequest(amHost, amPort, toJSON(req));
+            JSONObject jsonResponse = sendRequest(amAddress.getHostName(), amAddress.getPort(), toJSON(req));
             TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
 
             tmHost = response.getHost();

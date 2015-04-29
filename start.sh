@@ -1,5 +1,12 @@
 #!/bin/sh
 
+#create slaves if local mode is set as a parameter
+if [ "$1" == "local" ];
+then
+HOSTNAME=$(hostname)
+echo "$HOSTNAME" > config/slaves
+fi
+
 # Hide stderr
 exec 3>&2 2>/dev/null
 
