@@ -4,6 +4,7 @@
 if [ "$1" == "local" ];
 then
 HOSTNAME=$(hostname)
+mkdir -p config
 echo "$HOSTNAME" > config/slaves
 fi
 
