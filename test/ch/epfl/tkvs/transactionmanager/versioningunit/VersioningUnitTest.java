@@ -217,6 +217,7 @@ public class VersioningUnitTest extends TestCase {
         assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
         assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
 
+        t1.join();
         V.commit(xid1);
         i = 1;
         assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
@@ -224,6 +225,7 @@ public class VersioningUnitTest extends TestCase {
         assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
         assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
 
+        t2.join();
         V.commit(xid2);
         i = 2;
         assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
@@ -231,16 +233,13 @@ public class VersioningUnitTest extends TestCase {
         assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
         assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
 
+        t3.join();
         V.commit(xid3);
         i = 3;
         assertTrue(V.get(xid5, "key0").equals("value" + i + "0"));
         assertTrue(V.get(xid5, "key1").equals("value" + i + "1"));
         assertTrue(V.get(xid5, "key2").equals("value" + i + "2"));
         assertTrue(V.get(xid5, "key3").equals("value" + i + "3"));
-
-        t1.join();
-        t2.join();
-        t3.join();
 
     }
 
