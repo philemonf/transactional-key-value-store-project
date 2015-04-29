@@ -1,23 +1,19 @@
 package ch.epfl.tkvs;
 
-import static java.util.Arrays.asList;
-import junit.framework.TestCase;
-
-import java.util.Arrays;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import apple.laf.JRSUIConstants.State;
+import junit.framework.TestCase;
+
 
 /**
- * Created with IntelliJ IDEA.
- * User: philemonfavrod
- * Date: 27/04/15
- * Time: 20:24
- * To change this template use File | Settings | File Templates.
+ * Created with IntelliJ IDEA. User: philemonfavrod Date: 27/04/15 Time: 20:24 To change this template use File |
+ * Settings | File Templates.
  */
 public abstract class ScheduledTestCase extends TestCase {
+
     public static abstract class ScheduledCommand {
+
         private ScheduledCommand[][] schedule;
 
         public void setSchedule(ScheduledCommand[][] schedule) {
@@ -31,17 +27,19 @@ public abstract class ScheduledTestCase extends TestCase {
         public abstract void perform();
 
         protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
-        	perform();
+            perform();
             barrier.await();
         }
-        
+
         protected int getOrder() {
-        	return 0;
+            return 0;
         }
     }
 
     public static abstract class ScheduledCommandWithAssertion extends ScheduledCommand {
+
         public abstract void assertBefore();
+
         public abstract void assertAfter();
 
         @Override
@@ -54,10 +52,13 @@ public abstract class ScheduledTestCase extends TestCase {
     }
 
     public static abstract class ScheduledBlockingCommand extends ScheduledCommand {
+
         private Thread performThread = null;
+
         @Override
         protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
             performThread = new Thread(new Runnable() {
+
                 @Override
                 public void run() {
                     perform();
@@ -70,10 +71,10 @@ public abstract class ScheduledTestCase extends TestCase {
             });
 
             performThread.start();
-            
+
             // Wait a bit hoping that the thread will be blocked or to terminate
             Thread.sleep(5000);
-            
+
             barrier.await();
         }
 
@@ -83,6 +84,7 @@ public abstract class ScheduledTestCase extends TestCase {
     }
 
     public static final ScheduledCommand ___ = new ScheduledCommand() {
+
         @Override
         public void perform() {
 
@@ -90,6 +92,7 @@ public abstract class ScheduledTestCase extends TestCase {
     };
 
     public static class ShouldWaitScheduledCommand extends ScheduledCommand {
+
         private int tid;
         private int step;
 
@@ -104,9 +107,9 @@ public abstract class ScheduledTestCase extends TestCase {
             ScheduledBlockingCommand blockingCommand = (ScheduledBlockingCommand) getSchedule()[tid][step];
 
             if (!blockingCommand.getPerformThread().isAlive()) {
-            	System.out.println("SHIIT");
+                System.out.println("SHIIT");
             }
-            
+
             assertEquals(true, blockingCommand.getPerformThread().isAlive());
         }
     }
@@ -114,8 +117,6 @@ public abstract class ScheduledTestCase extends TestCase {
     public static ScheduledCommand Wt(int tid, int step) {
         return new ShouldWaitScheduledCommand(tid, step);
     }
-
-
 
     public static class ScheduleExecutor {
 
@@ -132,7 +133,7 @@ public abstract class ScheduledTestCase extends TestCase {
         public void execute() {
 
             int numThreads = this.schedule.length;
-            Thread [] executorThreads = new Thread[numThreads];
+            Thread[] executorThreads = new Thread[numThreads];
 
             final CyclicBarrier barrier = new CyclicBarrier(numThreads);
 
@@ -141,6 +142,7 @@ public abstract class ScheduledTestCase extends TestCase {
             for (int i = 0; i < numThreads; ++i) {
                 final int tid = i;
                 executorThreads[tid] = new Thread(new Runnable() {
+
                     @Override
                     public void run() {
                         try {
@@ -156,11 +158,11 @@ public abstract class ScheduledTestCase extends TestCase {
                     }
                 });
             }
-            
+
             for (int i = 0; i < numThreads; i++) {
                 executorThreads[i].start();
             }
-            
+
             for (int i = 0; i < numThreads; i++) {
                 try {
                     executorThreads[i].join();
