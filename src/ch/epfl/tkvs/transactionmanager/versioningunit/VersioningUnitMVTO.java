@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -190,10 +191,11 @@ public class VersioningUnitMVTO {
         }
 
         if (readFromXacts.get(xid) != null && !Collections.disjoint(abortedXacts, readFromXacts.get(xid))) {
-            Set<Integer> copy = new HashSet<Integer>(abortedXacts);
+            Set<Integer> causes = new HashSet<Integer>(abortedXacts);
+            causes.retainAll(readFromXacts.get(xid));
             abort(xid);
             notifyAll();
-            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + copy.retainAll(readFromXacts.get(xid)));
+            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + causes);
         }
     }
 
@@ -224,10 +226,12 @@ public class VersioningUnitMVTO {
         // Rollback everything that the xact read and wrote
         for (Serializable key : writtenKeys.get(xid)) {
 
-            for (Version version : versions.get(key)) {
+            for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
+                Version version = iterator.next();
                 if (version.WTS == xid) {
                     // TODO: break since we only have one version
                     KeyValueStore.instance.remove(version.key);
+                    iterator.remove();
                 }
             }
         }
