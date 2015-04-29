@@ -79,7 +79,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     }
 
     @Test
-    public void test1() {
+    public void testSimpleSchedule() {
         ScheduledCommand[][] schedule = {
         /* T1: */{ BEGIN(), _______, _______, W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______ },
         /* T2: */{ _______, BEGIN(), _______, _______, _______, R(1, 1), _______, R(1, 1), _______, CMMIT(), _______, _______, _______, _______ },
@@ -90,7 +90,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     }
 
     @Test
-    public void test2() {
+    public void testBlockingCommit() {
 
         ScheduledCommand[][] schedule = {
         /* T1: */{ BEGIN(), _______, W(1, 1), _______, _______, _______, CMMIT() },
@@ -100,13 +100,24 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     }
 
     @Test
-    public void test3() {
+    public void testAbortWrite() {
 
         ScheduledCommand[][] schedule = {
-        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______},
-        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), _______, _______, W(1, 2), CMMIT(), _______, _______, _______, _______},
-        /* T3: */{ _______, _______, _______, _______, _______, BEGIN(), R(1, 1), _______, _______, CMMIT(), _______, _______, _______},
+        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ },
+        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), _______, _______, W(1, 2), CMMIT(), _______, _______, _______, _______ },
+        /* T3: */{ _______, _______, _______, _______, _______, BEGIN(), R(1, 1), _______, _______, CMMIT(), _______, _______, _______ },
         /* T4: */{ _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 1), CMMIT() } };
+        ScheduleExecutor executor = new ScheduleExecutor(schedule);
+        executor.execute();
+    }
+
+    @Test
+    public void testCascadedAbort() {
+        ScheduledCommand[][] schedule = {
+        /* T1: */{ BEGIN(), W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______ },
+        /* T2: */{ _______, _______, _______, BEGIN(), R(1, 1), W(1, 2), _______, _______, _______, R(1, 2), W(1, 4), CMMIT(), _______, _______, _______, _______ },
+        /* T3: */{ _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 2), W(1, 3), _______, _______, _______, CMMIT(), _______, _______, _______ },
+        /* T4: */{ _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 1), CMMIT() } };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
     }
