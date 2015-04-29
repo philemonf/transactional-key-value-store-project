@@ -188,6 +188,10 @@ public enum VersioningUnitMVTO {
     }
 
     public synchronized void abort(int xid) {
+        
+        if(abortedXacts.contains(xid)) {
+            return; // already aborted
+        }
 
         abortedXacts.add(xid);
         uncommitted.remove(xid);
