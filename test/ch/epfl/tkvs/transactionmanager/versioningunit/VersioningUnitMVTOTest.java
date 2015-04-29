@@ -88,7 +88,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         
         ScheduledCommand[][] schedule = {
             /* T1: */ { B(1),  ___, W(1,1,1),    ___,   ___,      ___,  C(1)  },
-            /* T2: */ {  ___, B(2),      ___, R(2,1), CB(2),  Wt(2,4),   ___  }
+            /* T2: */ {  ___, B(2),      ___, R(2,1), CB(2),  Wt(1,4),   ___  }
         };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
