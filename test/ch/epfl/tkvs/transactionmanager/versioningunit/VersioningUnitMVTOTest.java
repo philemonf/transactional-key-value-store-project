@@ -1,15 +1,15 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import ch.epfl.tkvs.ScheduledTestCase;
+import ch.epfl.tkvs.transactionmanager.AbortException;
 
 
 public class VersioningUnitMVTOTest extends ScheduledTestCase {
-    
+
     private VersioningUnitMVTO V = VersioningUnitMVTO.instance;
 
     @Before
@@ -20,78 +20,81 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
     @After
     public void tearDown() throws Exception {
     }
-    
-    public ScheduledCommand B(final int xid) {
+
+    public ScheduledCommand BEGIN() {
         return new ScheduledCommand() {
-            public void perform() {
-                V.begin_transaction(xid);
-            }
-        };
-    }
-    
-    public ScheduledCommand R(final int xid, final int key, final int expected) {
-        return new ScheduledCommand() {
-            public void perform() {
-                assertEquals(expected, V.get(xid, key));
+
+            public void perform(int tid, int step) {
+                V.begin_transaction(tid);
             }
         };
     }
 
-    public ScheduledCommand W(final int xid, final int key, final int value) {
+    public ScheduledCommand R(final int key, final int expected) {
         return new ScheduledCommand() {
+
+            public void perform(int tid, int step) {
+                assertEquals(expected, V.get(tid, key));
+            }
+        };
+    }
+
+    public ScheduledCommand W(final int key, final int value) {
+        return new ScheduledCommand() {
+
             @Override
-            public void perform() {
+            public void perform(int tid, int step) {
                 try {
-                    V.put(xid, key, value);
+                    V.put(tid, key, value);
                 } catch (AbortException e) {
                 }
             }
         };
     }
-    
-    public ScheduledCommand C(final int xid) {
+
+    public ScheduledCommand CMMIT() {
         return new ScheduledCommand() {
-            public void perform() {
+
+            public void perform(int tid, int step) {
                 try {
-                    V.prepareCommit(xid);
-                    V.commit(xid);
+                    V.prepareCommit(tid);
+                    V.commit(tid);
                 } catch (AbortException e) {
                 }
             }
         };
     }
-    
-    public ScheduledBlockingCommand CB(final int xid) {
+
+    public ScheduledBlockingCommand CMMTB() {
         return new ScheduledBlockingCommand() {
-            public void perform() {
+
+            public void perform(int tid, int step) {
                 try {
-                    V.prepareCommit(xid);
-                    V.commit(xid);
+                    V.prepareCommit(tid);
+                    V.commit(tid);
                 } catch (AbortException e) {
                 }
             }
         };
     }
-    
+
     @Test
-    public void test1() {        
+    public void test1() {
         ScheduledCommand[][] schedule = {
-            /* T1: */ { B(1),  ___,      ___, W(1,1,1),    C(1),    ___,      ___,    ___,    ___,  ___,  ___,    ___,    ___,  ___ },
-            /* T2: */ {  ___, B(2),      ___,      ___,     ___, R(2,1,1),      ___, R(2,1,1),    ___, C(2),  ___,    ___,    ___,  ___ },
-            /* T3: */ {  ___,  ___,     B(3),      ___,     ___,    ___, W(3,1,5),    ___, R(3,1,5),  ___, C(3),    ___,    ___,  ___ },
-            /* T4: */ {  ___,  ___,      ___,      ___,     ___,    ___,      ___,    ___,    ___,  ___,  ___,   B(4), R(4,1,5), C(4) }
-        };
+        /* T1: */{ BEGIN(), _______, _______, W(1, 1), CMMIT(), _______, _______, _______, _______, _______, _______, _______, _______, _______ },
+        /* T2: */{ _______, BEGIN(), _______, _______, _______, R(1, 1), _______, R(1, 1), _______, CMMIT(), _______, _______, _______, _______ },
+        /* T3: */{ _______, _______, BEGIN(), _______, _______, _______, W(1, 5), _______, R(1, 5), _______, CMMIT(), _______, _______, _______ },
+        /* T4: */{ _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, BEGIN(), R(1, 5), CMMIT() } };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
     }
-    
+
     @Test
     public void test2() {
-        
+
         ScheduledCommand[][] schedule = {
-            /* T1: */ { B(1),  ___, W(1,1,1),    ___,   ___,      ___,  C(1)  },
-            /* T2: */ {  ___, B(2),      ___, R(2,1,1), CB(2),  Wt(1,4),   ___  }
-        };
+        /* T1: */{ BEGIN(), _______, W(1, 1), _______, _______, _______, CMMIT() },
+        /* T2: */{ _______, BEGIN(), _______, R(1, 1), CMMTB(), Wait(4), _______ } };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
     }

@@ -24,10 +24,10 @@ public abstract class ScheduledTestCase extends TestCase {
             return this.schedule;
         }
 
-        public abstract void perform();
+        public abstract void perform(int tid, int step);
 
-        protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
-            perform();
+        protected void internalPerform(final CyclicBarrier barrier, int tid, int step) throws InterruptedException, BrokenBarrierException {
+            perform(tid, step);
             barrier.await();
         }
 
@@ -43,9 +43,9 @@ public abstract class ScheduledTestCase extends TestCase {
         public abstract void assertAfter();
 
         @Override
-        protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
+        protected void internalPerform(final CyclicBarrier barrier, int tid, int step) throws InterruptedException, BrokenBarrierException {
             assertBefore();
-            perform();
+            perform(tid, step);
             barrier.await();
             assertAfter();
         }
@@ -56,12 +56,12 @@ public abstract class ScheduledTestCase extends TestCase {
         private Thread performThread = null;
 
         @Override
-        protected void internalPerform(final CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException {
+        protected void internalPerform(final CyclicBarrier barrier, final int tid, final int step) throws InterruptedException, BrokenBarrierException {
             performThread = new Thread(new Runnable() {
 
                 @Override
                 public void run() {
-                    perform();
+                    perform(tid, step);
                     try {
                         barrier.await();
                     } catch (Exception e) {
@@ -83,28 +83,26 @@ public abstract class ScheduledTestCase extends TestCase {
         }
     }
 
-    public static final ScheduledCommand ___ = new ScheduledCommand() {
+    public static final ScheduledCommand _______ = new ScheduledCommand() {
 
         @Override
-        public void perform() {
+        public void perform(int tid, int step) {
 
         }
     };
 
     public static class ShouldWaitScheduledCommand extends ScheduledCommand {
 
-        private int tid;
-        private int step;
+        private int stepThatShouldWait;
 
-        public ShouldWaitScheduledCommand(int tid, int step) {
-            this.tid = tid;
-            this.step = step;
+        public ShouldWaitScheduledCommand(int stepThatShouldWait) {
+            this.stepThatShouldWait = stepThatShouldWait;
         }
 
-        public void perform() {
+        public void perform(int tid, int step) {
             assert getSchedule() != null : "Problem in the test framework: schedule should never be null!";
 
-            ScheduledBlockingCommand blockingCommand = (ScheduledBlockingCommand) getSchedule()[tid][step];
+            ScheduledBlockingCommand blockingCommand = (ScheduledBlockingCommand) getSchedule()[tid][stepThatShouldWait];
 
             if (!blockingCommand.getPerformThread().isAlive()) {
                 System.out.println("SHIIT");
@@ -114,8 +112,8 @@ public abstract class ScheduledTestCase extends TestCase {
         }
     }
 
-    public static ScheduledCommand Wt(int tid, int step) {
-        return new ShouldWaitScheduledCommand(tid, step);
+    public static ScheduledCommand Wait(int stepThatShouldWait) {
+        return new ShouldWaitScheduledCommand(stepThatShouldWait);
     }
 
     public static class ScheduleExecutor {
@@ -148,7 +146,7 @@ public abstract class ScheduledTestCase extends TestCase {
                         try {
                             for (int step = 0; step < numSteps; ++step) {
                                 schedule[tid][step].setSchedule(schedule);
-                                schedule[tid][step].internalPerform(barrier);
+                                schedule[tid][step].internalPerform(barrier, tid, step);
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();

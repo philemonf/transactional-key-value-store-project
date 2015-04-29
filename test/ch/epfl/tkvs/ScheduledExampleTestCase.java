@@ -13,11 +13,11 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
 
     final Semaphore sem = new Semaphore(1);
 
-    public ScheduledBlockingCommand L() {
+    public ScheduledBlockingCommand LockS() {
         return new ScheduledBlockingCommand() {
 
             @Override
-            public void perform() {
+            public void perform(int tid, int step) {
                 try {
                     sem.acquire();
                 } catch (InterruptedException e) {
@@ -26,11 +26,11 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
         };
     }
 
-    public ScheduledCommand U() {
+    public ScheduledCommand ULock() {
         return new ScheduledCommand() {
 
             @Override
-            public void perform() {
+            public void perform(int tid, int step) {
                 sem.release();
             }
         };
@@ -38,7 +38,9 @@ public class ScheduledExampleTestCase extends ScheduledTestCase {
 
     @Test
     public void test() {
-        ScheduledCommand[][] schedule = { { L(), ___, ___, U(), ___ }, { ___, L(), Wt(1, 1), ___, U() } };
+        ScheduledCommand[][] schedule = {
+        /* T1: */{ LockS(), _______, _______, ULock(), _______ },
+        /* T2: */{ _______, LockS(), Wait(1), _______, ULock() } };
         ScheduleExecutor executor = new ScheduleExecutor(schedule);
         executor.execute();
     }
