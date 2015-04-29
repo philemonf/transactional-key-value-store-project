@@ -6,12 +6,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import org.apache.log4j.Logger;
-
 
 public class VersioningUnit {
-
-    private static Logger log = Logger.getLogger(VersioningUnit.class.getName());
 
     final static int PRIMARY_CACHE = 0;
 
@@ -69,7 +65,6 @@ public class VersioningUnit {
      * @return the value associated with the key
      */
     public Serializable get(int xid, Serializable key) {
-        log.info("Get xid: " + xid + "- key: " + key);
         Cache xactCache = caches.get(xid);
 
         if (xactCache != null) {
@@ -97,7 +92,6 @@ public class VersioningUnit {
      * @param value the value for the new version
      */
     public void put(int xid, Serializable key, Serializable value) {
-        log.info("Put xid: " + xid + "- key: " + key + "- value: " + value);
         Cache xactCache = caches.get(xid);
 
         if (xactCache == null) {
@@ -117,8 +111,6 @@ public class VersioningUnit {
      * @param xid the current transaction that wants to commit
      */
     public void commit(final int xid) {
-        log.info("Commit xid: " + xid);
-
         if (caches.get(xid) != null) {
             tmpPrimary.addFirst((caches.get(xid)));
             synchronized (guard) {
