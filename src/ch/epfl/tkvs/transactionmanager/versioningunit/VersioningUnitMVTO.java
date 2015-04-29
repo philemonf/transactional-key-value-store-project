@@ -20,7 +20,7 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     private KeyValueStore KVS = KeyValueStore.instance;
 
     // The Timestamp on which a Serializable key was last read
-    private Map<Serializable, Integer> RTS; //TODO: Think about keeping a list of the RTS in case of abort
+    private Map<Serializable, Integer> RTS; // TODO: Think about keeping a list of the RTS in case of abort
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
 
@@ -102,10 +102,9 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         // Read written version with largest timestamp older than xid
         for (Version v : versions.get(key)) {
             if (v.WTS <= xid) {
-                Set<Integer> readList = readFromXacts.get(xid);
-                readList.add(v.WTS);
-                // TODO: Is the get put needed?!
-                readFromXacts.put(xid, readList);
+                if (v.WTS != xid) {
+                    readFromXacts.get(xid).add(v.WTS);
+                }
                 return KVS.get(v.key);
             }
         }
