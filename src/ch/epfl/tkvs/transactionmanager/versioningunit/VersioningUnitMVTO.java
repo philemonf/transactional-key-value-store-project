@@ -94,7 +94,7 @@ public class VersioningUnitMVTO {
      * transaction
      * @param xid the ID or timestamp of the transaction
      */
-    public synchronized int begin_transaction(int xid) {
+    public synchronized int beginTransaction(int xid) {
         // Initialize data structures for the new transaction
         uncommitted.add(xid);
         writtenKeys.put(xid, new HashSet<Serializable>());
@@ -213,6 +213,7 @@ public class VersioningUnitMVTO {
         readFromXacts.remove(xid);
         writtenKeys.remove(xid);
         notifyAll();
+        garbageCollector();
     }
 
     public synchronized void abort(int xid) {
@@ -239,6 +240,53 @@ public class VersioningUnitMVTO {
         }
 
         writtenKeys.remove(xid);
+        garbageCollector();
     }
 
+    public synchronized void garbageCollector() {
+
+        if (uncommitted.isEmpty()) {
+            abortedXacts.clear();
+            return;
+        }
+
+        int minAliveXid = Collections.min(uncommitted);
+
+        // Removes useless versions stored in KVStore
+        for (Serializable key : versions.keySet()) {
+            boolean shouldRemoveAllFromNow = false;
+            for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
+                Version version = iterator.next();
+                if (shouldRemoveAllFromNow) {
+                    KVS.remove(version.key);
+                    iterator.remove();
+                } else if (version.WTS <= minAliveXid) {
+                    if (!abortedXacts.contains(version.WTS) && !uncommitted.contains(version.WTS))
+                        shouldRemoveAllFromNow = true;
+                }
+            }
+        }
+
+        // Removes useless abortedXacts
+        List<Integer> listMinXactReadFrom = new ArrayList<Integer>();
+        for (Integer xid : uncommitted) {
+            if (!readFromXacts.get(xid).isEmpty()) {
+                listMinXactReadFrom.add(Collections.min(readFromXacts.get(xid)));
+            }
+        }
+
+        if (listMinXactReadFrom.isEmpty()) {
+            abortedXacts.clear();
+            return;
+        }
+
+        int minXactReadFrom = Collections.min(listMinXactReadFrom);
+
+        for (Iterator<Integer> iterator = abortedXacts.iterator(); iterator.hasNext();) {
+            Integer xid = iterator.next();
+            if (xid < minXactReadFrom) {
+                iterator.remove();
+            }
+        }
+    }
 }

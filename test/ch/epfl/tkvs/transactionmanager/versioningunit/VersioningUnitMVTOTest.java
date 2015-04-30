@@ -25,7 +25,7 @@ public class VersioningUnitMVTOTest extends ScheduledTestCase {
         return new ScheduledCommand() {
 
             public void perform(int tid, int step) {
-                V.begin_transaction(tid);
+                V.beginTransaction(tid);
             }
         };
     }
