@@ -1,18 +1,20 @@
 package ch.epfl.tkvs.transactionmanager;
 
-import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -26,17 +28,28 @@ import java.util.concurrent.Executors;
 public class TransactionManager {
 
     private static final int THREAD_POOL_SIZE = 15;
-    private static final ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+    private static String tmHost;
+    private static int tmPort;
+    private static RoutingTable routing;
 
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
-
-    private ServerSocket server;
-    private String hostname;
 
     public static void main(String[] args) throws Exception {
 
         log.info("Initializing...");
         try {
+            String amIp = System.getenv("AM_IP");
+            int amPort = Integer.parseInt(System.getenv("AM_PORT"));
+            tmPort = NetUtils.getFreeSocketPort();
+            tmHost = Utils.extractIP(NetUtils.getHostname());
+
+            log.info("Sending Host:Port to AppMaster");
+            Socket sock = new Socket(amIp, amPort);
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+            out.println(tmHost + ":" + tmPort);
+            out.close();
+            sock.close();
+
             new TransactionManager().run();
         } catch (Exception ex) {
             log.fatal("Could not run transaction manager", ex);
@@ -45,30 +58,25 @@ public class TransactionManager {
         System.exit(0);
     }
 
-    public TransactionManager() throws UnknownHostException {
-        this.hostname = InetAddress.getLocalHost().getHostName();
-    }
-
     public void run() throws Exception {
-        log.info("Host Name: " + hostname);
+        log.info("Starting server at " + tmHost + ":" + tmPort);
+        ServerSocket server = new ServerSocket(tmPort);
 
-        NetConfig slaveConfig = new NetConfig();
-
-        // Create TM Server
-        int port = slaveConfig.getPortForHost(hostname);
-        server = new ServerSocket(port);
+        Socket sock = server.accept();
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        String input = in.readLine();
+        routing = (RoutingTable) Base64Utils.convertFromBase64(input);
 
         Algorithm concurrencyController = new MVCC2PL();
-
-        log.info("Starting server at " + hostname + ":" + port);
+        ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         while (!server.isClosed()) {
             try {
                 log.info("Waiting for message...");
-                Socket sock = server.accept();
+                sock = server.accept();
                 log.info("Processing message...");
 
-                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-                String input = in.readLine();
+                in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                input = in.readLine();
 
                 switch (input) {
                 case ":exit":
@@ -86,6 +94,5 @@ public class TransactionManager {
         }
         log.info("Finalizing");
         server.close();
-        // TODO: write KV store to disk ?
     }
 }

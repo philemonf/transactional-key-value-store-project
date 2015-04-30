@@ -1,11 +1,10 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import ch.epfl.tkvs.config.NetConfig;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import org.apache.commons.math3.util.Pair;
+import ch.epfl.tkvs.yarn.RoutingTable;
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -13,6 +12,7 @@ import org.codehaus.jettison.json.JSONObject;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Map.Entry;
 
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
@@ -20,11 +20,13 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 
 public class AMWorker extends Thread {
 
+    private RoutingTable routing;
     private String input;
     private Socket sock;
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
-    public AMWorker(String input, Socket sock) {
+    public AMWorker(RoutingTable routing, String input, Socket sock) {
+        this.routing = routing;
         this.input = input;
         this.sock = sock;
     }
@@ -61,10 +63,8 @@ public class AMWorker extends Thread {
         // TODO: Compute the hash of the key.
         int hash = 0;
 
-        // Get the hostName and portNumber for that hash.
-        NetConfig conf = new NetConfig();
-        conf.getTMbyHash(hash);
-        Pair<String, Integer> tm = conf.getTMbyHash(hash);
+        // TODO: get by hash. Now it just get the 1st.
+        Entry<String, Integer> tm = routing.getTMs().entrySet().iterator().next();
 
         // TODO: Create a unique transactionID
         int transactionID = 0;

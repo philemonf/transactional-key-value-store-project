@@ -1,7 +1,9 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import ch.epfl.tkvs.config.NetConfig;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.AMRMClient.ContainerRequest;
@@ -15,13 +17,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.SocketTimeoutException;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,31 +29,21 @@ import java.util.concurrent.Executors;
 public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
-    private static String hostname;
 
     private YarnConfiguration conf;
-
     private static final int MAX_NUMBER_OF_WORKERS = 10;
-
     private NMClient nmClient;
     AMRMClientAsync<ContainerRequest> rmClient;
+    private RoutingTable routing;
 
-    private int containerCount = 0;
-
-    private ServerSocket server;
+    private int activeTMCount = 0;
 
     public static void main(String[] args) {
-
         try {
             log.info("Initializing...");
-
-            // Compute hostname
-            hostname = InetAddress.getLocalHost().getHostName();
-            log.info("AppMaster hostname: " + hostname);
-
             new AppMaster().run();
         } catch (Exception ex) {
-            log.fatal("Could not run yarn app master", ex);
+            log.fatal("Failed", ex);
         }
         log.info("Finished");
         System.exit(0);
@@ -62,9 +51,6 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
 
     public void run() throws Exception {
         conf = new YarnConfiguration();
-
-        // Create AM Socket
-        server = new ServerSocket(NetConfig.AM_DEFAULT_PORT);
 
         // Create NM Client
         nmClient = NMClient.createNMClient();
@@ -76,9 +62,16 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         rmClient.init(conf);
         rmClient.start();
 
-        // Register with RM
-        rmClient.registerApplicationMaster("", 0, "");
-        log.info("Registered");
+        // Get port and hostname.
+        String amIP = Utils.extractIP(NetUtils.getHostname());
+        int amPort = NetUtils.getFreeSocketPort();
+        routing = new RoutingTable(amIP, amPort);
+
+        // Register with RM and create AM Socket
+        rmClient.registerApplicationMaster(amIP, amPort, "");
+        log.info("Registered and starting server at " + amIP + ":" + amPort);
+        Utils.writeAMAddress(amIP + ":" + amPort);
+        ServerSocket server = new ServerSocket(amPort);
 
         // Priority for worker containers - priorities are intra-application
         Priority priority = Records.newRecord(Priority.class);
@@ -90,20 +83,51 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         capability.setVirtualCores(1);
 
         // Request Containers from RM
-        NetConfig conf = new NetConfig();
-        Map<String, Integer> tmHosts = conf.getTMs();
-
-        for (String host : tmHosts.keySet()) {
-            log.info("Requesting Container at " + host);
-            rmClient.addContainerRequest(new ContainerRequest(capability, new String[] { host }, null, priority));
-            containerCount += 1;
+        ArrayList<String> tmRequests = Utils.readTMHostnames();
+        HashMap<String, ContainerRequest> contRequests = new HashMap<>();
+        for (String tmIp : tmRequests) {
+            log.info("Requesting Container at " + tmIp);
+            ContainerRequest req = new ContainerRequest(capability, new String[] { tmIp }, null, priority);
+            contRequests.put(tmIp, req);
+            rmClient.addContainerRequest(req);
         }
 
-        log.info("Starting server at " + hostname + ":" + NetConfig.AM_DEFAULT_PORT);
-        conf.writeAppMasterHostname(hostname); // Write its host name to HDFS
-        ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
+        // Get TM network info from all TMs.
+        server.setSoTimeout(3000); // 3 seconds accept() timeout.
+        try {
+            log.info("Waiting for a reply from all TMs");
+            while (routing.size() < tmRequests.size()) {
+                Socket sock = server.accept();
+                BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String input = in.readLine();
+                String[] info = input.split(":");
+                log.info("Registering TM at " + info[0] + ":" + info[1]);
+                routing.addTM(info[0], Integer.parseInt(info[1]));
+            }
+            log.info("All TMs replied successfully");
+        } catch (SocketTimeoutException e) {
+            log.warn("Did not get reply from all TMs");
+            for (String tmIp : tmRequests) {
+                if (!routing.contains(tmIp)) {
+                    log.warn("TM at " + tmIp + " did not reply");
+                    rmClient.removeContainerRequest(contRequests.get(tmIp));
+                }
+            }
+        }
+        server.setSoTimeout(0); // reset timeout.
 
-        while (!server.isClosed() && containerCount > 0) {
+        log.info("Sending routing information to TMs");
+        String routingEncoded = Base64Utils.convertToBase64(routing);
+        for (Entry<String, Integer> tm : routing.getTMs().entrySet()) {
+            Socket sock = new Socket(tm.getKey(), tm.getValue());
+            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+            out.print(routingEncoded);
+            out.close();
+            sock.close();
+        }
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
+        while (!server.isClosed() && activeTMCount > 0) {
             try {
                 log.info("Waiting for message...");
                 Socket sock = server.accept();
@@ -119,7 +143,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                     server.close();
 
                     log.info("Stopping TMs");
-                    for (Entry<String, Integer> ent : tmHosts.entrySet()) {
+                    for (Entry<String, Integer> ent : routing.getTMs().entrySet()) {
                         Socket exitSock = new Socket(ent.getKey(), ent.getValue());
                         PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
                         out.println(input);
@@ -128,7 +152,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
                     }
                     break;
                 default:
-                    threadPool.execute(new AMWorker(input, sock));
+                    threadPool.execute(new AMWorker(routing, input, sock));
                 }
 
             } catch (IOException e) {
@@ -136,7 +160,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
             }
         }
 
-        while (containerCount > 0) {
+        while (activeTMCount > 0) {
             Thread.sleep(1000);
         }
 
@@ -148,36 +172,39 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
     @Override
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
-            try {
-                nmClient.startContainer(container, initContainer());
-                log.info("Container launched " + container.getId());
-            } catch (Exception ex) {
-                log.error("Container not launched " + container.getId(), ex);
+            String ip = Utils.extractIP(container.getNodeHttpAddress());
+            if (!routing.contains(ip)) {
+                synchronized (this) {
+                    ++activeTMCount;
+                }
+                try {
+                    nmClient.startContainer(container, initContainer());
+                    log.info("Container launched " + container.getId());
+                } catch (Exception ex) {
+                    log.error("Container not launched " + container.getId(), ex);
+                }
             }
         }
     }
 
-    private ContainerLaunchContext initContainer() {
-        try {
-            // Create Container Context
-            ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-            cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX + " ch.epfl.tkvs.transactionmanager.TransactionManager " + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+    private ContainerLaunchContext initContainer() throws Exception {
+        // Create Container Context
+        ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
+        cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX + " ch.epfl.tkvs.transactionmanager.TransactionManager " + "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
-            // Set Container jar
-            LocalResource jar = Records.newRecord(LocalResource.class);
-            Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
-            cCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
+        // Set Container jar
+        LocalResource jar = Records.newRecord(LocalResource.class);
+        Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
+        cCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
 
-            // Set Container CLASSPATH
-            Map<String, String> env = new HashMap<String, String>();
-            Utils.setUpEnv(env, conf);
-            cCLC.setEnvironment(env);
+        // Set Container CLASSPATH
+        Map<String, String> env = new HashMap<String, String>();
+        Utils.setUpEnv(env, conf);
+        env.put("AM_IP", routing.getAMIp());
+        env.put("AM_PORT", String.valueOf(routing.getAMPort()));
+        cCLC.setEnvironment(env);
 
-            return cCLC;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
+        return cCLC;
     }
 
     @Override
@@ -185,7 +212,7 @@ public class AppMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statusOfContainers) {
             log.info("Container finished " + status.getContainerId());
             synchronized (this) {
-                --containerCount;
+                --activeTMCount;
             }
         }
     }
