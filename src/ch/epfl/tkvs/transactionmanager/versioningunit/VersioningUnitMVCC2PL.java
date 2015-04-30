@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 
-public class VersioningUnit {
+public class VersioningUnitMVCC2PL {
 
     final static int PRIMARY_CACHE = 0;
 
@@ -18,12 +18,12 @@ public class VersioningUnit {
     private Object guard = new Object();
 
     /** Unique instance of the VersioningUnitMVTO class */
-    private static VersioningUnit instance = null;
+    private static VersioningUnitMVCC2PL instance = null;
 
     /**
      * Private constructor of the Singleton
      */
-    private VersioningUnit() {
+    private VersioningUnitMVCC2PL() {
         // Exists only to defeat instantiation
     }
 
@@ -31,11 +31,11 @@ public class VersioningUnit {
      * Double-checked locking method to return the unique object
      * @return singleton VersioningUnit
      */
-    public static VersioningUnit getInstance() {
+    public static VersioningUnitMVCC2PL getInstance() {
         if (instance == null) {
-            synchronized (VersioningUnit.class) {
+            synchronized (VersioningUnitMVCC2PL.class) {
                 if (instance == null) {
-                    instance = new VersioningUnit();
+                    instance = new VersioningUnitMVCC2PL();
                 }
             }
         }

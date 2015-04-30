@@ -9,7 +9,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
-import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnit;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PL;
 
 import java.io.Serializable;
 import java.util.*;
@@ -21,7 +21,7 @@ import static ch.epfl.tkvs.transactionmanager.lockingunit.LockCompatibilityTable
 public class MVCC2PL implements Algorithm {
 
     private LockingUnit lockingUnit;
-    private VersioningUnit versioningUnit;
+    private VersioningUnitMVCC2PL versioningUnit;
 
     public MVCC2PL() {
         lockingUnit = LockingUnit.instance;
@@ -32,7 +32,7 @@ public class MVCC2PL implements Algorithm {
         lockCompatibility.put(Lock.COMMIT_LOCK, newCompatibilityList());
         lockingUnit.initWithLockCompatibilityTable(lockCompatibility);
 
-        versioningUnit = VersioningUnit.getInstance();
+        versioningUnit = VersioningUnitMVCC2PL.getInstance();
         versioningUnit.init();
 
         transactions = new ConcurrentHashMap<>();

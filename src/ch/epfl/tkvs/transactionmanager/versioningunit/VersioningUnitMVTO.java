@@ -63,7 +63,7 @@ public class VersioningUnitMVTO {
      */
     public static VersioningUnitMVTO getInstance() {
         if (instance == null) {
-            synchronized (VersioningUnit.class) {
+            synchronized (VersioningUnitMVCC2PL.class) {
                 if (instance == null) {
                     instance = new VersioningUnitMVTO();
                 }

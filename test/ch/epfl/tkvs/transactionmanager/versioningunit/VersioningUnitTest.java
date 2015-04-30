@@ -12,7 +12,7 @@ import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 public class VersioningUnitTest extends TestCase {
 
-    private VersioningUnit V = VersioningUnit.getInstance();
+    private VersioningUnitMVCC2PL V = VersioningUnitMVCC2PL.getInstance();
 
     @Before
     public void setUp() throws Exception {
