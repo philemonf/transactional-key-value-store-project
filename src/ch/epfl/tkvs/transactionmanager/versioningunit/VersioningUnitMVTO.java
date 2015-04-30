@@ -20,7 +20,7 @@ public class VersioningUnitMVTO {
     private KeyValueStore KVS = KeyValueStore.instance;
 
     // The Timestamp on which a Serializable key was last read
-    private Map<Serializable, Integer> RTS; // TODO: Think about keeping a list of the RTS in case of abort
+    private Map<Serializable, Integer> RTS;
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
 
@@ -204,12 +204,14 @@ public class VersioningUnitMVTO {
      */
     public synchronized void commit(int xid) {
 
-        if (abortedXacts.contains(xid)) {
+        if (!uncommitted.contains(xid) || abortedXacts.contains(xid)) {
             return;
         }
 
         // Commit successful
         uncommitted.remove(xid);
+        readFromXacts.remove(xid);
+        writtenKeys.remove(xid);
         notifyAll();
     }
 
@@ -235,6 +237,8 @@ public class VersioningUnitMVTO {
                 }
             }
         }
+
+        writtenKeys.remove(xid);
     }
 
 }
