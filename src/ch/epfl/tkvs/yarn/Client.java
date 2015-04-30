@@ -2,7 +2,9 @@ package ch.epfl.tkvs.yarn;
 
 import ch.epfl.tkvs.test.userclient.UserClient;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
-import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
+
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.YarnClient;
@@ -143,8 +145,11 @@ public class Client {
         log.info("Running LockingUnitTest... (might take a while)");
         runTestCase(LockingUnitTest.class);
 
-        log.info("Running VersioningUnitTest...");
-        runTestCase(VersioningUnitTest.class);
+        log.info("Running VersioningUnitMVCC2PLTest...");
+        runTestCase(VersioningUnitMVCC2PLTest.class);
+        
+        log.info("Running VersioningUnitMVTOTest...");
+        runTestCase(VersioningUnitMVTOTest.class);
 
         // log.info("Running MVCC2PLTest...");
         // runTestCase(MVCC2PLTest.class);

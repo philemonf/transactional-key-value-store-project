@@ -10,7 +10,7 @@ import org.junit.Test;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
-public class VersioningUnitTest extends TestCase {
+public class VersioningUnitMVCC2PLTest extends TestCase {
 
     private VersioningUnitMVCC2PL V = VersioningUnitMVCC2PL.getInstance();
 
