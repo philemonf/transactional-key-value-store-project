@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #create slaves if local mode is set as a parameter
-if [ "$1" == "local" ];
+if [ "$1" = "local" ];
 then
 HOSTNAME=$(hostname)
 mkdir -p config
