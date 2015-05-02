@@ -62,11 +62,7 @@ public abstract class ScheduledTestCase extends TestCase {
                 @Override
                 public void run() {
                     perform(tid, step);
-                    try {
-                        barrier.await();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    //TODO: Should we check something here ?
                 }
             });
 
