@@ -1,13 +1,14 @@
 package ch.epfl.tkvs.transactionmanager.communication.utils;
 
-import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
-import ch.epfl.tkvs.transactionmanager.communication.Message;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-
 import java.lang.reflect.*;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
 public class JSON2MessageConverter {

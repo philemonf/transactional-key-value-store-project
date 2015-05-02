@@ -1,9 +1,13 @@
 package ch.epfl.tkvs.yarn;
 
-import ch.epfl.tkvs.test.userclient.UserClient;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
-import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
-import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.*;
@@ -16,14 +20,10 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import ch.epfl.tkvs.test.userclient.UserClient;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
+import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
 
 
 public class Client {
@@ -147,7 +147,7 @@ public class Client {
 
         log.info("Running VersioningUnitMVCC2PLTest...");
         runTestCase(VersioningUnitMVCC2PLTest.class);
-        
+
         log.info("Running VersioningUnitMVTOTest...");
         runTestCase(VersioningUnitMVTOTest.class);
 

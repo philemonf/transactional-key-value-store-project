@@ -1,14 +1,7 @@
 package ch.epfl.tkvs.user;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
-import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
-import ch.epfl.tkvs.transactionmanager.communication.requests.*;
-import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
-import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import ch.epfl.tkvs.yarn.Utils;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -17,8 +10,16 @@ import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
-import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.*;
+import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.Utils;
 
 
 public class Transaction<K extends Key> {

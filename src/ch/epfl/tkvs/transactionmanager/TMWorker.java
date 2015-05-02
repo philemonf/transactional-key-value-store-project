@@ -1,5 +1,15 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.Socket;
+
+import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -8,15 +18,6 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.Socket;
-
-import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 
 public class TMWorker extends Thread {

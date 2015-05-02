@@ -1,13 +1,14 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
-import org.apache.log4j.Logger;
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.log4j.Logger;
+
+import ch.epfl.tkvs.transactionmanager.AbortException;
 
 
 /**

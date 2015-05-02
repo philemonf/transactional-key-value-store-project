@@ -1,10 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
+
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class Cache {

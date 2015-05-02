@@ -62,7 +62,7 @@ public abstract class ScheduledTestCase extends TestCase {
                 @Override
                 public void run() {
                     perform(tid, step);
-                    //TODO: Should we check something here ?
+                    // TODO: Should we check something here ?
                 }
             });
 
