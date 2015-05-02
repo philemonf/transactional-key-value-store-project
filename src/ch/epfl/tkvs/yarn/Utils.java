@@ -1,5 +1,10 @@
 package ch.epfl.tkvs.yarn;
 
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
 import org.apache.hadoop.fs.FileStatus;
@@ -13,11 +18,6 @@ import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Map;
 
 
 public class Utils {

@@ -1,21 +1,20 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.AbortException;
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.AbortException;
 
-public enum VersioningUnitMVTO implements IVersioningUnit {
-    instance;
+
+public class VersioningUnitMVTO {
 
     // The key-value storage where versions are stored
     private KeyValueStore KVS = KeyValueStore.instance;
 
     // The Timestamp on which a Serializable key was last read
-    private Map<Serializable, Integer> RTS; // TODO: Think about keeping a list of the RTS in case of abort
+    private Map<Serializable, Integer> RTS;
     // The different versions of a given key in descending order of timestamp
     private Map<Serializable, List<Version>> versions;
 
@@ -28,9 +27,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
 
     // The objects a given transaction has written
     private Map<Integer, Set<Serializable>> writtenKeys;
-
-    // testing-purpose only
-    private int testing_max_xact = 0;
 
     private class Version {
 
@@ -45,11 +41,37 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
     }
 
-    @Override
+    /** Unique instance of the VersioningUnitMVTO class */
+    private static VersioningUnitMVTO instance = null;
+
+    /**
+     * Private constructor of the Singleton
+     */
+    private VersioningUnitMVTO() {
+        // Exists only to defeat instantiation
+    }
+
+    /**
+     * Double-checked locking method to return the unique object
+     * @return singleton VersioningUnitMVTO
+     */
+    public static VersioningUnitMVTO getInstance() {
+        if (instance == null) {
+            synchronized (VersioningUnitMVCC2PL.class) {
+                if (instance == null) {
+                    instance = new VersioningUnitMVTO();
+                }
+            }
+        }
+        return instance;
+    }
+
+    /**
+     * You MUST first call this before any other methods
+     */
     public synchronized void init() {
         // TODO Init and Flush KVStore ?
         KVS.clear();
-        testing_max_xact = 0;
 
         // Flush data structures
         RTS = new ConcurrentHashMap<Serializable, Integer>();
@@ -62,17 +84,11 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
     }
 
     /**
-     * Tell the versioning unit about a new transaction
-     * @param xid the ID or timestamp of the transaction If the xact is -1, then the VU should generate a xact (testing
-     * purpose only)
+     * Tell the versioning unit about a new transaction You MUST call this before any other methods about a specific
+     * transaction
+     * @param xid the ID or timestamp of the transaction
      */
-    public synchronized int begin_transaction(int xid) {
-
-        // If we are testing the VU
-        if (xid == -1) {
-            xid = ++testing_max_xact;
-        }
-
+    public synchronized int beginTransaction(int xid) {
         // Initialize data structures for the new transaction
         uncommitted.add(xid);
         writtenKeys.put(xid, new HashSet<Serializable>());
@@ -81,7 +97,6 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         return xid;
     }
 
-    @Override
     public synchronized Serializable get(int xid, Serializable key) {
 
         // Update RTS
@@ -97,10 +112,9 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         // Read written version with largest timestamp older than xid
         for (Version v : versions.get(key)) {
             if (v.WTS <= xid) {
-                Set<Integer> readList = readFromXacts.get(xid);
-                readList.add(v.WTS);
-                // TODO: Is the get put needed?!
-                readFromXacts.put(xid, readList);
+                if (v.WTS != xid) {
+                    readFromXacts.get(xid).add(v.WTS);
+                }
                 return KVS.get(v.key);
             }
         }
@@ -109,7 +123,9 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         return null;
     }
 
-    @Override
+    /**
+     * @throws AbortException if the write is not possible
+     */
     public synchronized void put(int xid, Serializable key, Serializable value) throws AbortException {
 
         // Is the write possible ?
@@ -148,8 +164,15 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
     }
 
-    @Override
-    public synchronized void commit(int xid) throws AbortException {
+    /**
+     * You MUST call this before calling commit(xid) Can block until other transactions commit or abort
+     * @throws AbortException if the commmit is not possible
+     */
+    public synchronized void prepareCommit(int xid) throws AbortException {
+
+        if (abortedXacts.contains(xid)) {
+            return;
+        }
 
         // TODO: optimize the notification of the correct waiting transaction
         try {
@@ -162,23 +185,36 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         }
 
         if (readFromXacts.get(xid) != null && !Collections.disjoint(abortedXacts, readFromXacts.get(xid))) {
-            Set<Integer> copy = new HashSet<Integer>(abortedXacts);
+            Set<Integer> causes = new HashSet<Integer>(abortedXacts);
+            causes.retainAll(readFromXacts.get(xid));
             abort(xid);
             notifyAll();
-            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + copy.retainAll(readFromXacts.get(xid)));
+            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + causes);
+        }
+    }
+
+    /**
+     * Real commit, you MUST call this after a successful call to prepareCommit(xid)
+     */
+    public synchronized void commit(int xid) {
+
+        if (!uncommitted.contains(xid) || abortedXacts.contains(xid)) {
+            return;
         }
 
         // Commit successful
         uncommitted.remove(xid);
+        readFromXacts.remove(xid);
+        writtenKeys.remove(xid);
         notifyAll();
-    }
-
-    @Override
-    public synchronized void stopNow() {
-        // TODO Auto-generated method stub
+        garbageCollector();
     }
 
     public synchronized void abort(int xid) {
+
+        if (abortedXacts.contains(xid)) {
+            return; // already aborted
+        }
 
         abortedXacts.add(xid);
         uncommitted.remove(xid);
@@ -187,15 +223,64 @@ public enum VersioningUnitMVTO implements IVersioningUnit {
         // Rollback everything that the xact read and wrote
         for (Serializable key : writtenKeys.get(xid)) {
 
-            for (Version version : versions.get(key)) {
+            for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
+                Version version = iterator.next();
                 if (version.WTS == xid) {
                     // TODO: break since we only have one version
                     KeyValueStore.instance.remove(version.key);
+                    iterator.remove();
                 }
             }
-
         }
 
+        writtenKeys.remove(xid);
+        garbageCollector();
     }
 
+    public synchronized void garbageCollector() {
+
+        if (uncommitted.isEmpty()) {
+            abortedXacts.clear();
+            return;
+        }
+
+        int minAliveXid = Collections.min(uncommitted);
+
+        // Removes useless versions stored in KVStore
+        for (Serializable key : versions.keySet()) {
+            boolean shouldRemoveAllFromNow = false;
+            for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
+                Version version = iterator.next();
+                if (shouldRemoveAllFromNow) {
+                    KVS.remove(version.key);
+                    iterator.remove();
+                } else if (version.WTS <= minAliveXid) {
+                    if (!abortedXacts.contains(version.WTS) && !uncommitted.contains(version.WTS))
+                        shouldRemoveAllFromNow = true;
+                }
+            }
+        }
+
+        // Removes useless abortedXacts
+        List<Integer> listMinXactReadFrom = new ArrayList<Integer>();
+        for (Integer xid : uncommitted) {
+            if (!readFromXacts.get(xid).isEmpty()) {
+                listMinXactReadFrom.add(Collections.min(readFromXacts.get(xid)));
+            }
+        }
+
+        if (listMinXactReadFrom.isEmpty()) {
+            abortedXacts.clear();
+            return;
+        }
+
+        int minXactReadFrom = Collections.min(listMinXactReadFrom);
+
+        for (Iterator<Integer> iterator = abortedXacts.iterator(); iterator.hasNext();) {
+            Integer xid = iterator.next();
+            if (xid < minXactReadFrom) {
+                iterator.remove();
+            }
+        }
+    }
 }

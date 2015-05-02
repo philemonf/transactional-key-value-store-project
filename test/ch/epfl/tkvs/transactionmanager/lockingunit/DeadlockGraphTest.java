@@ -1,10 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
-import org.junit.Test;
+import static junit.framework.TestCase.assertEquals;
 
 import java.util.HashSet;
 
-import static junit.framework.TestCase.assertEquals;
+import org.junit.Test;
 
 
 public class DeadlockGraphTest {

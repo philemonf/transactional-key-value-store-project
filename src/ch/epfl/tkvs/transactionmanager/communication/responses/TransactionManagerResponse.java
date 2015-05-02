@@ -1,10 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.communication.responses;
 
+import java.io.IOException;
+
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
-
-import java.io.IOException;
 
 
 public class TransactionManagerResponse extends Message {

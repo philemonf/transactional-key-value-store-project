@@ -1,8 +1,8 @@
 package ch.epfl.tkvs.transactionmanager.communication.utils;
 
-import org.apache.commons.codec.binary.Base64;
-
 import java.io.*;
+
+import org.apache.commons.codec.binary.Base64;
 
 
 public class Base64Utils {

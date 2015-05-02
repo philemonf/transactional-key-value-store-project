@@ -1,21 +1,22 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
-import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
-import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import ch.epfl.tkvs.yarn.RoutingTable;
-import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.Map.Entry;
 
-import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
-import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.RoutingTable;
 
 
 public class AMWorker extends Thread {

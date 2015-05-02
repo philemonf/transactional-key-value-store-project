@@ -1,14 +1,5 @@
 package ch.epfl.tkvs.transactionmanager;
 
-import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
-import ch.epfl.tkvs.yarn.RoutingTable;
-import ch.epfl.tkvs.yarn.Utils;
-import ch.epfl.tkvs.yarn.appmaster.AppMaster;
-import org.apache.hadoop.net.NetUtils;
-import org.apache.log4j.Logger;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -17,6 +8,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import org.apache.hadoop.net.NetUtils;
+import org.apache.log4j.Logger;
+
+import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
+import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.Utils;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
 /**
@@ -67,7 +68,7 @@ public class TransactionManager {
         String input = in.readLine();
         routing = (RoutingTable) Base64Utils.convertFromBase64(input);
 
-        Algorithm concurrencyController = new MVCC2PL();
+        Algorithm concurrencyController = new MVTO();
         ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         while (!server.isClosed()) {
             try {

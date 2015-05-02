@@ -1,16 +1,18 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import java.io.IOException;
+
+import junit.framework.TestCase;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
-import junit.framework.TestCase;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.IOException;
 
 
 public class MVCC2PLTest extends TestCase {
