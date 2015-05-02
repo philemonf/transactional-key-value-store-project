@@ -9,7 +9,7 @@ echo "$HOSTNAME" > config/slaves
 fi
 
 # Hide stderr
-exec 3>&2 2>/dev/null
+#exec 3>&2 2>/dev/null
 
 # Sets the hadoop classpath.
 HADOOP_CP=`hadoop classpath`
@@ -41,7 +41,7 @@ hadoop fs -copyFromLocal TKVS.jar /projects/transaction-manager/TKVS.jar
 hadoop fs -copyFromLocal config /projects/transaction-manager/
 
 # Reset stderr
-exec 2>&3
+#exec 2>&3
 
 # Executes the Client.
 echo "Executing YARN Client...\n"

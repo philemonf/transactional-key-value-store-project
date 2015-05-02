@@ -5,10 +5,16 @@ import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.client.api.YarnClient;
@@ -69,8 +75,32 @@ public class Client {
         res.setMemory(256);
         res.setVirtualCores(1);
 
+        if (UserGroupInformation.isSecurityEnabled()) {
+            log.info("Setting up security information");
+            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
+            Credentials credentials = new Credentials();
+            String tokenRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
+            if (tokenRenewer == null || tokenRenewer.length() == 0) {
+                throw new Exception("Can't get Master Kerberos principal for the RM to use as renewer");
+            }
+
+            // For now, only getting tokens for the default file-system.
+            FileSystem fs = FileSystem.get(conf);
+            final Token<?> tokens[] = fs.addDelegationTokens(tokenRenewer, credentials);
+            if (tokens != null) {
+                for (Token<?> token : tokens) {
+                    log.info("Got dt for " + fs.getUri() + "; " + token);
+                }
+            }
+            DataOutputBuffer dob = new DataOutputBuffer();
+            credentials.writeTokenStorageToStream(dob);
+            ByteBuffer fsTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+            amCLC.setTokens(fsTokens);
+        }
+
         // Create ApplicationSubmissionContext
         ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
+        appContext.setKeepContainersAcrossApplicationAttempts(false);
         appContext.setApplicationName("TKVS");
         appContext.setQueue("default");
         appContext.setAMContainerSpec(amCLC);
@@ -91,8 +121,14 @@ public class Client {
         YarnApplicationState appState = appReport.getYarnApplicationState();
 
         // Wait until Client knows AM's host:port
+        log.info("Waiting for AppMaster.. ");
         while (appReport.getRpcPort() == -1) {
             appReport = client.getApplicationReport(id);
+            appState = appReport.getYarnApplicationState();
+            if (appState == YarnApplicationState.FINISHED || appState == YarnApplicationState.KILLED || appState == YarnApplicationState.FAILED) {
+                log.fatal("AppMaster is dead!");
+                System.exit(1);
+            }
             Thread.sleep(100);
         }
 

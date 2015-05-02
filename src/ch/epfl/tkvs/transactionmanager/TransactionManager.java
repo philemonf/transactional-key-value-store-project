@@ -36,8 +36,7 @@ public class TransactionManager {
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     public static void main(String[] args) throws Exception {
-
-        log.info("Initializing...");
+        log.info("Initializing at " + NetUtils.getHostname());
         try {
             String amIp = System.getenv("AM_IP");
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
