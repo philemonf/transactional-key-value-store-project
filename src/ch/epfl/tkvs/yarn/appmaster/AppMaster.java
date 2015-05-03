@@ -99,7 +99,13 @@ public class AppMaster {
         server.setSoTimeout(10000); // 10 seconds accept() timeout.
         try {
             log.info("Waiting for a reply from all TMs");
-            while (rmHandler.getRoutingTable().size() < tmRequests.size()) {
+            
+            // To avoid infinite hang due to pings from the client
+            // we keep a counter that indicates us how many subsequent
+            // pings occurred.
+            int pingCount = 0; 
+            
+            while (rmHandler.getRoutingTable().size() < tmRequests.size() && pingCount < 3) {
                 Socket sock = server.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -109,7 +115,12 @@ public class AppMaster {
                 	out.println("not ready");
                 	out.flush();
                 	out.close();
+                	++pingCount;
+                	
                 } else {
+                	
+                	pingCount = 0;
+                	
                 	String[] info = input.split(":");
                 	log.info("Registering TM at " + info[0] + ":" + info[1]);
                 	rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));

@@ -145,7 +145,7 @@ public class Client {
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
         while(!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
-        	Thread.sleep(500);
+        	Thread.sleep(5000);
         }
         
         System.out.println("\nClient REPL: ");
@@ -220,14 +220,15 @@ public class Client {
     
     private boolean pingAppMaster(String ip, int port) throws IOException {
     	final Socket sock = new Socket(ip, port);
+    	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+    	BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+    	
     	try {
 	    	// Ping the AppMaster
-	    	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
 	    	out.println(":ping");
 	    	out.flush();
 	    	
 	    	// Wait for a response
-	    	BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
 	    	String response = in.readLine();
 	    	
 	    	if (response != null && response.equals("ok")) {
@@ -235,7 +236,10 @@ public class Client {
 	    	}
 	    	
 	    	return false;
+	    	
     	} finally {
+    		out.close();
+    		in.close();
     		sock.close();
     	}
     }
