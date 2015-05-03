@@ -127,13 +127,13 @@ public enum LockingUnit {
                         theLocks = allLocksExcept(transactionID, key, oldTypes);
                     }
                 }
-
-                addLock(transactionID, key, newType);
-
                 for (LockType oldType : oldTypes) {
                     removeLock(transactionID, key, oldType);
                 }
             }
+
+            addLock(transactionID, key, newType);
+
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
@@ -243,6 +243,7 @@ public enum LockingUnit {
 
     /**
      * Checks if requesting for a new lock causes deadlock
+     *
      * @param transactionID ID of the transaction requesting new lock
      * @param key key on which the lock is requested
      * @param lockType the type of the new lock requested
@@ -263,6 +264,7 @@ public enum LockingUnit {
 
     /**
      * Gets transactions holding locks that are incompatible with new lock requested by another transaction
+     *
      * @param transactionID the id of the new transaction requesting lock
      * @param key the key on which lock is requested
      * @param lockType the type of the lock which is requested
