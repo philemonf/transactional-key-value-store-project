@@ -198,9 +198,24 @@ public class AppMaster {
             }
         }
 
-        while (rmHandler.getContainerCount() > 0) {
+        int waitIterationElapsed = 0;
+        while (rmHandler.getContainerCount() > 0 && waitIterationElapsed < 10) {
+            log.info("Still " + rmHandler.getContainerCount() + " containers need to be closed.");
             Thread.sleep(1000);
+            ++waitIterationElapsed;
         }
+        
+        if (rmHandler.getContainerCount() > 0) {
+        	log.info("Force to close containers that are not closed.");
+        	rmHandler.closeAllRegisteredContainers();
+        	
+        	while (rmHandler.getContainerCount() > 0) {
+                log.info("Still " + rmHandler.getContainerCount() + " containers need to be closed.");
+                Thread.sleep(1000);
+        	}
+        	
+        }
+        
         nmClient.stop();
         server.close();
 

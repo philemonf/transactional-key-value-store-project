@@ -2,6 +2,7 @@ package ch.epfl.tkvs.yarn.appmaster;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +24,9 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     private final NMClientAsync nmClient;
     private final YarnConfiguration conf;
 
-    private int containerCount = 0;
     private RoutingTable routing;
+    
+    private List<Container> registeredContainers = Collections.synchronizedList(new LinkedList<Container>());
 
     public RMCallbackHandler(NMClientAsync nmClient, YarnConfiguration conf) {
         this.nmClient = nmClient;
@@ -40,7 +42,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     }
 
     public int getContainerCount() {
-        return containerCount;
+        return registeredContainers.size();
     }
 
     private ContainerLaunchContext initContainer() throws Exception {
@@ -68,9 +70,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
         for (Container container : containers) {
             if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
                 try {
-                    synchronized (this) {
-                        ++containerCount;
-                    }
+                	registeredContainers.add(container);
                     nmClient.startContainerAsync(container, initContainer());
                     log.info("Container launched " + container.getId());
                 } catch (Exception ex) {
@@ -84,10 +84,24 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     public void onContainersCompleted(List<ContainerStatus> contStatus) {
         for (ContainerStatus status : contStatus) {
             log.info("Container finished " + status.getContainerId());
-            synchronized (this) {
-                --containerCount;
+            Container containerToRemove = null;
+            for (Container container : registeredContainers) {
+            	if (container != null && status != null && container.getId().equals(status.getContainerId())) {
+            		containerToRemove = container;
+            	}
             }
+            
+            if (containerToRemove != null) {
+            	registeredContainers.remove(containerToRemove);
+            }
+            
         }
+    }
+    
+    public void closeAllRegisteredContainers() {
+    	for (Container container : registeredContainers) {
+    		nmClient.stopContainerAsync(container.getId(), container.getNodeId());
+    	}
     }
 
     @Override
