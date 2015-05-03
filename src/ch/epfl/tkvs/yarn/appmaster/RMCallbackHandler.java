@@ -26,9 +26,9 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     private int containerCount = 0;
     private RoutingTable routing;
 
-    public RMCallbackHandler(NMClientAsync nmClient) {
+    public RMCallbackHandler(NMClientAsync nmClient, YarnConfiguration conf) {
         this.nmClient = nmClient;
-        this.conf = new YarnConfiguration();
+        this.conf = conf;
     }
 
     public RoutingTable getRoutingTable() {
@@ -46,7 +46,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     private ContainerLaunchContext initContainer() throws Exception {
         // Create Container Context
         ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-        cCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.TM_XMX + " ch.epfl.tkvs.transactionmanager.TransactionManager " + "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set Container jar
         LocalResource jar = Records.newRecord(LocalResource.class);

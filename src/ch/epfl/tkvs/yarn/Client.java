@@ -58,7 +58,7 @@ public class Client {
 
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -66,14 +66,14 @@ public class Client {
         amCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
 
         // Set AM CLASSPATH
-        Map<String, String> env = new HashMap<String, String>();
+        Map<String, String> env = new HashMap<>();
         Utils.setUpEnv(env, conf);
         amCLC.setEnvironment(env);
 
         // Set AM resources
         Resource res = Records.newRecord(Resource.class);
-        res.setMemory(256);
-        res.setVirtualCores(1);
+        res.setMemory(Utils.AM_MEMORY);
+        res.setVirtualCores(Utils.AM_CORES);
 
         if (UserGroupInformation.isSecurityEnabled()) {
             log.info("Setting up security information");
@@ -131,6 +131,7 @@ public class Client {
             }
             Thread.sleep(100);
         }
+        Utils.writeAMAddress(Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort());
 
         Thread.sleep(2000); // Wait a bit until everything is set up.
         System.out.println("\nClient REPL: ");

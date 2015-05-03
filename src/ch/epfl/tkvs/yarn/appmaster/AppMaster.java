@@ -25,6 +25,8 @@ import org.apache.hadoop.yarn.client.api.async.impl.NMClientAsyncImpl;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RoutingTable;
@@ -59,7 +61,7 @@ public class AppMaster {
 
         // Create RM Client
         log.info("Creating RM client");
-        RMCallbackHandler rmHandler = new RMCallbackHandler(nmClient);
+        RMCallbackHandler rmHandler = new RMCallbackHandler(nmClient, conf);
         AMRMClientAsync<ContainerRequest> rmClient = new AMRMClientAsyncImpl<>(1000, rmHandler);
         rmClient.init(conf);
         rmClient.start();
@@ -72,7 +74,6 @@ public class AppMaster {
         // Register with RM and create AM Socket
         rmClient.registerApplicationMaster(amIP, amPort, null);
         log.info("Registered and starting server at " + amIP + ":" + amPort);
-        Utils.writeAMAddress(amIP + ":" + amPort);
         ServerSocket server = new ServerSocket(amPort);
 
         // Priority for worker containers - priorities are intra-application
@@ -81,8 +82,8 @@ public class AppMaster {
 
         // Resource requirements for worker containers
         Resource capability = Records.newRecord(Resource.class);
-        capability.setMemory(128);
-        capability.setVirtualCores(1);
+        capability.setMemory(Utils.TM_MEMORY);
+        capability.setVirtualCores(Utils.TM_CORES);
 
         // Request Containers from RM
         ArrayList<String> tmRequests = Utils.readTMHostnames();
@@ -95,7 +96,7 @@ public class AppMaster {
         }
 
         // Get TM network info from all TMs.
-        server.setSoTimeout(3000); // 3 seconds accept() timeout.
+        server.setSoTimeout(10000); // 10 seconds accept() timeout.
         try {
             log.info("Waiting for a reply from all TMs");
             while (rmHandler.getRoutingTable().size() < tmRequests.size()) {
@@ -154,7 +155,12 @@ public class AppMaster {
                     }
                     break;
                 default:
-                    threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), input, sock));
+                    try {
+                        JSONObject jsonRequest = new JSONObject(input);
+                        threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), jsonRequest, sock));
+                    } catch (JSONException e) {
+                        log.warn("Non JSON message will not be parsed: " + input);
+                    }
                 }
 
             } catch (IOException e) {

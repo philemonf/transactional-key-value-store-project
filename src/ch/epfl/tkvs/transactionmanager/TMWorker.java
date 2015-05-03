@@ -22,13 +22,13 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter
 
 public class TMWorker extends Thread {
 
-    private String input;
+    private JSONObject jsonRequest;
     private Socket sock;
     private Algorithm concurrencyController;
     private static Logger log = Logger.getLogger(TMWorker.class.getName());
 
-    public TMWorker(String input, Socket sock, Algorithm algorithm) {
-        this.input = input;
+    public TMWorker(JSONObject input, Socket sock, Algorithm algorithm) {
+        this.jsonRequest = input;
         this.sock = sock;
 
         this.concurrencyController = algorithm;
@@ -38,7 +38,6 @@ public class TMWorker extends Thread {
         try {
 
             // Create the response
-            JSONObject jsonRequest = new JSONObject(input);
             JSONObject response = null;
 
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
