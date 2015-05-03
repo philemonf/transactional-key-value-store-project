@@ -4,8 +4,10 @@ import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
@@ -85,18 +87,13 @@ public class MVTO implements Algorithm {
         Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
-        if (transaction == null) {
+        if (transaction == null || !transaction.isPrepared) {
             return new GenericSuccessResponse(false);
         }
-        try {
-            versioningUnit.prepareCommit(xid);
-            versioningUnit.commit(xid);
-            terminate(transaction);
-            return new GenericSuccessResponse(true);
-        } catch (AbortException e) {
-            terminate(transaction);
-            return new GenericSuccessResponse(false);
-        }
+        versioningUnit.commit(xid);
+        terminate(transaction);
+        return new GenericSuccessResponse(true);
+
     }
 
     private ConcurrentHashMap<Integer, Transaction> transactions;
@@ -108,12 +105,49 @@ public class MVTO implements Algorithm {
         transactions.remove(transaction.transactionId);
     }
 
-    private class Transaction {
+    @Override
+    public GenericSuccessResponse abort(AbortRequest request) {
+        int xid = request.getTransactionId();
+
+        Transaction transaction = transactions.get(xid);
+
+        // Transaction not begun or already terminated
+        if (transaction == null) {
+            return new GenericSuccessResponse(false);
+        }
+        versioningUnit.abort(xid);
+        terminate(transaction);
+        return new GenericSuccessResponse(true);
+    }
+
+    @Override
+    public GenericSuccessResponse prepare(PrepareRequest request) {
+        int xid = request.getTransactionId();
+
+        Transaction transaction = transactions.get(xid);
+
+        // Transaction not begun or already terminated
+        if (transaction == null) {
+            return new GenericSuccessResponse(false);
+        }
+        try {
+            versioningUnit.prepareCommit(xid);
+            transaction.isPrepared = true;
+            return new GenericSuccessResponse(true);
+        } catch (AbortException e) {
+            terminate(transaction);
+            return new GenericSuccessResponse(false);
+        }
+    }
+
+    public static class Transaction {
 
         int transactionId;
+        boolean isPrepared;
 
         public Transaction(int transactionID) {
             this.transactionId = transactionID;
+            isPrepared = false;
         }
 
     }

@@ -64,7 +64,7 @@ public abstract class ScheduledTestCase extends TestCase {
                     perform(tid, step);
                     // TODO: Should we check something here ?
                 }
-            });
+            }, "Transaction " + tid + " blocking op");
 
             performThread.start();
 
@@ -150,7 +150,7 @@ public abstract class ScheduledTestCase extends TestCase {
                             e.printStackTrace();
                         }
                     }
-                });
+                }, "Transaction " + tid);
             }
 
             for (int i = 0; i < numThreads; i++) {

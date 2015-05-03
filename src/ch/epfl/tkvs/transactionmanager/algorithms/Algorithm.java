@@ -5,8 +5,11 @@
  */
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
@@ -22,4 +25,9 @@ public interface Algorithm {
     GenericSuccessResponse begin(BeginRequest request);
 
     GenericSuccessResponse commit(CommitRequest request);
+
+    GenericSuccessResponse abort(AbortRequest request);
+
+    GenericSuccessResponse prepare(PrepareRequest request);
+
 }

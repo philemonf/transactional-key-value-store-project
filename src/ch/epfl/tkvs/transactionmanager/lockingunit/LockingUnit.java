@@ -127,9 +127,10 @@ public enum LockingUnit {
                         theLocks = allLocksExcept(transactionID, key, oldTypes);
                     }
                 }
-                for (LockType oldType : oldTypes) {
-                    removeLock(transactionID, key, oldType);
-                }
+                if (oldTypes != null)
+                    for (LockType oldType : oldTypes) {
+                        removeLock(transactionID, key, oldType);
+                    }
             }
 
             addLock(transactionID, key, newType);
@@ -143,13 +144,18 @@ public enum LockingUnit {
     }
 
     private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
+
         HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();
+        if (!locks.containsKey(key)) {
+            return theLocks;
+        }
         for (LockType lockType : lct.getLockTypes()) {
             theLocks.put(lockType, new LinkedList<Integer>(locks.get(key).get(lockType)));
         }
-        for (LockType lockType : locksToExclude) {
-            theLocks.get(lockType).remove(new Integer(transactionID));
-        }
+        if (locksToExclude != null)
+            for (LockType lockType : locksToExclude) {
+                theLocks.get(lockType).remove(new Integer(transactionID));
+            }
         for (LockType lockType : lct.getLockTypes()) {
             if (theLocks.get(lockType).isEmpty()) {
                 theLocks.remove(lockType);

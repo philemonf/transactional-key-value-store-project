@@ -2,8 +2,10 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
@@ -107,7 +109,7 @@ public class Simple2PL implements Algorithm {
         Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
-        if (transaction == null) {
+        if (transaction == null || !transaction.isPrepared) {
             return new GenericSuccessResponse(false);
         }
 
@@ -124,13 +126,35 @@ public class Simple2PL implements Algorithm {
         transactions.remove(transaction.transactionId);
     }
 
+    @Override
+    public GenericSuccessResponse abort(AbortRequest request) {
+        terminate(null, true);
+        return null;
+    }
+
+    @Override
+    public GenericSuccessResponse prepare(PrepareRequest request) {
+        int xid = request.getTransactionId();
+
+        Transaction transaction = transactions.get(xid);
+
+        // Transaction not begun or already terminated
+        if (transaction == null) {
+            return new GenericSuccessResponse(false);
+        }
+        transaction.isPrepared = true;
+        return new GenericSuccessResponse(true);
+    }
+
     private class Transaction {
 
         private int transactionId;
+        boolean isPrepared;
         private HashMap<Serializable, List<LockType>> currentLocks;
 
         public Transaction(int transactionId) {
             this.transactionId = transactionId;
+            isPrepared = false;
             currentLocks = new HashMap<>();
         }
 

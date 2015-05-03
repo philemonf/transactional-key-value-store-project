@@ -7,8 +7,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
@@ -111,6 +113,37 @@ public class MVCC2PL implements Algorithm {
 
         Transaction transaction = transactions.get(xid);
 
+        // Transaction not begun or already terminated or not prepared
+        if (transaction == null || !transaction.isPrepared) {
+            return new GenericSuccessResponse(false);
+        }
+        terminate(transaction, true);
+        return new GenericSuccessResponse(true);
+
+    }
+
+    private ConcurrentHashMap<Integer, Transaction> transactions;
+
+    @Override
+    public GenericSuccessResponse abort(AbortRequest request) {
+        int xid = request.getTransactionId();
+
+        Transaction transaction = transactions.get(xid);
+
+        // Transaction not begun or already terminated
+        if (transaction == null) {
+            return new GenericSuccessResponse(false);
+        }
+        terminate(transaction, false);
+        return new GenericSuccessResponse(true);
+    }
+
+    @Override
+    public GenericSuccessResponse prepare(PrepareRequest request) {
+        int xid = request.getTransactionId();
+
+        Transaction transaction = transactions.get(xid);
+
         // Transaction not begun or already terminated
         if (transaction == null) {
             return new GenericSuccessResponse(false);
@@ -125,16 +158,14 @@ public class MVCC2PL implements Algorithm {
                     transaction.setLock(key, Arrays.asList((LockType) Lock.COMMIT_LOCK));
                 }
             }
-
-            terminate(transaction, true);
+            transaction.isPrepared = true;
             return new GenericSuccessResponse(true);
+
         } catch (AbortException e) {
             terminate(transaction, false);
             return new GenericSuccessResponse(false);
         }
     }
-
-    private ConcurrentHashMap<Integer, Transaction> transactions;
 
     private static enum Lock implements LockType {
 
@@ -152,13 +183,15 @@ public class MVCC2PL implements Algorithm {
         transactions.remove(transaction.transactionId);
     }
 
-    private class Transaction {
+    public static class Transaction {
 
         private int transactionId;
+        boolean isPrepared;
         private HashMap<Serializable, List<LockType>> currentLocks;
 
         public Transaction(int transactionId) {
             this.transactionId = transactionId;
+            isPrepared = false;
             currentLocks = new HashMap<>();
         }
 
