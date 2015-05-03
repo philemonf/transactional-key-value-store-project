@@ -103,9 +103,19 @@ public class AppMaster {
                 Socket sock = server.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
-                String[] info = input.split(":");
-                log.info("Registering TM at " + info[0] + ":" + info[1]);
-                rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));
+                if (input.equals(":ping")) {
+                	log.info("Receive a premature ping from the client.");
+                	PrintWriter out = new PrintWriter(sock.getOutputStream());
+                	out.println("not ready");
+                	out.flush();
+                	out.close();
+                } else {
+                	String[] info = input.split(":");
+                	log.info("Registering TM at " + info[0] + ":" + info[1]);
+                	rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));
+                }
+                
+                sock.close();
             }
             log.info("All TMs replied successfully");
         } catch (SocketTimeoutException e) {
@@ -140,6 +150,15 @@ public class AppMaster {
                 String input = in.readLine();
 
                 switch (input) {
+                case ":ping":
+                {
+                	log.info("Receive a ping");
+                	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+                	out.println("ok");
+                	out.close();
+                	break;
+                }
+                
                 case ":exit":
                     log.info("Stopping Server");
                     sock.close();

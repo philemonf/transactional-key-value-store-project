@@ -1,10 +1,14 @@
 package ch.epfl.tkvs.yarn;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
@@ -131,9 +135,19 @@ public class Client {
             }
             Thread.sleep(100);
         }
-        Utils.writeAMAddress(Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort());
+        String amIPAddress = Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort();
+        Utils.writeAMAddress(amIPAddress);
+        
+        log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
 
         Thread.sleep(2000); // Wait a bit until everything is set up.
+        
+        // Ping the AppMaster until it is ready
+        log.info("Start pinging the AppMaster until it is ready.");
+        while(!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
+        	Thread.sleep(500);
+        }
+        
         System.out.println("\nClient REPL: ");
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
@@ -202,5 +216,27 @@ public class Client {
         for (Failure failure : res.getFailures()) {
             log.error(failure.toString());
         }
+    }
+    
+    private boolean pingAppMaster(String ip, int port) throws IOException {
+    	final Socket sock = new Socket(ip, port);
+    	try {
+	    	// Ping the AppMaster
+	    	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+	    	out.println(":ping");
+	    	out.flush();
+	    	
+	    	// Wait for a response
+	    	BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+	    	String response = in.readLine();
+	    	
+	    	if (response != null && response.equals("ok")) {
+	    		return true;
+	    	}
+	    	
+	    	return false;
+    	} finally {
+    		sock.close();
+    	}
     }
 }

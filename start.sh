@@ -36,9 +36,15 @@ rm -r -f build
 hadoop fs -rm -r -f "/projects/transaction-manager/*"
 
 echo "Putting TKVS.jar and config in HDFS..."
-hadoop fs -mkdir -p /projects/transaction-manager/
-hadoop fs -copyFromLocal TKVS.jar /projects/transaction-manager/TKVS.jar
-hadoop fs -copyFromLocal config /projects/transaction-manager/
+PROJECT_HOME='/projects/transaction-manager/'
+JAR_PATH="$PROJECT_HOME/TKVS.jar"
+CONFIG_PATH="$PROJECT_HOME/config"
+
+hadoop fs -mkdir -p "$PROJECT_HOME"
+hadoop fs -copyFromLocal TKVS.jar "$JAR_PATH"
+hadoop fs -chmod -R 777 "$JAR_PATH"
+hadoop fs -copyFromLocal config "$PROJECT_HOME"
+hadoop fs -chmod -R 777 "$CONFIG_PATH"
 
 # Reset stderr
 #exec 2>&3
