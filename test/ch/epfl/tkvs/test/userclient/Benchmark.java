@@ -12,6 +12,7 @@ public class Benchmark {
     private MyKey keys[];
     private User users[];
     private int maxNbActions;
+    private int ratio;
 
     /**
      * 
@@ -33,6 +34,8 @@ public class Benchmark {
             users[i] = new User(i + 1, maxNbActions, ratio);
         }
 
+        this.ratio = ratio;
+
     }
 
     public void run() {
@@ -41,6 +44,7 @@ public class Benchmark {
         System.out.println("\t\tNumber of transactions: " + users.length);
         System.out.println("\t\tMaximum number of requests: " + maxNbActions);
         System.out.println("\t\tNumber of keys: " + keys.length);
+        System.out.println("\t\tread:write ratio: " + ratio + ":1");
 
         Transaction<Key> init = null;
         boolean isDone = false;
@@ -106,7 +110,7 @@ public class Benchmark {
         System.out.println("\tNumber of Aborts during Write: " + nbWriteAbortsTotal);
         System.out.println("\tTotal Commit: " + nbCommitTotal);
         System.out.println("\tTotal Aborts: " + nbAbortTotal);
-        System.out.println("\tTotal Latency: " + latencyTotal / users.length);
+        System.out.println("\tTotal Latency: " + latencyTotal / users.length + " ms");
 
         System.out.println("Benchmarking end");
     }
@@ -166,13 +170,12 @@ public class Benchmark {
             boolean isDone = false;
             latency = System.currentTimeMillis();
             while (!isDone) {
-                isDone = true;
 
                 key = keys[keyIndexInit];
                 try {
                     t = new Transaction<MyKey>(key);
                 } catch (AbortException e) {
-                    isDone = false;
+                    continue;
                 }
 
                 for (int i = 0; i < nbActions; i++) {
@@ -188,8 +191,8 @@ public class Benchmark {
                             t.read(key);
                             nbRead = nbRead + 1;
                         } catch (AbortException e) {
-                            isDone = false;
                             nbReadAborts = nbReadAborts + 1;
+                            continue;
                         }
 
                     } else {
@@ -198,8 +201,8 @@ public class Benchmark {
                             t.write(key, "UserID:" + userID + " Action:" + i);
                             nbWrite = nbWrite + 1;
                         } catch (AbortException e) {
-                            isDone = false;
                             nbWriteAborts = nbWriteAborts + 1;
+                            continue;
                         }
 
                     }
@@ -209,10 +212,11 @@ public class Benchmark {
                 try {
                     t.commit();
                     nbCommit = nbCommit + 1;
+                    isDone = true;
                 } catch (AbortException e) {
                     // If the commit was not successful, restart with a
                     // transaction which has a higher timestamp
-                    isDone = false;
+                    continue;
                 }
 
             }
