@@ -17,6 +17,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TryCommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
@@ -69,6 +70,9 @@ public class TMWorker extends Thread {
             case AbortRequest.MESSAGE_TYPE:
                 AbortRequest abortRequest = (AbortRequest) JSON2MessageConverter.parseJSON(jsonRequest, AbortRequest.class);
                 response = toJSON(concurrencyController.abort(abortRequest));
+            case TryCommitRequest.MESSAGE_TYPE:
+                TryCommitRequest tr = (TryCommitRequest) JSON2MessageConverter.parseJSON(jsonRequest, TryCommitRequest.class);
+                response = toJSON(concurrencyController.tryCommit(tr));
             }
 
             // Send the response
