@@ -31,8 +31,11 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 		
 		log.info(dm);
 		
+		DeadlockGraph graph = null;
+		
 		try {
-			DeadlockGraph graph = dm.getGraph();		
+			
+			graph = dm.getGraph();		
 			log.info(graph);
 			
 		} catch (ClassNotFoundException e) {

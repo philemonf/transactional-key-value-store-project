@@ -39,6 +39,7 @@ public class AppMaster {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private static final int MAX_NUMBER_OF_WORKERS = 10;
+    private static RMCallbackHandler rmHandler;
 
     public static void main(String[] args) {
         log.info("Initializing at " + NetUtils.getHostname());
@@ -63,7 +64,7 @@ public class AppMaster {
 
         // Create RM Client
         log.info("Creating RM client");
-        RMCallbackHandler rmHandler = new RMCallbackHandler(nmClient, conf);
+        rmHandler = new RMCallbackHandler(nmClient, conf);
         AMRMClientAsync<ContainerRequest> rmClient = new AMRMClientAsyncImpl<>(1000, rmHandler);
         rmClient.init(conf);
         rmClient.start();
@@ -230,5 +231,9 @@ public class AppMaster {
         }
 
         rmClient.stop();
+    }
+    
+    public static int numberOfRegisteredTMs() {
+    	return rmHandler.getContainerCount();
     }
 }
