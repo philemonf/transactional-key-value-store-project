@@ -14,14 +14,14 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
-import java.util.Set;
 
 
-public class MVTO implements Algorithm {
+public class MVTO extends Algorithm {
 
     private VersioningUnitMVTO versioningUnit;
 
-    public MVTO() {
+    public MVTO(RemoteHandler rh) {
+        super(rh);
         transactions = new ConcurrentHashMap<>();
         versioningUnit = VersioningUnitMVTO.getInstance();
         versioningUnit.init();
@@ -38,10 +38,12 @@ public class MVTO implements Algorithm {
         if (transaction == null) {
             return new ReadResponse(false, null);
         }
-
-        Serializable value = versioningUnit.get(xid, key);
-        return new ReadResponse(true, (String) value);
-
+        if (isLocalKey(request.getTMhash())) {
+            Serializable value = versioningUnit.get(xid, key);
+            return new ReadResponse(true, (String) value);
+        } else {
+            return remote.read(transaction, request);
+        }
     }
 
     @Override
@@ -56,13 +58,16 @@ public class MVTO implements Algorithm {
         if (transaction == null) {
             return new GenericSuccessResponse(false);
         }
-
-        try {
-            versioningUnit.put(xid, key, value);
-            return new GenericSuccessResponse(true);
-        } catch (AbortException e) {
-            terminate(transaction);
-            return new GenericSuccessResponse(false);
+        if (isLocalKey(request.getTMhash())) {
+            try {
+                versioningUnit.put(xid, key, value);
+                return new GenericSuccessResponse(true);
+            } catch (AbortException e) {
+                terminate(transaction, false);
+                return new GenericSuccessResponse(false);
+            }
+        } else {
+            return remote.write(transaction, request);
         }
     }
 
@@ -71,7 +76,6 @@ public class MVTO implements Algorithm {
         int xid = request.getTransactionId();
 
         // Transaction with duplicate id
-
         if (transactions.containsKey(xid)) {
             return new GenericSuccessResponse(false);
         }
@@ -92,8 +96,7 @@ public class MVTO implements Algorithm {
         if (transaction == null || !transaction.isPrepared) {
             return new GenericSuccessResponse(false);
         }
-        versioningUnit.commit(xid);
-        terminate(transaction);
+        terminate(transaction, true);
         return new GenericSuccessResponse(true);
 
     }
@@ -101,9 +104,14 @@ public class MVTO implements Algorithm {
     private ConcurrentHashMap<Integer, Transaction> transactions;
 
     // Does cleaning up after end of transaction
-
-    private void terminate(Transaction transaction) {
-
+    private void terminate(Transaction transaction, boolean success) {
+        if (success) {
+            versioningUnit.commit(transaction.transactionId);
+        } else {
+            versioningUnit.abort(transaction.transactionId);
+        }
+        if (!success && !isLocalTransaction(transaction))
+            remote.abort(transaction);
         transactions.remove(transaction.transactionId);
     }
 
@@ -117,8 +125,8 @@ public class MVTO implements Algorithm {
         if (transaction == null) {
             return new GenericSuccessResponse(false);
         }
-        versioningUnit.abort(xid);
-        terminate(transaction);
+
+        terminate(transaction, false);
         return new GenericSuccessResponse(true);
     }
 
@@ -137,19 +145,14 @@ public class MVTO implements Algorithm {
             transaction.isPrepared = true;
             return new GenericSuccessResponse(true);
         } catch (AbortException e) {
-            terminate(transaction);
+            terminate(transaction, false);
             return new GenericSuccessResponse(false);
         }
     }
 
     @Override
-    public ch.epfl.tkvs.transactionmanager.Transaction getTransaction(int id) {
-        return transactions.get(id);
-    }
-
-    @Override
-    public Set<Integer> getAllIds() {
-        return transactions.keySet();
+    public Transaction getTransaction(int xid) {
+        return transactions.get(xid);
     }
 
 }

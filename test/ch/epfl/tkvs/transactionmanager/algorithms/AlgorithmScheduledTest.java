@@ -18,7 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class AlgorithmScheduledTest extends ScheduledTestCase {
+public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
 
     Algorithm instance;
     final boolean t = true;
@@ -30,6 +30,8 @@ public class AlgorithmScheduledTest extends ScheduledTestCase {
 
             @Override
             public void perform(int tid, int step) {
+
+                System.out.println("Begin " + tid);
                 GenericSuccessResponse gsr = instance.begin(new BeginRequest(tid));
                 assertEquals(gsr.getSuccess(), true);
             }
@@ -42,7 +44,9 @@ public class AlgorithmScheduledTest extends ScheduledTestCase {
             @Override
             public void perform(int tid, int step) {
                 try {
+                    System.out.println("Read " + tid + " " + key);
                     ReadResponse rr = instance.read(new ReadRequest(tid, key, 0));
+
                     if (shouldSucceed) {
                         assertEquals(true, rr.getSuccess());
                         assertEquals(expected, (String) rr.getValue());
@@ -62,6 +66,8 @@ public class AlgorithmScheduledTest extends ScheduledTestCase {
             @Override
             public void perform(int tid, int step) {
                 try {
+
+                    System.out.println("Write " + tid + " " + key);
                     GenericSuccessResponse gsr = instance.write(new WriteRequest(tid, key, value, 0));
                     assertEquals(shouldSucceed, gsr.getSuccess());
 
@@ -77,6 +83,8 @@ public class AlgorithmScheduledTest extends ScheduledTestCase {
 
             @Override
             public void perform(int tid, int step) {
+
+                System.out.println("Commit " + tid);
                 GenericSuccessResponse gsr = instance.prepare(new PrepareRequest(tid));
                 assertEquals(shouldSucceed, gsr.getSuccess());
                 gsr = instance.commit(new CommitRequest(tid));

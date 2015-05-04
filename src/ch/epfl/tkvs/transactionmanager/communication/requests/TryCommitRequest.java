@@ -5,10 +5,10 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
-public class BeginRequest extends Message {
+public class TryCommitRequest extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
-    public static final String MESSAGE_TYPE = "begin_request";
+    public static final String MESSAGE_TYPE = "try_commit_request";
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_TRANSACTION_ID)
     private int transactionId;
@@ -17,8 +17,9 @@ public class BeginRequest extends Message {
         return transactionId;
     }
 
-    public BeginRequest(int transactionId) {
+    public TryCommitRequest(int transactionId) {
         this.transactionId = transactionId;
+
     }
 
 }

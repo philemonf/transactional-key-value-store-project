@@ -1,11 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
-import ch.epfl.tkvs.transactionmanager.Transaction;
-import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
-import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
-import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.Transaction_2PL;
 import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
@@ -13,27 +9,15 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import static ch.epfl.tkvs.transactionmanager.lockingunit.LockType.Default;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 
-public class Simple2PL implements Algorithm {
+public class Simple2PL extends Algo2PL {
 
-    private LockingUnit lockingUnit;
-    private KeyValueStore KVS;
-
-    public Simple2PL() {
-        lockingUnit = LockingUnit.instance;
-        KVS = KeyValueStore.instance;
-        KVS.clear();
+    public Simple2PL(RemoteHandler rh) {
+        super(rh);
         lockingUnit.init();
-        transactions = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -41,24 +25,28 @@ public class Simple2PL implements Algorithm {
         int xid = request.getTransactionId();
         Serializable key = request.getEncodedKey();
 
-        Simple2PLTransaction transaction = transactions.get(xid);
+        Transaction_2PL transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
             return new ReadResponse(false, null);
         }
 
-        LockType lock = Default.READ_LOCK;
-        try {
-            if (!transaction.checkLock(key, lock)) {
-                lockingUnit.lock(xid, key, lock);
-                transaction.addLock(key, lock);
+        if (isLocalKey(request.getTMhash())) {
+            LockType lock = Default.READ_LOCK;
+            try {
+                if (!transaction.checkLock(key, lock) && !transaction.checkLock(key, Default.WRITE_LOCK)) {
+                    lockingUnit.lock(xid, key, lock);
+                    transaction.addLock(key, lock);
+                }
+                Serializable value = versioningUnit.get(xid, key);
+                return new ReadResponse(true, (String) value);
+            } catch (AbortException e) {
+                terminate(transaction, false);
+                return new ReadResponse(false, null);
             }
-            Serializable value = KVS.get(key);
-            return new ReadResponse(true, (String) value);
-        } catch (AbortException e) {
-            terminate(transaction, false);
-            return new ReadResponse(false, null);
+        } else {
+            return remote.read(transaction, request);
         }
 
     }
@@ -69,75 +57,34 @@ public class Simple2PL implements Algorithm {
         Serializable key = request.getEncodedKey();
         Serializable value = request.getEncodedValue();
 
-        Simple2PLTransaction transaction = transactions.get(xid);
+        Transaction_2PL transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
             return new GenericSuccessResponse(false);
         }
-
-        LockType lock = Default.WRITE_LOCK;
-        try {
-            if (!transaction.checkLock(key, lock)) {
-                lockingUnit.promote(xid, key, transaction.getLocksForKey(key), lock);
-                transaction.setLock(key, Arrays.asList(lock));
+        if (isLocalKey(request.getTMhash())) {
+            LockType lock = Default.WRITE_LOCK;
+            try {
+                if (!transaction.checkLock(key, lock)) {
+                    lockingUnit.promote(xid, key, transaction.getLocksForKey(key), lock);
+                    transaction.setLock(key, Arrays.asList(lock));
+                }
+                versioningUnit.put(xid, key, value);
+                return new GenericSuccessResponse(true);
+            } catch (AbortException e) {
+                terminate(transaction, false);
+                return new GenericSuccessResponse(false);
             }
-            KVS.put(key, value);
-            return new GenericSuccessResponse(true);
-        } catch (AbortException e) {
-            terminate(transaction, false);
-            return new GenericSuccessResponse(false);
-        }
-    }
-
-    @Override
-    public GenericSuccessResponse begin(BeginRequest request) {
-        int xid = request.getTransactionId();
-
-        // Transaction with duplicate id
-        if (transactions.containsKey(xid)) {
-            return new GenericSuccessResponse(false);
-        }
-        transactions.put(xid, new Simple2PLTransaction(xid));
-
-        return new GenericSuccessResponse(true);
-    }
-
-    @Override
-    public GenericSuccessResponse commit(CommitRequest request) {
-        int xid = request.getTransactionId();
-
-        Simple2PLTransaction transaction = transactions.get(xid);
-
-        // Transaction not begun or already terminated
-        if (transaction == null || !transaction.isPrepared) {
-            return new GenericSuccessResponse(false);
-        }
-
-        terminate(transaction, true);
-        return new GenericSuccessResponse(true);
-
-    }
-
-    private ConcurrentHashMap<Integer, Simple2PLTransaction> transactions;
-
-    // Does cleaning up after end of transaction
-    private void terminate(Simple2PLTransaction transaction, boolean success) {
-        lockingUnit.releaseAll(transaction.transactionId, transaction.currentLocks);
-        transactions.remove(transaction.transactionId);
-    }
-
-    @Override
-    public GenericSuccessResponse abort(AbortRequest request) {
-        terminate(null, true);
-        return null;
+        } else
+            return remote.write(transaction, request);
     }
 
     @Override
     public GenericSuccessResponse prepare(PrepareRequest request) {
         int xid = request.getTransactionId();
 
-        Simple2PLTransaction transaction = transactions.get(xid);
+        Transaction_2PL transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -147,59 +94,4 @@ public class Simple2PL implements Algorithm {
         return new GenericSuccessResponse(true);
     }
 
-    @Override
-    public Transaction getTransaction(int id) {
-        return transactions.get(id);
-    }
-
-    @Override
-    public Set<Integer> getAllIds() {
-        return transactions.keySet();
-    }
-
-    private class Simple2PLTransaction extends Transaction {
-
-        private HashMap<Serializable, List<LockType>> currentLocks;
-
-        public Simple2PLTransaction(int transactionId) {
-            super(transactionId);
-            currentLocks = new HashMap<>();
-        }
-
-        /**
-         * Replaces old locks for a key with new locks
-         *
-         * @param key
-         * @param newLocks
-         */
-        public void setLock(Serializable key, List<LockType> newLocks) {
-            currentLocks.put(key, newLocks);
-        }
-
-        /**
-         * Adds lock of type lockType for a key
-         *
-         * @param key
-         * @param lockType
-         */
-        public void addLock(Serializable key, LockType lockType) {
-            if (currentLocks.containsKey(key)) {
-                currentLocks.get(key).add(lockType);
-            } else {
-                currentLocks.put(key, new LinkedList<LockType>(Arrays.asList(lockType)));
-            }
-        }
-
-        public boolean checkLock(Serializable key, LockType lockType) {
-            return currentLocks.get(key) != null && (currentLocks.get(key).contains(lockType) || currentLocks.get(key).contains(Default.WRITE_LOCK));
-        }
-
-        public Set<Serializable> getLockedKeys() {
-            return currentLocks.keySet();
-        }
-
-        public List<LockType> getLocksForKey(Serializable key) {
-            return currentLocks.get(key);
-        }
-    }
 }

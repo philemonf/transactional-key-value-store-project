@@ -110,7 +110,7 @@ public class UserTransaction<K extends Key> {
             }
 
             return response.getValue();
-        } catch (IOException | InvalidMessageException ex) {
+        } catch (IOException | InvalidMessageException | JSONException ex) {
             Logger.getLogger(UserTransaction.class.getName()).log(Level.SEVERE, null, ex);
             throw new AbortException(ex.getLocalizedMessage());
         }
@@ -143,7 +143,7 @@ public class UserTransaction<K extends Key> {
             if (status != TransactionStatus.live) {
                 throw new AbortException("Transaction is no longer live");
             }
-            CommitRequest request = new CommitRequest(transactionID);
+            TryCommitRequest request = new TryCommitRequest(transactionID);
             JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
             boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
             if (!isSuccess) {

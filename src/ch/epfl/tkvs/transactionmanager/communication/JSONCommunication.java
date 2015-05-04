@@ -10,5 +10,4 @@ public class JSONCommunication {
     public static final String KEY_FOR_HOST = "host";
     public static final String KEY_FOR_SUCCESS = "success";
     public static final String KEY_FOR_MESSAGE_TYPE = "type";
-    public static final String KEY_FOR_PRIMARY_MESSAGE = "primary";
 }
