@@ -218,7 +218,8 @@ public class Client {
 
                 log.info("Running benchmark program...");
 
-                new Thread(new Benchmark(nbKeys, nbUsers, maxNbActions)).run();
+                int ratio = 2;
+                new Thread(new Benchmark(nbKeys, nbUsers, maxNbActions, ratio)).run();
                 break;
 
             case "":
