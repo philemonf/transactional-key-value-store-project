@@ -1,6 +1,5 @@
 package ch.epfl.tkvs.test.userclient;
 
-import java.sql.Time;
 import java.util.Random;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
@@ -69,14 +68,13 @@ public class Benchmark implements Runnable {
             users[i].start();
         }
 
-        
-        int nbReadTotal=0;
+        int nbReadTotal = 0;
         int nbWriteTotal = 0;
         int nbReadAbortsTotal = 0;
         int nbWriteAbortsTotal = 0;
         int nbCommitTotal = 0;
-        double latencyTotal = 0;        
-        
+        double latencyTotal = 0;
+
         for (int i = 0; i < users.length; i++) {
             try {
                 users[i].join();
@@ -84,8 +82,7 @@ public class Benchmark implements Runnable {
                 e.printStackTrace();
             }
         }
-        
-        
+
         for (int i = 0; i < users.length; i++) {
             latencyTotal += users[i].latency;
             nbReadTotal += users[i].nbRead;
@@ -93,9 +90,9 @@ public class Benchmark implements Runnable {
             nbWriteAbortsTotal += users[i].nbWriteAborts;
             nbReadAbortsTotal += users[i].nbReadAborts;
         }
-        
+
         int nbAbortTotal = nbReadAbortsTotal + nbWriteAbortsTotal;
-        
+
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
         System.out.println("\tNumber of Writes: " + nbWriteTotal);
@@ -124,18 +121,17 @@ public class Benchmark implements Runnable {
             this.maxNbActions = maxNbActions;
 
             this.nbRead = 0;
-            this.nbWrite= 0;
-            this.nbReadAborts= 0;
-            this.nbWriteAborts= 0;
-            this.nbCommit= 0;
-            this.latency= 0;
-               
+            this.nbWrite = 0;
+            this.nbReadAborts = 0;
+            this.nbWriteAborts = 0;
+            this.nbCommit = 0;
+            this.latency = 0;
+
         }
 
         @Override
         public void run() {
 
-            latency = System.currentTimeMillis();
             // Generate a random number of Actions
             Random r = new Random();
             int nbActions = r.nextInt(maxNbActions) + 1;
@@ -145,6 +141,7 @@ public class Benchmark implements Runnable {
             Transaction<MyKey> t = null;
 
             boolean isDone = false;
+            latency = System.currentTimeMillis();
             while (!isDone) {
                 isDone = true;
 
@@ -176,10 +173,10 @@ public class Benchmark implements Runnable {
 
                         try {
                             t.read(key);
-                            nbRead = nbRead+1;
+                            nbRead = nbRead + 1;
                         } catch (AbortException e) {
                             isDone = false;
-                            nbReadAborts= nbReadAborts+1;
+                            nbReadAborts = nbReadAborts + 1;
                         }
                     }
 
@@ -187,47 +184,37 @@ public class Benchmark implements Runnable {
 
                 try {
                     t.commit();
-                    nbCommit = nbCommit +1;
+                    nbCommit = nbCommit + 1;
                 } catch (AbortException e) {
                     // If the commit was not successful, restart with a
                     // transaction which has a higher timestamp
                     isDone = false;
                 }
-                
-                
+
             }
             latency = System.currentTimeMillis() - latency;
         }
 
-        
-
-
-        
         public int getNbRead() {
             return nbRead;
         }
 
-        
         public int getNbWrite() {
             return nbWrite;
         }
 
-        
         public int getNbReadAborts() {
             return nbReadAborts;
         }
 
-        
         public int getNbWriteAborts() {
             return nbWriteAborts;
         }
 
-        
         public int getNbCommit() {
             return nbCommit;
         }
 
-        
         public double getLatency() {
             return latency;
         }
