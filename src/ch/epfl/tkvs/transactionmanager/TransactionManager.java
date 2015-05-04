@@ -11,6 +11,8 @@ import java.util.concurrent.Executors;
 
 import org.apache.hadoop.net.NetUtils;
 import org.apache.log4j.Logger;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
@@ -36,8 +38,7 @@ public class TransactionManager {
     private static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     public static void main(String[] args) throws Exception {
-
-        log.info("Initializing...");
+        log.info("Initializing at " + NetUtils.getHostname());
         try {
             String amIp = System.getenv("AM_IP");
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
@@ -87,7 +88,12 @@ public class TransactionManager {
                     threadPool.shutdown();
                     break;
                 default:
-                    threadPool.execute(new TMWorker(input, sock, concurrencyController));
+                    try {
+                        JSONObject jsonRequest = new JSONObject(input);
+                        threadPool.execute(new TMWorker(jsonRequest, sock, concurrencyController));
+                    } catch (JSONException e) {
+                        log.warn("Non JSON message will not be parsed: " + input);
+                    }
                 }
             } catch (IOException e) {
                 log.error("sock.accept ", e);

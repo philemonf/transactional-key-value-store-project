@@ -1,16 +1,31 @@
 package ch.epfl.tkvs.yarn;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.hadoop.yarn.api.records.LocalResource;
+import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -52,7 +67,7 @@ public class Client {
 
         // Create AM Container
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$JAVA_HOME/bin/java " + Utils.AM_XMX + " ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -60,17 +75,41 @@ public class Client {
         amCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
 
         // Set AM CLASSPATH
-        Map<String, String> env = new HashMap<String, String>();
+        Map<String, String> env = new HashMap<>();
         Utils.setUpEnv(env, conf);
         amCLC.setEnvironment(env);
 
         // Set AM resources
         Resource res = Records.newRecord(Resource.class);
-        res.setMemory(256);
-        res.setVirtualCores(1);
+        res.setMemory(Utils.AM_MEMORY);
+        res.setVirtualCores(Utils.AM_CORES);
+
+        if (UserGroupInformation.isSecurityEnabled()) {
+            log.info("Setting up security information");
+            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
+            Credentials credentials = new Credentials();
+            String tokenRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
+            if (tokenRenewer == null || tokenRenewer.length() == 0) {
+                throw new Exception("Can't get Master Kerberos principal for the RM to use as renewer");
+            }
+
+            // For now, only getting tokens for the default file-system.
+            FileSystem fs = FileSystem.get(conf);
+            final Token<?> tokens[] = fs.addDelegationTokens(tokenRenewer, credentials);
+            if (tokens != null) {
+                for (Token<?> token : tokens) {
+                    log.info("Got dt for " + fs.getUri() + "; " + token);
+                }
+            }
+            DataOutputBuffer dob = new DataOutputBuffer();
+            credentials.writeTokenStorageToStream(dob);
+            ByteBuffer fsTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+            amCLC.setTokens(fsTokens);
+        }
 
         // Create ApplicationSubmissionContext
         ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
+        appContext.setKeepContainersAcrossApplicationAttempts(false);
         appContext.setApplicationName("TKVS");
         appContext.setQueue("default");
         appContext.setAMContainerSpec(amCLC);
@@ -91,12 +130,29 @@ public class Client {
         YarnApplicationState appState = appReport.getYarnApplicationState();
 
         // Wait until Client knows AM's host:port
+        log.info("Waiting for AppMaster.. ");
         while (appReport.getRpcPort() == -1) {
             appReport = client.getApplicationReport(id);
+            appState = appReport.getYarnApplicationState();
+            if (appState == YarnApplicationState.FINISHED || appState == YarnApplicationState.KILLED || appState == YarnApplicationState.FAILED) {
+                log.fatal("AppMaster is dead!");
+                System.exit(1);
+            }
             Thread.sleep(100);
         }
+        String amIPAddress = Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort();
+        Utils.writeAMAddress(amIPAddress);
+
+        log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
 
         Thread.sleep(2000); // Wait a bit until everything is set up.
+
+        // Ping the AppMaster until it is ready
+        log.info("Start pinging the AppMaster until it is ready.");
+        while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
+            Thread.sleep(5000);
+        }
+
         System.out.println("\nClient REPL: ");
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
@@ -164,6 +220,32 @@ public class Client {
 
         for (Failure failure : res.getFailures()) {
             log.error(failure.toString());
+        }
+    }
+
+    private boolean pingAppMaster(String ip, int port) throws IOException {
+        final Socket sock = new Socket(ip, port);
+        PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+
+        try {
+            // Ping the AppMaster
+            out.println(":ping");
+            out.flush();
+
+            // Wait for a response
+            String response = in.readLine();
+
+            if (response != null && response.equals("ok")) {
+                return true;
+            }
+
+            return false;
+
+        } finally {
+            out.close();
+            in.close();
+            sock.close();
         }
     }
 }

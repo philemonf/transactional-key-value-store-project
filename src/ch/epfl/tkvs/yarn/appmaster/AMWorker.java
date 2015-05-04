@@ -22,20 +22,19 @@ import ch.epfl.tkvs.yarn.RoutingTable;
 public class AMWorker extends Thread {
 
     private RoutingTable routing;
-    private String input;
+    private JSONObject jsonRequest;
     private Socket sock;
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
-    public AMWorker(RoutingTable routing, String input, Socket sock) {
+    public AMWorker(RoutingTable routing, JSONObject input, Socket sock) {
         this.routing = routing;
-        this.input = input;
+        this.jsonRequest = input;
         this.sock = sock;
     }
 
     public void run() {
         try {
             // Create the response
-            JSONObject jsonRequest = new JSONObject(input);
             JSONObject response = null;
 
             switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {

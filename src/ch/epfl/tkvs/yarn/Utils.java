@@ -1,6 +1,10 @@
 package ch.epfl.tkvs.yarn;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Map;
@@ -22,8 +26,11 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 
 public class Utils {
 
-    public static final String AM_XMX = "-Xmx256M";
-    public static final String TM_XMX = "-Xmx256M";
+    public static final int AM_MEMORY = 4096;
+    public static final int AM_CORES = 8;
+    public static final int TM_MEMORY = 4096;
+    public static final int TM_CORES = 8;
+
     public static final String TKVS_JAR_NAME = "TKVS.jar";
     public static final Path TKVS_CONFIG_PATH = new Path("hdfs:///projects/transaction-manager/config/");
     public static final Path TKVS_JAR_PATH = new Path("hdfs:///projects/transaction-manager/" + TKVS_JAR_NAME);
@@ -42,6 +49,7 @@ public class Utils {
             classPathEnv.append(System.getProperty("java.class.path"));
         }
         env.put("CLASSPATH", classPathEnv.toString());
+        env.put("HADOOP_HOME", System.getenv("HADOOP_HOME"));
     }
 
     public static void setUpLocalResource(Path resPath, LocalResource res, YarnConfiguration conf) throws IOException {
@@ -56,7 +64,7 @@ public class Utils {
     }
 
     public static ArrayList<String> readTMHostnames() throws Exception {
-        ArrayList<String> tmHosts = new ArrayList<String>();
+        ArrayList<String> tmHosts = new ArrayList<>();
         Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
         FileSystem fs = slavesPath.getFileSystem(new Configuration());
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(slavesPath)));
@@ -86,7 +94,7 @@ public class Utils {
     public static void writeAMAddress(String address) throws Exception {
         FileSystem fs = FileSystem.get(new YarnConfiguration());
         PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(AM_ADDRESS_PATH, true)));
-        pr.println(address);
+        pr.print(address);
         pr.close();
         fs.close();
     }
