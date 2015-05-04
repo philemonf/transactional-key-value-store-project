@@ -35,7 +35,6 @@ public class Benchmark {
 
     }
 
-    @Override
     public void run() {
         System.out.println("Benchmarking start");
         System.out.println("\tParameters:");
