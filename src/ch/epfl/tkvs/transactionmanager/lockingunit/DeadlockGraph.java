@@ -1,10 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.lockingunit;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 
 
-public class DeadlockGraph {
+public class DeadlockGraph implements Serializable {
 
     HashMap<Integer, HashSet<Integer>> outgoingEdges;
     HashMap<Integer, HashSet<Integer>> incomingEdges;

@@ -16,7 +16,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
 
 
-public class MVTO extends Algorithm {
+public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
 
@@ -154,5 +154,9 @@ public class MVTO extends Algorithm {
     public Transaction getTransaction(int xid) {
         return transactions.get(xid);
     }
+
+	@Override
+	public void checkpoint() {
+	}
 
 }

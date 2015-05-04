@@ -20,7 +20,7 @@ import org.junit.Test;
 
 public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
 
-    Algorithm instance;
+    CCAlgorithm instance;
     final boolean t = true;
     final boolean f = false;
     final ScheduledCommand _______________ = _______;

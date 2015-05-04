@@ -24,9 +24,9 @@ import org.codehaus.jettison.json.JSONException;
 
 public class RemoteHandler {
 
-    private Algorithm localAlgo;
+    private CCAlgorithm localAlgo;
 
-    public RemoteHandler(Algorithm localAlgo) {
+    public RemoteHandler(CCAlgorithm localAlgo) {
         this.localAlgo = localAlgo;
     }
 

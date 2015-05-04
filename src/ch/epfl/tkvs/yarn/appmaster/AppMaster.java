@@ -31,6 +31,8 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
 public class AppMaster {
@@ -150,6 +152,8 @@ public class AppMaster {
             sock.close();
         }
 
+        ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
+        
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
@@ -186,7 +190,7 @@ public class AppMaster {
                 default:
                     try {
                         JSONObject jsonRequest = new JSONObject(input);
-                        threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), jsonRequest, sock));
+                        threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), jsonRequest, sock, decider));
                     } catch (JSONException e) {
                         log.warn("Non JSON message will not be parsed: " + input);
                     }

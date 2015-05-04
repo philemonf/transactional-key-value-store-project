@@ -148,6 +148,11 @@ public enum LockingUnit {
         }
     }
 
+    public DeadlockGraph getDeadlockGraph() {
+    	//TODO might have to do something before, think about it
+    	return graph;
+    }
+    
     private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
 
         HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();

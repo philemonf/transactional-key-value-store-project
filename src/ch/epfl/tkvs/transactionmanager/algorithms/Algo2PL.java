@@ -1,25 +1,30 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.log4j.Logger;
+
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.Transaction_2PL;
+import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 
-public abstract class Algo2PL extends Algorithm {
+public abstract class Algo2PL extends CCAlgorithm {
 
     protected LockingUnit lockingUnit;
     protected VersioningUnitMVCC2PL versioningUnit;
 
     protected ConcurrentHashMap<Integer, Transaction_2PL> transactions;
+    private final static Logger log = Logger.getLogger(Algo2PL.class.getName());
 
     public Algo2PL(RemoteHandler remote) {
         super(remote);
@@ -89,6 +94,22 @@ public abstract class Algo2PL extends Algorithm {
         terminate(transaction, true);
         return new GenericSuccessResponse(true);
 
+    }
+    
+    @Override
+    public void checkpoint() {
+    	// Get the dead lock graph
+    	DeadlockGraph graph = lockingUnit.getDeadlockGraph();
+    	
+    	try {
+    		// Create the message
+    		DeadlockMessage deadlockMessage = new DeadlockMessage(graph);
+    		log.info("About to send deadlock info to app master: " + deadlockMessage);
+    		TransactionManager.sendToAppMaster(deadlockMessage);
+    		
+    	} catch (IOException e) {
+    		log.error(e);
+    	}
     }
 
 }

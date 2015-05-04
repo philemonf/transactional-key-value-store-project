@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
+import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -27,10 +27,10 @@ public class TMWorker extends Thread {
 
     private JSONObject jsonRequest;
     private Socket sock;
-    private Algorithm concurrencyController;
+    private CCAlgorithm concurrencyController;
     private static Logger log = Logger.getLogger(TMWorker.class.getName());
 
-    public TMWorker(JSONObject input, Socket sock, Algorithm algorithm) {
+    public TMWorker(JSONObject input, Socket sock, CCAlgorithm algorithm) {
         this.jsonRequest = input;
         this.sock = sock;
 

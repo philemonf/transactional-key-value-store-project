@@ -17,6 +17,8 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManager
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
 public class AMWorker extends Thread {
@@ -24,12 +26,16 @@ public class AMWorker extends Thread {
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
+    private ICentralizedDecider centralizedDecider;
+    
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
+    
 
-    public AMWorker(RoutingTable routing, JSONObject input, Socket sock) {
+    public AMWorker(RoutingTable routing, JSONObject input, Socket sock, ICentralizedDecider decider) {
         this.routing = routing;
         this.jsonRequest = input;
         this.sock = sock;
+        this.centralizedDecider = decider;
     }
 
     public void run() {
@@ -37,12 +43,23 @@ public class AMWorker extends Thread {
             // Create the response
             JSONObject response = null;
 
-            switch (jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE)) {
+            String messageType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
+            
+            switch (messageType) {
 
             case TransactionManagerRequest.MESSAGE_TYPE:
                 TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
                 response = getResponseForRequest(request);
                 break;
+            default:
+            	if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
+            		
+            		centralizedDecider.handleMessage(jsonRequest);
+            		
+            		if (centralizedDecider.readyToDecide()) {
+            			centralizedDecider.performDecision();
+            		}
+            	}
             }
 
             // Send the response

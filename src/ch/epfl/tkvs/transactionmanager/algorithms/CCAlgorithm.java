@@ -16,25 +16,69 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 
-
-public abstract class Algorithm {
+/**
+ * This abstract class represents an concurrency control algorithm.
+ * One must come up with actual implementation of such a class and inject
+ * it in the transaction manager in order to get a custom concurrency algorithm.
+ */
+public abstract class CCAlgorithm {
 
     protected RemoteHandler remote;
 
+    /**
+     * Called whenever the transaction manager receives a read request.
+     * @param request the incoming read request
+     * @return the response to be sent to the sender
+     */
     public abstract ReadResponse read(ReadRequest request);
 
+    /**
+     * Called whenever the transaction manager receives a write request.
+     * @param request the incoming write request
+     * @return the response to be sent to the sender
+     */
     public abstract GenericSuccessResponse write(WriteRequest request);
 
+    /**
+     * Called whenever the transaction manager receives a request to begin a transaction.
+     * @param request the incoming begin request
+     * @return the response to be sent to the sender
+     */
     public abstract GenericSuccessResponse begin(BeginRequest request);
 
+    /**
+     * Called whenever the transaction manager receives a commit request.
+     * @param request the incoming commit request
+     * @return the response to be sent to the sender
+     */
     public abstract GenericSuccessResponse commit(CommitRequest request);
 
+    /**
+     * Called whenever the transaction manager receives an abort request.
+     * @param request the incoming abort request
+     * @return the response to be sent to the sender
+     */
     public abstract GenericSuccessResponse abort(AbortRequest request);
 
+    /**
+     * Called whenever the transaction manager receives a prepare request (first phase of 2PC).
+     * @param request the incoming prepare request
+     * @return the response to be sent to the sender
+     */
     public abstract GenericSuccessResponse prepare(PrepareRequest request);
 
+    /**
+     * Returns a transaction object given its id.
+     * @param xid the id of the transaction
+     * @return the corresponding transaction
+     */
     public abstract Transaction getTransaction(int xid);
 
+    /**
+     * TODO: comment it please
+     * @param request
+     * @return
+     */
     public GenericSuccessResponse tryCommit(TryCommitRequest request) {
         int xid = request.getTransactionId();
 
@@ -51,8 +95,22 @@ public abstract class Algorithm {
         } else
             return remote.tryCommit(transaction);
     }
+    
+    /**
+     * This method is called periodically by the transaction manager.
+     * It can be used for a lot of purpose including:
+     * <ul>
+     * 	<li>Fault tolerance</li>
+     * 	<li>Sending report to some node</li>
+     * 	<li>Internal state audit</li>
+     * </ul>
+     * This is up to the actual implementation of the concurrency control
+     * algorithm to decide. If such a function is not needed, please leave
+     * it empty.
+     */
+    abstract public void checkpoint();
 
-    public Algorithm(RemoteHandler remote) {
+    public CCAlgorithm(RemoteHandler remote) {
         this.remote = remote;
     }
 
