@@ -35,6 +35,7 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
+import ch.epfl.tkvs.test.userclient.Benchmark;
 import ch.epfl.tkvs.test.userclient.UserClient;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
@@ -178,6 +179,48 @@ public class Client {
 
                 System.out.println();
                 break;
+
+            case ":benchmark":
+
+                String parameter = null;
+                int nbUsers = 1;
+                int nbKeys = 1;
+                int maxNbActions = 1;
+
+                try {
+                    System.out.println("Specify the number of Users");
+                    parameter = System.console().readLine();
+                    nbUsers = Integer.valueOf(parameter);
+                } catch (Exception e) {
+                    nbUsers = 1;
+                    System.out.println("Wrong input, using default:" + nbUsers);
+                }
+
+                try {
+                    System.out.println("Specify the maximal number of Actions");
+                    parameter = System.console().readLine();
+                    maxNbActions = Integer.valueOf(parameter);
+                } catch (Exception e) {
+                    maxNbActions = 1;
+                    System.out.println("Wrong input, using default:" + maxNbActions);
+                }
+
+                try {
+                    System.out.println("Specify the number of Keys");
+                    parameter = System.console().readLine();
+                    nbKeys = Integer.valueOf(parameter);
+                } catch (Exception e) {
+                    nbKeys = 1;
+                    System.out.println("Wrong input, using default:" + nbKeys);
+                }
+
+                System.out.println("Running benchmark...\n");
+
+                log.info("Running benchmark program...");
+
+                new Thread(new Benchmark(nbKeys, nbUsers, maxNbActions)).run();
+                break;
+
             case "":
                 break;
             default:
