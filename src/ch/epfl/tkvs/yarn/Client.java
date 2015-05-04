@@ -182,10 +182,6 @@ public class Client {
                 System.out.println();
                 break;
 
-            case ":defaultBM":
-                System.out.println("Launching default benchmark");
-                new Benchmark(1000, 200, 600, 50).run();
-
             case ":benchmark":
 
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)");
