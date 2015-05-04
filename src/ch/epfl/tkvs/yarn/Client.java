@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,7 +19,13 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
-import org.apache.hadoop.yarn.api.records.*;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.hadoop.yarn.api.records.LocalResource;
+import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -137,17 +142,17 @@ public class Client {
         }
         String amIPAddress = Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort();
         Utils.writeAMAddress(amIPAddress);
-        
+
         log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
 
         Thread.sleep(2000); // Wait a bit until everything is set up.
-        
+
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
-        while(!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
-        	Thread.sleep(5000);
+        while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
+            Thread.sleep(5000);
         }
-        
+
         System.out.println("\nClient REPL: ");
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
@@ -217,30 +222,30 @@ public class Client {
             log.error(failure.toString());
         }
     }
-    
+
     private boolean pingAppMaster(String ip, int port) throws IOException {
-    	final Socket sock = new Socket(ip, port);
-    	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-    	BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-    	
-    	try {
-	    	// Ping the AppMaster
-	    	out.println(":ping");
-	    	out.flush();
-	    	
-	    	// Wait for a response
-	    	String response = in.readLine();
-	    	
-	    	if (response != null && response.equals("ok")) {
-	    		return true;
-	    	}
-	    	
-	    	return false;
-	    	
-    	} finally {
-    		out.close();
-    		in.close();
-    		sock.close();
-    	}
+        final Socket sock = new Socket(ip, port);
+        PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+
+        try {
+            // Ping the AppMaster
+            out.println(":ping");
+            out.flush();
+
+            // Wait for a response
+            String response = in.readLine();
+
+            if (response != null && response.equals("ok")) {
+                return true;
+            }
+
+            return false;
+
+        } finally {
+            out.close();
+            in.close();
+            sock.close();
+        }
     }
 }

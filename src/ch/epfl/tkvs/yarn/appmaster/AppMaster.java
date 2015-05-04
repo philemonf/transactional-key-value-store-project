@@ -99,33 +99,33 @@ public class AppMaster {
         server.setSoTimeout(10000); // 10 seconds accept() timeout.
         try {
             log.info("Waiting for a reply from all TMs");
-            
+
             // To avoid infinite hang due to pings from the client
             // we keep a counter that indicates us how many subsequent
             // pings occurred.
-            int pingCount = 0; 
-            
+            int pingCount = 0;
+
             while (rmHandler.getRoutingTable().size() < tmRequests.size() && pingCount < 3) {
                 Socket sock = server.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
                 if (input.equals(":ping")) {
-                	log.info("Receive a premature ping from the client.");
-                	PrintWriter out = new PrintWriter(sock.getOutputStream());
-                	out.println("not ready");
-                	out.flush();
-                	out.close();
-                	++pingCount;
-                	
+                    log.info("Receive a premature ping from the client.");
+                    PrintWriter out = new PrintWriter(sock.getOutputStream());
+                    out.println("not ready");
+                    out.flush();
+                    out.close();
+                    ++pingCount;
+
                 } else {
-                	
-                	pingCount = 0;
-                	
-                	String[] info = input.split(":");
-                	log.info("Registering TM at " + info[0] + ":" + info[1]);
-                	rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));
+
+                    pingCount = 0;
+
+                    String[] info = input.split(":");
+                    log.info("Registering TM at " + info[0] + ":" + info[1]);
+                    rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));
                 }
-                
+
                 sock.close();
             }
             log.info("All TMs replied successfully");
@@ -161,15 +161,14 @@ public class AppMaster {
                 String input = in.readLine();
 
                 switch (input) {
-                case ":ping":
-                {
-                	log.info("Receive a ping");
-                	PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-                	out.println("ok");
-                	out.close();
-                	break;
+                case ":ping": {
+                    log.info("Receive a ping");
+                    PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+                    out.println("ok");
+                    out.close();
+                    break;
                 }
-                
+
                 case ":exit":
                     log.info("Stopping Server");
                     sock.close();
@@ -204,18 +203,18 @@ public class AppMaster {
             Thread.sleep(1000);
             ++waitIterationElapsed;
         }
-        
+
         if (rmHandler.getContainerCount() > 0) {
-        	log.info("Force to close containers that are not closed.");
-        	rmHandler.closeAllRegisteredContainers();
-        	
-        	while (rmHandler.getContainerCount() > 0) {
+            log.info("Force to close containers that are not closed.");
+            rmHandler.closeAllRegisteredContainers();
+
+            while (rmHandler.getContainerCount() > 0) {
                 log.info("Still " + rmHandler.getContainerCount() + " containers need to be closed.");
                 Thread.sleep(1000);
-        	}
-        	
+            }
+
         }
-        
+
         nmClient.stop();
         server.close();
 
