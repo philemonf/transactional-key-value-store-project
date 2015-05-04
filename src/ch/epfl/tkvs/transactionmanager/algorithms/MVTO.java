@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -13,6 +14,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
+import java.util.Set;
 
 
 public class MVTO implements Algorithm {
@@ -140,15 +142,14 @@ public class MVTO implements Algorithm {
         }
     }
 
-    public static class Transaction {
-
-        int transactionId;
-        boolean isPrepared;
-
-        public Transaction(int transactionID) {
-            this.transactionId = transactionID;
-            isPrepared = false;
-        }
-
+    @Override
+    public ch.epfl.tkvs.transactionmanager.Transaction getTransaction(int id) {
+        return transactions.get(id);
     }
+
+    @Override
+    public Set<Integer> getAllIds() {
+        return transactions.keySet();
+    }
+
 }

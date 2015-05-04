@@ -2,6 +2,7 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -40,7 +41,7 @@ public class Simple2PL implements Algorithm {
         int xid = request.getTransactionId();
         Serializable key = request.getEncodedKey();
 
-        Transaction transaction = transactions.get(xid);
+        Simple2PLTransaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -68,7 +69,7 @@ public class Simple2PL implements Algorithm {
         Serializable key = request.getEncodedKey();
         Serializable value = request.getEncodedValue();
 
-        Transaction transaction = transactions.get(xid);
+        Simple2PLTransaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -97,7 +98,7 @@ public class Simple2PL implements Algorithm {
         if (transactions.containsKey(xid)) {
             return new GenericSuccessResponse(false);
         }
-        transactions.put(xid, new Transaction(xid));
+        transactions.put(xid, new Simple2PLTransaction(xid));
 
         return new GenericSuccessResponse(true);
     }
@@ -106,7 +107,7 @@ public class Simple2PL implements Algorithm {
     public GenericSuccessResponse commit(CommitRequest request) {
         int xid = request.getTransactionId();
 
-        Transaction transaction = transactions.get(xid);
+        Simple2PLTransaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null || !transaction.isPrepared) {
@@ -118,10 +119,10 @@ public class Simple2PL implements Algorithm {
 
     }
 
-    private ConcurrentHashMap<Integer, Transaction> transactions;
+    private ConcurrentHashMap<Integer, Simple2PLTransaction> transactions;
 
     // Does cleaning up after end of transaction
-    private void terminate(Transaction transaction, boolean success) {
+    private void terminate(Simple2PLTransaction transaction, boolean success) {
         lockingUnit.releaseAll(transaction.transactionId, transaction.currentLocks);
         transactions.remove(transaction.transactionId);
     }
@@ -136,7 +137,7 @@ public class Simple2PL implements Algorithm {
     public GenericSuccessResponse prepare(PrepareRequest request) {
         int xid = request.getTransactionId();
 
-        Transaction transaction = transactions.get(xid);
+        Simple2PLTransaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -146,15 +147,22 @@ public class Simple2PL implements Algorithm {
         return new GenericSuccessResponse(true);
     }
 
-    private class Transaction {
+    @Override
+    public Transaction getTransaction(int id) {
+        return transactions.get(id);
+    }
 
-        private int transactionId;
-        boolean isPrepared;
+    @Override
+    public Set<Integer> getAllIds() {
+        return transactions.keySet();
+    }
+
+    private class Simple2PLTransaction extends Transaction {
+
         private HashMap<Serializable, List<LockType>> currentLocks;
 
-        public Transaction(int transactionId) {
-            this.transactionId = transactionId;
-            isPrepared = false;
+        public Simple2PLTransaction(int transactionId) {
+            super(transactionId);
             currentLocks = new HashMap<>();
         }
 

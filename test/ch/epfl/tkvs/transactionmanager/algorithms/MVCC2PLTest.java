@@ -20,16 +20,14 @@ public class MVCC2PLTest extends AlgorithmScheduledTest {
         /* T2 */{ BEGIN(), _______________, R("y", null, t), _______________, W("x", "x2", f), _______, COMM(f) } };
         new ScheduleExecutor(schedule).execute();
     }
+
     @Test
-    public void testComplex(){
+    public void testComplex() {
         ScheduledCommand[][] schedule = {
-            /* T1 */{BEGIN(),R("x", null, t),_______,_______________,R(null, null, t)},
-            /* T2 */{_______,_______________,BEGIN(),W("y", "y2", t)},
-            /* T3 */{_______,_______________,_______,_______________},
-            /* T4 */{_______,_______________,_______,_______________}
-        };
-//        new ScheduleExecutor(schedule).execute();
-        }
+        /* T1 */{ BEGIN(), R("x", null, t), _______, _______________, R(null, null, t) },
+        /* T2 */{ _______, _______________, BEGIN(), W("y", "y2", t) },
+        /* T3 */{ _______, _______________, _______, _______________ },
+        /* T4 */{ _______, _______________, _______, _______________ } };
+        // new ScheduleExecutor(schedule).execute();
     }
-            
 }

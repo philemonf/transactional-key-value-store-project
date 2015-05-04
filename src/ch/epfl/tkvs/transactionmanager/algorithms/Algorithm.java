@@ -5,7 +5,7 @@
  */
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
+import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -14,6 +14,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import java.util.Set;
 
 
 public interface Algorithm {
@@ -30,4 +31,7 @@ public interface Algorithm {
 
     GenericSuccessResponse prepare(PrepareRequest request);
 
+    Transaction getTransaction(int id);
+
+    Set<Integer> getAllIds();
 }

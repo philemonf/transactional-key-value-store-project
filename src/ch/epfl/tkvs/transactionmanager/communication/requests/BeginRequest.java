@@ -13,12 +13,25 @@ public class BeginRequest extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_TRANSACTION_ID)
     private int transactionId;
 
+    @JSONAnnotation(key = JSONCommunication.KEY_FOR_PRIMARY_MESSAGE)
+    private boolean primaryMessage;
+
     public int getTransactionId() {
         return transactionId;
     }
 
+    public boolean isPrimaryMessage() {
+        return primaryMessage;
+    }
+
+    public BeginRequest(int transactionId, boolean primaryMessage) {
+        this.transactionId = transactionId;
+        this.primaryMessage = primaryMessage;
+    }
+
     public BeginRequest(int transactionId) {
         this.transactionId = transactionId;
+        primaryMessage = true;
     }
 
 }

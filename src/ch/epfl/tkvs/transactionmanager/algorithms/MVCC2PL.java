@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -45,7 +46,7 @@ public class MVCC2PL implements Algorithm {
         int xid = request.getTransactionId();
         Serializable key = request.getEncodedKey();
 
-        Transaction transaction = transactions.get(xid);
+        MVCC2PL_Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -73,7 +74,7 @@ public class MVCC2PL implements Algorithm {
         Serializable key = request.getEncodedKey();
         Serializable value = request.getEncodedValue();
 
-        Transaction transaction = transactions.get(xid);
+        MVCC2PL_Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -102,7 +103,7 @@ public class MVCC2PL implements Algorithm {
         if (transactions.containsKey(xid)) {
             return new GenericSuccessResponse(false);
         }
-        transactions.put(xid, new Transaction(xid));
+        transactions.put(xid, new MVCC2PL_Transaction(xid));
 
         return new GenericSuccessResponse(true);
     }
@@ -111,7 +112,7 @@ public class MVCC2PL implements Algorithm {
     public GenericSuccessResponse commit(CommitRequest request) {
         int xid = request.getTransactionId();
 
-        Transaction transaction = transactions.get(xid);
+        MVCC2PL_Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated or not prepared
         if (transaction == null || !transaction.isPrepared) {
@@ -122,13 +123,13 @@ public class MVCC2PL implements Algorithm {
 
     }
 
-    private ConcurrentHashMap<Integer, Transaction> transactions;
+    private ConcurrentHashMap<Integer, MVCC2PL_Transaction> transactions;
 
     @Override
     public GenericSuccessResponse abort(AbortRequest request) {
         int xid = request.getTransactionId();
 
-        Transaction transaction = transactions.get(xid);
+        MVCC2PL_Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -142,7 +143,7 @@ public class MVCC2PL implements Algorithm {
     public GenericSuccessResponse prepare(PrepareRequest request) {
         int xid = request.getTransactionId();
 
-        Transaction transaction = transactions.get(xid);
+        MVCC2PL_Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
         if (transaction == null) {
@@ -167,13 +168,23 @@ public class MVCC2PL implements Algorithm {
         }
     }
 
+    @Override
+    public Transaction getTransaction(int id) {
+        return transactions.get(id);
+    }
+
+    @Override
+    public Set<Integer> getAllIds() {
+        return transactions.keySet();
+    }
+
     private static enum Lock implements LockType {
 
         READ_LOCK, WRITE_LOCK, COMMIT_LOCK
     }
 
     // Does cleaning up after end of transaction
-    private void terminate(Transaction transaction, boolean success) {
+    private void terminate(MVCC2PL_Transaction transaction, boolean success) {
         if (success) {
             versioningUnit.commit(transaction.transactionId);
         } else {
@@ -183,15 +194,13 @@ public class MVCC2PL implements Algorithm {
         transactions.remove(transaction.transactionId);
     }
 
-    public static class Transaction {
+    public static class MVCC2PL_Transaction extends Transaction {
 
-        private int transactionId;
-        boolean isPrepared;
         private HashMap<Serializable, List<LockType>> currentLocks;
 
-        public Transaction(int transactionId) {
-            this.transactionId = transactionId;
-            isPrepared = false;
+        public MVCC2PL_Transaction(int transactionId) {
+            super(transactionId);
+
             currentLocks = new HashMap<>();
         }
 
