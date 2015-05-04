@@ -98,9 +98,9 @@ public class Benchmark implements Runnable {
         System.out.println("\tNumber of Writes: " + nbWriteTotal);
         System.out.println("\tNumber of Aborts during Read: " + nbReadAbortsTotal);
         System.out.println("\tNumber of Aborts during Write: " + nbWriteAbortsTotal);
-        System.out.println("\tTotal Latency: " + latencyTotal);
         System.out.println("\tTotal Commit: " + nbCommitTotal);
         System.out.println("\tTotal Aborts: " + nbAbortTotal);
+        System.out.println("\tTotal Latency: " + latencyTotal / users.length);
 
         System.out.println("Benchmarking end");
     }
@@ -193,30 +193,6 @@ public class Benchmark implements Runnable {
 
             }
             latency = System.currentTimeMillis() - latency;
-        }
-
-        public int getNbRead() {
-            return nbRead;
-        }
-
-        public int getNbWrite() {
-            return nbWrite;
-        }
-
-        public int getNbReadAborts() {
-            return nbReadAborts;
-        }
-
-        public int getNbWriteAborts() {
-            return nbWriteAborts;
-        }
-
-        public int getNbCommit() {
-            return nbCommit;
-        }
-
-        public double getLatency() {
-            return latency;
         }
     }
 }
