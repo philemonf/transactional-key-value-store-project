@@ -134,8 +134,4 @@ public class RemoteHandler {
         t.areAllRemoteAborted = true;
         return new GenericSuccessResponse(true);
     }
-
-    public GenericSuccessResponse sendDeadlockMessage(DeadlockInfoMessage m) {
-        return null;
-    }
 }

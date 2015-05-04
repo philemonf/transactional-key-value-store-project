@@ -54,6 +54,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
 	@Override
 	public boolean readyToDecide() {
+		int totalTMCount = AppMaster.numberOfRegisteredTMs();
 		return false;
 	}
 
