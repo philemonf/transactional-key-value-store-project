@@ -8,7 +8,7 @@ import org.apache.log4j.Logger;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.Transaction_2PL;
-import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
+import ch.epfl.tkvs.transactionmanager.communication.DeadlockInfoMessage;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -103,7 +103,7 @@ public abstract class Algo2PL extends CCAlgorithm {
     	
     	try {
     		// Create the message
-    		DeadlockMessage deadlockMessage = new DeadlockMessage(graph);
+    		DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(graph);
     		log.info("About to send deadlock info to app master: " + deadlockMessage);
     		TransactionManager.sendToAppMaster(deadlockMessage);
     		

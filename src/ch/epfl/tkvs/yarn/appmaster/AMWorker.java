@@ -62,10 +62,9 @@ public class AMWorker extends Thread {
             	}
             }
 
-            // Send the response
-            log.info("Response" + response.toString());
-
+            // Send the response if it exists
             if (response != null) {
+            	log.info("Response" + response.toString());
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
                 out.println(response.toString());
             }

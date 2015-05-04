@@ -1,12 +1,15 @@
 package ch.epfl.tkvs.yarn.appmaster.centralized_decision;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
+import ch.epfl.tkvs.transactionmanager.communication.DeadlockInfoMessage;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 public class DeadlockCentralizedDecider implements ICentralizedDecider {
@@ -16,16 +19,32 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 	@Override
 	public void handleMessage(JSONObject message) {
 		
-		DeadlockMessage dm = null;
+		DeadlockInfoMessage dm = null;
 		
 		try {
-			dm = (DeadlockMessage) JSON2MessageConverter.parseJSON(message, DeadlockMessage.class);
+			dm = (DeadlockInfoMessage) JSON2MessageConverter.parseJSON(message, DeadlockInfoMessage.class);
 		} catch (InvalidMessageException e) {
 			// TODO Handle the error
 			log.error(e);
+			return;
 		}
-
+		
 		log.info(dm);
+		
+		try {
+			DeadlockGraph graph = dm.getGraph();		
+			log.info(graph);
+			
+		} catch (ClassNotFoundException e) {
+			// TODO Handle the error
+			log.error(e);
+			return;
+		} catch (IOException e) {
+			// TODO Handle the error
+			log.error(e);
+			return;
+		}
+		
 
 		// TODO: Do something
 	}
@@ -42,7 +61,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
 	@Override
 	public boolean shouldHandleMessageType(String messageType) {
-		return messageType.equals(DeadlockMessage.MESSAGE_TYPE);
+		return messageType.equals(DeadlockInfoMessage.MESSAGE_TYPE);
 	}
 	
 }

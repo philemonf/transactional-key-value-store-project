@@ -1,7 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.Transaction;
-import ch.epfl.tkvs.transactionmanager.communication.DeadlockMessage;
+import ch.epfl.tkvs.transactionmanager.communication.DeadlockInfoMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
@@ -135,7 +135,7 @@ public class RemoteHandler {
         return new GenericSuccessResponse(true);
     }
 
-    public GenericSuccessResponse sendDeadlockMessage(DeadlockMessage m) {
+    public GenericSuccessResponse sendDeadlockMessage(DeadlockInfoMessage m) {
         return null;
     }
 }

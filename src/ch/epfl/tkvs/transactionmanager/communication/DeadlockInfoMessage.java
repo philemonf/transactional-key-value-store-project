@@ -5,7 +5,7 @@ import java.io.IOException;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 
-public class DeadlockMessage extends Message {
+public class DeadlockInfoMessage extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "deadlock_message";
@@ -13,7 +13,7 @@ public class DeadlockMessage extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_DEAD_LOCK_GRAPH)
     private String encodedGraph;
     
-    public DeadlockMessage(DeadlockGraph graph) throws IOException {
+    public DeadlockInfoMessage(DeadlockGraph graph) throws IOException {
     	encodedGraph = Base64Utils.convertToBase64(graph);
     }
     
