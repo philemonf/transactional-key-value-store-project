@@ -182,21 +182,25 @@ public class Client {
                 System.out.println();
                 break;
 
+            case ":defaultBM":
+                System.out.println("Launching default benchmark");
+                new Benchmark(1000, 200, 600, 50).run();
+
             case ":benchmark":
-                
+
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)");
                 Matcher matcher = pattern.matcher(input);
-                if(!matcher.matches()) {
+                if (!matcher.matches()) {
                     System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio>");
                     System.out.println("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
                     break;
                 }
-                
+
                 int nbUsers = Math.max(1, Integer.parseInt(matcher.group(1)));
                 int maxNbActions = Math.max(1, Integer.parseInt(matcher.group(2)));
                 int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
-                int ratio = Math.max(2,  Integer.parseInt(matcher.group(4)));
-                
+                int ratio = Math.max(2, Integer.parseInt(matcher.group(4)));
+
                 new Benchmark(nbKeys, nbUsers, maxNbActions, ratio).run();
                 break;
 
