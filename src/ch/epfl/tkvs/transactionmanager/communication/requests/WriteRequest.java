@@ -24,13 +24,13 @@ public class WriteRequest extends Message {
     private String encodedValue;
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
-    private int hash;
+    private int TMhash;
 
     public WriteRequest(int transactionId, Serializable key, Serializable value, int hash) throws IOException {
         this.transactionId = transactionId;
         this.encodedKey = Base64Utils.convertToBase64(key);
         this.encodedValue = Base64Utils.convertToBase64(value);
-        this.hash = hash;
+        this.TMhash = hash;
     }
 
     public int getTransactionId() {
@@ -45,7 +45,7 @@ public class WriteRequest extends Message {
         return encodedValue;
     }
 
-    public int getHash() {
-        return hash;
+    public int getTMhash() {
+        return TMhash;
     }
 }

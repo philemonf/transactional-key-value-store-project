@@ -132,13 +132,14 @@ public enum LockingUnit {
                         theLocks = allLocksExcept(transactionID, key, oldTypes);
                     }
                 }
-
-                addLock(transactionID, key, newType);
-
-                for (LockType oldType : oldTypes) {
-                    removeLock(transactionID, key, oldType);
-                }
+                if (oldTypes != null)
+                    for (LockType oldType : oldTypes) {
+                        removeLock(transactionID, key, oldType);
+                    }
             }
+
+            addLock(transactionID, key, newType);
+
         } catch (InterruptedException e) {
             // TODO: something
             log.error("Shit happens...");
@@ -148,13 +149,18 @@ public enum LockingUnit {
     }
 
     private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
+
         HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();
+        if (!locks.containsKey(key)) {
+            return theLocks;
+        }
         for (LockType lockType : lct.getLockTypes()) {
             theLocks.put(lockType, new LinkedList<Integer>(locks.get(key).get(lockType)));
         }
-        for (LockType lockType : locksToExclude) {
-            theLocks.get(lockType).remove(new Integer(transactionID));
-        }
+        if (locksToExclude != null)
+            for (LockType lockType : locksToExclude) {
+                theLocks.get(lockType).remove(new Integer(transactionID));
+            }
         for (LockType lockType : lct.getLockTypes()) {
             if (theLocks.get(lockType).isEmpty()) {
                 theLocks.remove(lockType);
@@ -248,6 +254,7 @@ public enum LockingUnit {
 
     /**
      * Checks if requesting for a new lock causes deadlock
+     *
      * @param transactionID ID of the transaction requesting new lock
      * @param key key on which the lock is requested
      * @param lockType the type of the new lock requested
@@ -268,6 +275,7 @@ public enum LockingUnit {
 
     /**
      * Gets transactions holding locks that are incompatible with new lock requested by another transaction
+     *
      * @param transactionID the id of the new transaction requesting lock
      * @param key the key on which lock is requested
      * @param lockType the type of the lock which is requested

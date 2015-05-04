@@ -12,9 +12,12 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TryCommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
@@ -59,6 +62,16 @@ public class TMWorker extends Thread {
                 CommitRequest commitRequest = (CommitRequest) JSON2MessageConverter.parseJSON(jsonRequest, CommitRequest.class);
                 response = toJSON(concurrencyController.commit(commitRequest));
                 break;
+            case PrepareRequest.MESSAGE_TYPE:
+                PrepareRequest prepareRequest = (PrepareRequest) JSON2MessageConverter.parseJSON(jsonRequest, PrepareRequest.class);
+                response = toJSON(concurrencyController.prepare(prepareRequest));
+
+            case AbortRequest.MESSAGE_TYPE:
+                AbortRequest abortRequest = (AbortRequest) JSON2MessageConverter.parseJSON(jsonRequest, AbortRequest.class);
+                response = toJSON(concurrencyController.abort(abortRequest));
+            case TryCommitRequest.MESSAGE_TYPE:
+                TryCommitRequest tr = (TryCommitRequest) JSON2MessageConverter.parseJSON(jsonRequest, TryCommitRequest.class);
+                response = toJSON(concurrencyController.tryCommit(tr));
             }
 
             // Send the response
@@ -73,5 +86,4 @@ public class TMWorker extends Thread {
             e.printStackTrace();
         }
     }
-
 }

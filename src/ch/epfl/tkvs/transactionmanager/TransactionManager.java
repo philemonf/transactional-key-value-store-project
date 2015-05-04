@@ -16,6 +16,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.Algorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
+import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
@@ -69,7 +70,7 @@ public class TransactionManager {
         String input = in.readLine();
         routing = (RoutingTable) Base64Utils.convertFromBase64(input);
 
-        Algorithm concurrencyController = new MVTO();
+        Algorithm concurrencyController = new Simple2PL(null);
         ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         while (!server.isClosed()) {
             try {
