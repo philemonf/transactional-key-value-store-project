@@ -12,6 +12,8 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.DataOutputBuffer;
@@ -169,7 +171,7 @@ public class Client {
             }
 
             // TODO: support more commands with more cases ..
-            switch (input) {
+            switch (input.split(" ")[0]) {
             case ":test":
                 System.out.println("Running test client...\n");
 
@@ -181,45 +183,21 @@ public class Client {
                 break;
 
             case ":benchmark":
-
-                String parameter = null;
-                int nbUsers = 1;
-                int nbKeys = 1;
-                int maxNbActions = 1;
-
-                try {
-                    System.out.println("Specify the number of Users");
-                    parameter = System.console().readLine();
-                    nbUsers = Integer.valueOf(parameter);
-                } catch (Exception e) {
-                    nbUsers = 1;
-                    System.out.println("Wrong input, using default:" + nbUsers);
+                
+                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)");
+                Matcher matcher = pattern.matcher(input);
+                if(!matcher.matches()) {
+                    System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio>");
+                    System.out.println("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
+                    break;
                 }
-
-                try {
-                    System.out.println("Specify the maximal number of Actions");
-                    parameter = System.console().readLine();
-                    maxNbActions = Integer.valueOf(parameter);
-                } catch (Exception e) {
-                    maxNbActions = 1;
-                    System.out.println("Wrong input, using default:" + maxNbActions);
-                }
-
-                try {
-                    System.out.println("Specify the number of Keys");
-                    parameter = System.console().readLine();
-                    nbKeys = Integer.valueOf(parameter);
-                } catch (Exception e) {
-                    nbKeys = 1;
-                    System.out.println("Wrong input, using default:" + nbKeys);
-                }
-
-                System.out.println("Running benchmark...\n");
-
-                log.info("Running benchmark program...");
-
-                int ratio = 2;
-                new Thread(new Benchmark(nbKeys, nbUsers, maxNbActions, ratio)).run();
+                
+                int nbUsers = Math.max(1, Integer.parseInt(matcher.group(1)));
+                int maxNbActions = Math.max(1, Integer.parseInt(matcher.group(2)));
+                int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
+                int ratio = Math.max(2,  Integer.parseInt(matcher.group(4)));
+                
+                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio).run();
                 break;
 
             case "":

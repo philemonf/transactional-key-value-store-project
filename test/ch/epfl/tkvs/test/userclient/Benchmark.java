@@ -7,7 +7,7 @@ import ch.epfl.tkvs.user.Key;
 import ch.epfl.tkvs.user.Transaction;
 
 
-public class Benchmark implements Runnable {
+public class Benchmark {
 
     private MyKey keys[];
     private User users[];
@@ -38,10 +38,10 @@ public class Benchmark implements Runnable {
     @Override
     public void run() {
         System.out.println("Benchmarking start");
-        System.out.println("\t Parameters:");
-        System.out.println("\t Maximum number of actions: " + maxNbActions);
-        System.out.println("\t Number of keys: " + keys.length);
-        System.out.println("\t Number of users: " + users.length);
+        System.out.println("\tParameters:");
+        System.out.println("\t\tNumber of transactions: " + users.length);
+        System.out.println("\t\tMaximum number of requests: " + maxNbActions);
+        System.out.println("\t\tNumber of keys: " + keys.length);
 
         Transaction<Key> init = null;
         boolean isDone = false;
