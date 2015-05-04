@@ -1,7 +1,10 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import static ch.epfl.tkvs.transactionmanager.communication.JSONCommunication.KEY_FOR_MESSAGE_TYPE;
+import static ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest.MESSAGE_TYPE;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
+import static ch.epfl.tkvs.yarn.appmaster.AppMaster.nextTransactionId;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,7 +14,6 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
-import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
@@ -21,7 +23,6 @@ import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
 public class AMWorker extends Thread {
-
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
@@ -41,11 +42,11 @@ public class AMWorker extends Thread {
             // Create the response
             JSONObject response = null;
 
-            String messageType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
+            String messageType = jsonRequest.getString(KEY_FOR_MESSAGE_TYPE);
 
             switch (messageType) {
 
-            case TransactionManagerRequest.MESSAGE_TYPE:
+            case MESSAGE_TYPE:
                 TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
                 response = getResponseForRequest(request);
                 break;
@@ -82,7 +83,7 @@ public class AMWorker extends Thread {
 
         log.info("Assigned a TM to it: " + tm.getHostname() + " - " + tm.getPort());
 
-        int transactionID = AppMaster.nextTransactionId();
+        int transactionID = nextTransactionId();
 
         return toJSON(new TransactionManagerResponse(true, transactionID, tm.getHostname(), tm.getPort()));
     }
