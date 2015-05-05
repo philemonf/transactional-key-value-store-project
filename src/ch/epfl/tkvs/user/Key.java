@@ -11,5 +11,5 @@ public abstract class Key implements Serializable {
     @Override
     abstract public String toString();
 
-    public abstract int getHash();
+    public abstract int getLocalityHash();
 }

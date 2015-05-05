@@ -6,14 +6,17 @@ import ch.epfl.tkvs.user.Key;
 public class MyKey extends Key {
 
     String k;
-
-    public MyKey(String k) {
+    int localityHash;
+    
+    
+    public MyKey(String k, int localityHash) {
         this.k = k;
+        this.localityHash = localityHash;
     }
 
     @Override
-    public int getHash() {
-        return 0;
+    public int getLocalityHash() {
+        return localityHash;
     }
 
     @Override

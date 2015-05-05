@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.test.userclient;
 
+import ch.epfl.tkvs.transactionmanager.AbortException;
 import ch.epfl.tkvs.user.UserTransaction;
 
 
@@ -7,13 +8,53 @@ public class UserClient implements Runnable {
 
     @Override
     public void run() {
-        try {
+    	try {
+    		
             System.out.println("User Client starting");
-            MyKey k0 = new MyKey("myKey");
-            UserTransaction t = new UserTransaction<MyKey>(k0);
-            t.write(k0, "myValue");
-            System.out.println((String) t.read(k0));
-            t.commit();
+            final MyKey k0 = new MyKey("k0", 0);
+            final MyKey k1 = new MyKey("k1", 1);
+            
+            Thread thread1 = new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+					UserTransaction<MyKey> t = new UserTransaction<MyKey>(k0);
+					
+		            t.write(k0, "myValue");
+		            System.out.println((String) t.read(k0));
+		            t.commit();
+					} catch (AbortException e) {
+						System.err.println("thread1 aborted. Restarting.");
+						run();
+					}
+				}
+			});
+            
+            Thread thread2 = new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					try {
+						UserTransaction<MyKey> t = new UserTransaction<MyKey>(k1);
+						
+			            t.write(k1, "myValue");
+			            System.out.println((String) t.read(k1));
+			            System.out.println((String) t.read(k1));
+			            t.commit();
+						} catch (AbortException e) {
+							System.err.println("thread2 aborted. Restarting.");
+							run();
+						}
+				}
+			});
+            
+            thread1.start();
+            thread2.start();
+            
+            thread1.join();
+            thread2.join();
+            
         } catch (Exception e) {
             e.printStackTrace();
         }

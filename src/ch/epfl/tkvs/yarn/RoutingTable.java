@@ -25,7 +25,7 @@ public class RoutingTable implements Serializable {
 
     public void addTM(RemoteTransactionManager tm) {
         tms.add(tm);
-        tms.sort(new Comparator<RemoteTransactionManager>() {
+        Collections.sort(tms, new Comparator<RemoteTransactionManager>() {
 
     		@Override
     		public int compare(RemoteTransactionManager o1,

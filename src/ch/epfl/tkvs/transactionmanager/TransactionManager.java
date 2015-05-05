@@ -23,6 +23,7 @@ import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
+import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
@@ -177,6 +178,22 @@ public class TransactionManager {
     	return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
 
+    /**
+     * Returns the locality hash associated with the local node.
+     * @return the locality hash or -1 in case of error
+     */
+    public static int getLocalityHash() {
+    	int i = 0;
+    	for (RemoteTransactionManager tm : routing.getTMs()) {
+    		if (tm.getHostname().equals(tmHost) && tm.getPort() == tmPort) {
+    			return i;
+    		}
+    		++i;
+    	}
+    	
+    	return -1;
+    }
+    
     // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms
     private void startCheckpointThread(final ServerSocket mainServer, final CCAlgorithm ccAlg) {
         new Thread(new Runnable() {

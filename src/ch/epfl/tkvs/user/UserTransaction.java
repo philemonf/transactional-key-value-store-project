@@ -45,7 +45,7 @@ public class UserTransaction<K extends Key> {
     public UserTransaction(K key) throws AbortException {
         try {
             InetSocketAddress amAddress = Utils.readAMAddress();
-            TransactionManagerRequest req = new TransactionManagerRequest(key.getHash());
+            TransactionManagerRequest req = new TransactionManagerRequest(key.getLocalityHash());
 
             JSONObject jsonResponse = sendRequest(amAddress.getHostName(), amAddress.getPort(), toJSON(req));
             TransactionManagerResponse response = (TransactionManagerResponse) parseJSON(jsonResponse, TransactionManagerResponse.class);
@@ -108,7 +108,7 @@ public class UserTransaction<K extends Key> {
                 throw new AbortException("Transaction is no longer live");
             }
 
-            ReadRequest request = new ReadRequest(transactionID, key, key.getHash());
+            ReadRequest request = new ReadRequest(transactionID, key, key.getLocalityHash());
 
             JSONObject json = sendRequest(tmHost, tmPort, toJSON(request));
             ReadResponse response = (ReadResponse) parseJSON(json, ReadResponse.class);
@@ -132,7 +132,7 @@ public class UserTransaction<K extends Key> {
             if (status != TransactionStatus.live) {
                 throw new AbortException("Transaction is no longer live");
             }
-            WriteRequest request = new WriteRequest(transactionID, key, value, key.getHash());
+            WriteRequest request = new WriteRequest(transactionID, key, value, key.getLocalityHash());
             JSONObject response = sendRequest(tmHost, tmPort, toJSON(request));
 
             boolean isSuccess = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);

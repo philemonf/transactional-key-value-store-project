@@ -109,7 +109,7 @@ public abstract class CCAlgorithm {
         this.remote = remote;
     }
 
-    protected boolean isLocalKey(int hash) {
+    protected boolean isLocalKey(int localityHash) {
         return (remote == null);
     }
 
