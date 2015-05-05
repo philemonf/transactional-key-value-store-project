@@ -9,12 +9,8 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.fail;
-import org.junit.Before;
 import org.junit.Test;
 
 
@@ -43,19 +39,16 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
 
             @Override
             public void perform(int tid, int step) {
-                try {
-                    System.out.println("Read " + tid + " " + key);
-                    ReadResponse rr = instance.read(new ReadRequest(tid, key, 0));
 
-                    if (shouldSucceed) {
-                        assertEquals(true, rr.getSuccess());
-                        assertEquals(expected, (String) rr.getValue());
-                    } else
-                        assertEquals(false, rr.getSuccess());
+                System.out.println("Read " + tid + " " + key);
+                ReadResponse rr = instance.read(new ReadRequest(tid, key, 0));
 
-                } catch (IOException ex) {
-                    Logger.getLogger(Simple2PLTest.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                if (shouldSucceed) {
+                    assertEquals(true, rr.getSuccess());
+                    assertEquals(expected, (String) rr.getValue());
+                } else
+                    assertEquals(false, rr.getSuccess());
+
             }
         };
     }
@@ -65,15 +58,11 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
 
             @Override
             public void perform(int tid, int step) {
-                try {
 
-                    System.out.println("Write " + tid + " " + key);
-                    GenericSuccessResponse gsr = instance.write(new WriteRequest(tid, key, value, 0));
-                    assertEquals(shouldSucceed, gsr.getSuccess());
+                System.out.println("Write " + tid + " " + key);
+                GenericSuccessResponse gsr = instance.write(new WriteRequest(tid, key, value, 0));
+                assertEquals(shouldSucceed, gsr.getSuccess());
 
-                } catch (IOException ex) {
-                    Logger.getLogger(Simple2PLTest.class.getName()).log(Level.SEVERE, null, ex);
-                }
             }
         };
     }
@@ -96,45 +85,37 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
 
     @Test
     public void testRead() {
-        try {
 
-            ReadRequest request = new ReadRequest(0, 0, 0);
+        ReadRequest request = new ReadRequest(0, 0, 0);
 
-            ReadResponse result = instance.read(request);
-            assertEquals(false, result.getSuccess());
+        ReadResponse result = instance.read(request);
+        assertEquals(false, result.getSuccess());
 
-            GenericSuccessResponse br;
-            br = instance.begin(new BeginRequest(0));
-            assertEquals(true, br.getSuccess());
+        GenericSuccessResponse br;
+        br = instance.begin(new BeginRequest(0));
+        assertEquals(true, br.getSuccess());
 
-            result = instance.read(request);
-            assertEquals(true, result.getSuccess());
-            assertEquals(null, result.getValue());
+        result = instance.read(request);
+        assertEquals(true, result.getSuccess());
+        assertEquals(null, result.getValue());
 
-        } catch (IOException ex) {
-            fail(ex.getLocalizedMessage());
-        }
     }
 
     @Test
     public void testWrite() {
 
-        try {
-            WriteRequest request = new WriteRequest(0, 0, 0, 0);
+        WriteRequest request = new WriteRequest(0, 0, 0, 0);
 
-            GenericSuccessResponse result = instance.write(request);
-            assertEquals(false, result.getSuccess());
+        GenericSuccessResponse result = instance.write(request);
+        assertEquals(false, result.getSuccess());
 
-            GenericSuccessResponse br;
-            br = instance.begin(new BeginRequest(0));
-            assertEquals(true, br.getSuccess());
+        GenericSuccessResponse br;
+        br = instance.begin(new BeginRequest(0));
+        assertEquals(true, br.getSuccess());
 
-            result = instance.write(request);
-            assertEquals(true, result.getSuccess());
+        result = instance.write(request);
+        assertEquals(true, result.getSuccess());
 
-        } catch (IOException ex) {
-            fail(ex.getLocalizedMessage());
-        }
     }
 
     @Test
@@ -155,112 +136,98 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
     @Test
     public void testCommit() {
 
-        try {
-            CommitRequest request = new CommitRequest(0);
+        CommitRequest request = new CommitRequest(0);
 
-            GenericSuccessResponse result = instance.commit(request);
-            assertEquals(false, result.getSuccess());
+        GenericSuccessResponse result = instance.commit(request);
+        assertEquals(false, result.getSuccess());
 
-            GenericSuccessResponse br;
-            br = instance.begin(new BeginRequest(0));
-            assertEquals(true, br.getSuccess());
+        GenericSuccessResponse br;
+        br = instance.begin(new BeginRequest(0));
+        assertEquals(true, br.getSuccess());
 
-            result = instance.commit(request);
-            assertEquals(false, result.getSuccess());
+        result = instance.commit(request);
+        assertEquals(false, result.getSuccess());
 
-            result = instance.prepare(new PrepareRequest(0));
-            assertEquals(true, result.getSuccess());
+        result = instance.prepare(new PrepareRequest(0));
+        assertEquals(true, result.getSuccess());
 
-            result = instance.commit(request);
-            assertEquals(true, result.getSuccess());
+        result = instance.commit(request);
+        assertEquals(true, result.getSuccess());
 
-            result = instance.commit(request);
-            assertEquals(false, result.getSuccess());
+        result = instance.commit(request);
+        assertEquals(false, result.getSuccess());
 
-            ReadResponse rr = instance.read(new ReadRequest(0, 0, 0));
-            assertEquals(false, rr.getSuccess());
+        ReadResponse rr = instance.read(new ReadRequest(0, 0, 0));
+        assertEquals(false, rr.getSuccess());
 
-            result = instance.write(new WriteRequest(0, 0, 0, 0));
-            assertEquals(false, result.getSuccess());
+        result = instance.write(new WriteRequest(0, 0, 0, 0));
+        assertEquals(false, result.getSuccess());
 
-            // WHAT SHOULD BE RESULT, true or false? At the moment it will
-            // succeed and test will fail
-            result = instance.begin(new BeginRequest(0));
-            assertEquals(true, result.getSuccess());
-
-        } catch (IOException ex) {
-            fail(ex.getLocalizedMessage());
-        }
+        // WHAT SHOULD BE RESULT, true or false? At the moment it will
+        // succeed and test will fail
+        result = instance.begin(new BeginRequest(0));
+        assertEquals(true, result.getSuccess());
 
     }
 
     @Test
     public void testSingle() {
-        try {
 
-            GenericSuccessResponse br = instance.begin(new BeginRequest(1));
-            assertEquals(true, br.getSuccess());
+        GenericSuccessResponse br = instance.begin(new BeginRequest(1));
+        assertEquals(true, br.getSuccess());
 
-            GenericSuccessResponse wr = instance.write(new WriteRequest(1, 0, "zero", 0));
-            assertEquals(true, wr.getSuccess());
+        GenericSuccessResponse wr = instance.write(new WriteRequest(1, 0, "zero", 0));
+        assertEquals(true, wr.getSuccess());
 
-            ReadResponse rr = instance.read(new ReadRequest(1, 0, 0));
-            assertEquals(true, rr.getSuccess());
-            assertEquals("zero", (String) rr.getValue());
+        ReadResponse rr = instance.read(new ReadRequest(1, 0, 0));
+        assertEquals(true, rr.getSuccess());
+        assertEquals("zero", (String) rr.getValue());
 
-            GenericSuccessResponse pr = instance.prepare(new PrepareRequest(1));
-            assertEquals(true, pr.getSuccess());
+        GenericSuccessResponse pr = instance.prepare(new PrepareRequest(1));
+        assertEquals(true, pr.getSuccess());
 
-            GenericSuccessResponse cr = instance.commit(new CommitRequest(1));
-            assertEquals(true, cr.getSuccess());
-
-        } catch (IOException ex) {
-            fail(ex.getLocalizedMessage());
-        }
+        GenericSuccessResponse cr = instance.commit(new CommitRequest(1));
+        assertEquals(true, cr.getSuccess());
 
     }
 
     @Test
     public void testSerial() {
-        try {
 
-            GenericSuccessResponse gsr = instance.begin(new BeginRequest(0));
-            assertEquals(true, gsr.getSuccess());
+        GenericSuccessResponse gsr = instance.begin(new BeginRequest(0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.write(new WriteRequest(0, 0, "zero", 0));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.write(new WriteRequest(0, 0, "zero", 0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.write(new WriteRequest(0, 1, "ONE", 0));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.write(new WriteRequest(0, 1, "ONE", 0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.write(new WriteRequest(0, 1, "one", 0));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.write(new WriteRequest(0, 1, "one", 0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.prepare(new PrepareRequest(0));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.prepare(new PrepareRequest(0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.commit(new CommitRequest(0));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.commit(new CommitRequest(0));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.begin(new BeginRequest(1));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.begin(new BeginRequest(1));
+        assertEquals(true, gsr.getSuccess());
 
-            ReadResponse rr = instance.read(new ReadRequest(1, 1, 0));
-            assertEquals(true, rr.getSuccess());
-            assertEquals("one", (String) rr.getValue());
+        ReadResponse rr = instance.read(new ReadRequest(1, 1, 0));
+        assertEquals(true, rr.getSuccess());
+        assertEquals("one", (String) rr.getValue());
 
-            rr = instance.read(new ReadRequest(1, 0, 0));
-            assertEquals(true, rr.getSuccess());
-            assertEquals("zero", (String) rr.getValue());
+        rr = instance.read(new ReadRequest(1, 0, 0));
+        assertEquals(true, rr.getSuccess());
+        assertEquals("zero", (String) rr.getValue());
 
-            gsr = instance.prepare(new PrepareRequest(1));
-            assertEquals(true, gsr.getSuccess());
+        gsr = instance.prepare(new PrepareRequest(1));
+        assertEquals(true, gsr.getSuccess());
 
-            gsr = instance.commit(new CommitRequest(1));
-            assertEquals(true, gsr.getSuccess());
-        } catch (IOException ex) {
-            fail(ex.getLocalizedMessage());
-        }
+        gsr = instance.commit(new CommitRequest(1));
+        assertEquals(true, gsr.getSuccess());
 
     }
 

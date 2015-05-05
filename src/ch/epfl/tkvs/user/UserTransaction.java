@@ -11,12 +11,11 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import org.apache.log4j.Logger;
 import ch.epfl.tkvs.transactionmanager.AbortException;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -41,6 +40,7 @@ public class UserTransaction<K extends Key> {
     private int tmPort;
     private int transactionID;
     private TransactionStatus status;
+    private static Logger log = Logger.getLogger(UserTransaction.class.getName());
 
     public UserTransaction(K key) throws AbortException {
         try {
@@ -120,7 +120,7 @@ public class UserTransaction<K extends Key> {
 
             return response.getValue();
         } catch (IOException | InvalidMessageException | JSONException ex) {
-            Logger.getLogger(UserTransaction.class.getName()).log(Level.SEVERE, null, ex);
+            log.fatal("Something wrong with messages", ex);
             throw new AbortException(ex.getLocalizedMessage());
         }
 
@@ -141,7 +141,7 @@ public class UserTransaction<K extends Key> {
                 throw new AbortException("Abort");
             }
         } catch (IOException | JSONException ex) {
-            Logger.getLogger(UserTransaction.class.getName()).log(Level.SEVERE, null, ex);
+            log.fatal("Something wrong with messages", ex);
             throw new AbortException(ex.getLocalizedMessage());
         }
     }
@@ -160,7 +160,7 @@ public class UserTransaction<K extends Key> {
                 throw new AbortException("Abort");
             }
         } catch (JSONException ex) {
-            Logger.getLogger(UserTransaction.class.getName()).log(Level.SEVERE, null, ex);
+            log.fatal("Something wrong with messages", ex);
             throw new AbortException(ex.getLocalizedMessage());
         }
     }

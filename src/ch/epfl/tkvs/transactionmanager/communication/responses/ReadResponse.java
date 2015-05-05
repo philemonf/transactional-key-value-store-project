@@ -7,10 +7,12 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import org.apache.log4j.Logger;
 
 
 public class ReadResponse extends Message {
 
+    private static Logger log = Logger.getLogger(ReadResponse.class);
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "transaction_manager_response";
 
@@ -29,13 +31,14 @@ public class ReadResponse extends Message {
         return success;
     }
 
-    public Serializable getValue() throws IOException {
+    public Serializable getValue() {
         if (encodedValue == null)
             return null;
         try {
             return Base64Utils.convertFromBase64(encodedValue);
-        } catch (ClassNotFoundException e) {
-            throw new IOException(e);
+        } catch (IOException | ClassNotFoundException e) {
+            log.fatal("Cannot decode value", e);
+            return null;
         }
     }
 }

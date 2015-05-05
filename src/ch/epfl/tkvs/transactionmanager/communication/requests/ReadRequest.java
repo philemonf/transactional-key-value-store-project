@@ -7,9 +7,12 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import org.apache.log4j.Logger;
 
 
 public class ReadRequest extends Message {
+
+    private static Logger log = Logger.getLogger(ReadRequest.class);
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "read_request";
@@ -23,9 +26,14 @@ public class ReadRequest extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
     private int TMhash;
 
-    public ReadRequest(int transactionId, Serializable key, int hash) throws IOException {
+    public ReadRequest(int transactionId, Serializable key, int hash) {
         this.transactionId = transactionId;
-        this.encodedKey = Base64Utils.convertToBase64(key);
+        try {
+            this.encodedKey = Base64Utils.convertToBase64(key);
+        } catch (IOException ex) {
+            log.fatal("Cannot encode key", ex);
+            this.encodedKey = null;
+        }
         this.TMhash = hash;
     }
 

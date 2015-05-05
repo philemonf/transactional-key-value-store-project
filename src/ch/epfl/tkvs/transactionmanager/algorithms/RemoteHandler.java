@@ -1,7 +1,6 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.Transaction;
-import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
@@ -18,8 +17,7 @@ import org.codehaus.jettison.json.JSONObject;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import java.io.IOException;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 
 
@@ -31,6 +29,7 @@ public class RemoteHandler {
 
     // The concurrency control algorithm being executed locally to which the remote handler is attached to.
     private CCAlgorithm localAlgo;
+    private static final Logger log = Logger.getLogger(RemoteHandler.class);
 
     // public RemoteHandler(CCAlgorithm localAlgo)
     public void setAlgo(CCAlgorithm localAlgo) {
@@ -51,13 +50,11 @@ public class RemoteHandler {
         if (!t.remoteIsPrepared.containsKey(hash)) {
             try {
                 JSONObject response = sendToRemoteTM(new BeginRequest(t.transactionId), hash, true);
-                boolean success = false;
-
-                success = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
+                boolean success = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
                 t.remoteIsPrepared.put(hash, Boolean.FALSE);
                 return success;
             } catch (IOException | JSONException ex) {
-                Logger.getLogger(RemoteHandler.class.getName()).log(Level.SEVERE, null, ex);
+                log.fatal("Invalid or no response from remote TM", ex);
                 return false;
             }
         }
@@ -84,7 +81,7 @@ public class RemoteHandler {
                 abort(t);
             return rr;
         } catch (IOException | InvalidMessageException ex) {
-            Logger.getLogger(RemoteHandler.class.getName()).log(Level.SEVERE, null, ex);
+            log.fatal("Invalid or no response from remote TM", ex);
             return new ReadResponse(false, null);
         }
 
@@ -109,7 +106,7 @@ public class RemoteHandler {
                 abort(t);
             return gsr;
         } catch (IOException | InvalidMessageException ex) {
-            Logger.getLogger(RemoteHandler.class.getName()).log(Level.SEVERE, null, ex);
+            log.fatal("Invalid or no response from remote TM", ex);
             return new GenericSuccessResponse(false);
         }
     }
@@ -118,7 +115,6 @@ public class RemoteHandler {
      * Performs 2-Phase commit protocol to try to commit a distributed transaction Invokes distributed abort in case of
      * error
      * @param t The transaction running on primary Transaction Manager
-     * @param request the original request received by primary Transaction Manager
      * @return the response from the secondary Transaction Manager
      */
     public GenericSuccessResponse tryCommit(Transaction t) {
@@ -133,7 +129,7 @@ public class RemoteHandler {
             try {
                 response = sendToRemoteTM(pr, remoteHash, true).getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
             } catch (IOException | JSONException ex) {
-                Logger.getLogger(RemoteHandler.class.getName()).log(Level.SEVERE, null, ex);
+                log.fatal("Invalid or no response from remote TM", ex);
 
             }
             canCommit &= response;
@@ -146,7 +142,7 @@ public class RemoteHandler {
                 commit(t);
             } catch (Exception ex) {
                 // TODO: something in case of network error? return true or false?
-                Logger.getLogger(RemoteHandler.class.getName()).log(Level.SEVERE, null, ex);
+                log.fatal("Network error, incomplete commit", ex);
                 return new GenericSuccessResponse(false);
             }
         } else {
