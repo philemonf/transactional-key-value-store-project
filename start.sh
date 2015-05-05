@@ -52,5 +52,3 @@ hadoop fs -chmod -R 777 "$CONFIG_PATH"
 # Executes the Client.
 echo "Executing YARN Client...\n"
 hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client
-
-hadoop fs -copyToLocal /projects/transaction-manager/results.bm results.bm 
