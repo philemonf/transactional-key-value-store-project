@@ -45,6 +45,7 @@ public class AppMaster {
     private static RMCallbackHandler rmHandler;
     private static int nextXid = 0;
 
+
     public static void main(String[] args) {
         log.info("Initializing at " + NetUtils.getHostname());
         try {
@@ -176,8 +177,8 @@ public class AppMaster {
         }
 
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
-
         ExecutorService threadPool = Executors.newCachedThreadPool();
+        
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
                 log.info("Waiting for message...");

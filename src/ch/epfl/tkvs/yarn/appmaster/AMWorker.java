@@ -66,6 +66,8 @@ public class AMWorker extends Thread {
                 log.info("Response" + response.toString());
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
                 out.println(response.toString());
+                out.close();
+                log.info("Finish sending response " + response.toString());
             }
             sock.close(); // Closing this socket will also close the socket's
                           // InputStream and OutputStream.
