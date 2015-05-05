@@ -64,7 +64,8 @@ public abstract class Algo2PL extends CCAlgorithm {
         if (transaction == null) {
             return new GenericSuccessResponse(false);
         }
-        terminate(transaction, false);
+        if (!lockingUnit.interruptWaitingLocks(xid))
+            terminate(transaction, false);
         return new GenericSuccessResponse(true);
     }
 
@@ -95,21 +96,21 @@ public abstract class Algo2PL extends CCAlgorithm {
         return new GenericSuccessResponse(true);
 
     }
-    
+
     @Override
     public void checkpoint() {
-    	// Get the dead lock graph
-    	DeadlockGraph graph = lockingUnit.getDeadlockGraph();
-    	
-    	try {
-    		// Create the message
-    		DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(graph);
-    		log.info("About to send deadlock info to app master: " + deadlockMessage);
-    		TransactionManager.sendToAppMaster(deadlockMessage);
-    		
-    	} catch (IOException e) {
-    		log.error(e);
-    	}
+        // Get the dead lock graph
+        DeadlockGraph graph = lockingUnit.getDeadlockGraph();
+
+        try {
+            // Create the message
+            DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(graph);
+            log.info("About to send deadlock info to app master: " + deadlockMessage);
+            TransactionManager.sendToAppMaster(deadlockMessage);
+
+        } catch (IOException e) {
+            log.error(e);
+        }
     }
 
 }

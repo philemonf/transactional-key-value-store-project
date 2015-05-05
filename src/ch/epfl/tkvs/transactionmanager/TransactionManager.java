@@ -11,18 +11,16 @@ import java.util.concurrent.Executors;
 
 import org.apache.hadoop.net.NetUtils;
 import org.apache.log4j.Logger;
-import org.apache.log4j.net.SocketServer;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
+import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
 import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 import ch.epfl.tkvs.yarn.RoutingTable;
@@ -82,14 +80,19 @@ public class TransactionManager {
         TMInitMessage initMessage = (TMInitMessage) JSON2MessageConverter.parseJSON(new JSONObject(input), TMInitMessage.class);
         routing = initMessage.getRoutingTable();
 
+        RemoteHandler remoteHandler = new RemoteHandler();
+
         // Select which concurrency algorithm to use
+        // concurrencyController = new Simple2PL(remoteHandler);
         CCAlgorithm concurrencyController = new Simple2PL(null);
-        
+
+        remoteHandler.setAlgo(concurrencyController);
+
         // Start the thread that will call checkpoint on the concurrency controller
         startCheckpointThread(server, concurrencyController);
-        
+
         ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
-        
+
         while (!server.isClosed()) {
             try {
                 log.info("Waiting for message...");
@@ -118,49 +121,48 @@ public class TransactionManager {
         log.info("Finalizing");
         server.close();
     }
-    
+
     /**
      * Helper method to send a message to the app master. Might be blocking if the app master is not ready on start up.
      * @param message the message to send
      * @throws IOException in case of network error or invalid message format
      */
     public static void sendToAppMaster(Message message) throws IOException {
-    	
-    	Socket sock = new Socket(routing.getAMIp(), routing.getAMPort());
-    	BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-    	PrintWriter out = new PrintWriter(sock.getOutputStream());
-    	
-    	while (!isAMReady) {
-    		out.println(":ping");
-    		out.flush();
-    		
-    		String response = in.readLine();
-    		if (response != null && response.equals("ok")) {
-    			isAMReady = true;
-    		} else {
-    			try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					throw new IOException(e);
-				}
-    		}
-    	}
-    	
-    	JSONObject json = null;
-    	try {
-			json = Message2JSONConverter.toJSON(message);
-		} catch (JSONException e) {
-			log.error(e);
-			throw new IOException("An exception occurred while converting the message to json: " + e);
-		}
-    	
-    	
-    	out.println(json.toString());
-    	out.flush();
-    	
-    	in.close();
-    	out.close();
-    	sock.close();
+
+        Socket sock = new Socket(routing.getAMIp(), routing.getAMPort());
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        PrintWriter out = new PrintWriter(sock.getOutputStream());
+
+        while (!isAMReady) {
+            out.println(":ping");
+            out.flush();
+
+            String response = in.readLine();
+            if (response != null && response.equals("ok")) {
+                isAMReady = true;
+            } else {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    throw new IOException(e);
+                }
+            }
+        }
+
+        JSONObject json = null;
+        try {
+            json = Message2JSONConverter.toJSON(message);
+        } catch (JSONException e) {
+            log.error(e);
+            throw new IOException("An exception occurred while converting the message to json: " + e);
+        }
+
+        out.println(json.toString());
+        out.flush();
+
+        in.close();
+        out.close();
+        sock.close();
     }
     
     /**
@@ -174,25 +176,25 @@ public class TransactionManager {
     public JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
     	return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
-    
-    // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms 
-    private void startCheckpointThread(final ServerSocket mainServer, CCAlgorithm ccAlg) {
-    	new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				while (!mainServer.isClosed()) {
-					
-					try {
-						Thread.sleep(CHECKPOINT_PERIOD_MS);
-					} catch (InterruptedException e) {
-						// TODO Handle this error
-						e.printStackTrace();
-					}
-					
-					ccAlg.checkpoint();
-				}
-			}
-		}).start();
+
+    // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms
+    private void startCheckpointThread(final ServerSocket mainServer, final CCAlgorithm ccAlg) {
+        new Thread(new Runnable() {
+
+            @Override
+            public void run() {
+                while (!mainServer.isClosed()) {
+
+                    try {
+                        Thread.sleep(CHECKPOINT_PERIOD_MS);
+                    } catch (InterruptedException e) {
+                        // TODO Handle this error
+                        e.printStackTrace();
+                    }
+
+                    ccAlg.checkpoint();
+                }
+            }
+        }).start();
     }
 }
