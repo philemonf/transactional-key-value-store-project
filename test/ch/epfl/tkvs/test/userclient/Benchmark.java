@@ -1,5 +1,8 @@
 package ch.epfl.tkvs.test.userclient;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
 import java.util.Random;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
@@ -42,6 +45,8 @@ public class Benchmark {
     // Ratio of read compared to one write
     private int ratio;
 
+    private PrintWriter pw;
+
     /**
      * 
      * @param nbKeys: Number of keys that will be accessed by the users
@@ -60,19 +65,22 @@ public class Benchmark {
 
         this.maxNbActions = maxNbActions;
         this.ratio = ratio;
+
     }
 
-    public void run() {
+    public void run() throws FileNotFoundException {
 
         System.out.println("Benchmarking start");
 
+        pw = new PrintWriter(new FileOutputStream("results.bm"));
         printBenchmarkParameters();
         initializeKeys();
         initializeUsersActions();
 
         startBenchmarking();
-        extractResults();
+        extractResults(pw);
 
+        pw.close();
         System.out.println("Benchmarking end");
     }
 
@@ -183,8 +191,9 @@ public class Benchmark {
 
     /**
      * Extract all the information needed from the User threads
+     * @param pw
      */
-    private void extractResults() {
+    private void extractResults(PrintWriter pw) {
         int nbReadTotal = 0;
         int nbWriteTotal = 0;
         int nbBeginAbortsTotal = 0;
@@ -216,7 +225,6 @@ public class Benchmark {
         }
 
         int nbAbortTotal = nbReadAbortsTotal + nbWriteAbortsTotal;
-
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
         System.out.println("\tNumber of Writes: " + nbWriteTotal);
@@ -226,6 +234,9 @@ public class Benchmark {
         System.out.println("\tTotal Commit: " + nbCommitTotal);
         System.out.println("\tTotal Aborts: " + nbAbortTotal);
         System.out.println("\tTotal Latency: " + latencyTotal / users.length + " ms");
+
+        pw.format("%d %d %d %d %d %d %d %d %d %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latencyTotal);
+
     }
 
     private class User extends Thread {
@@ -270,19 +281,18 @@ public class Benchmark {
 
         @Override
         public void run() {
-
             boolean aborted = false;
             boolean isDone = false;
             latency = System.currentTimeMillis();
             while (!isDone) {
-                aborted = false;
                 MyKey key = actions[0].key;
                 Transaction<MyKey> t = null;
+                aborted = false;
                 try {
                     t = new Transaction<MyKey>(key);
                 } catch (AbortException e) {
                     nbBeginAborts++;
-                    continue;
+                    break;
                 }
 
                 for (int i = 0; i < actions.length; i++) {
@@ -295,7 +305,7 @@ public class Benchmark {
                         } catch (AbortException e) {
                             nbWriteAborts++;
                             aborted = true;
-                            continue;
+                            break;
                         }
 
                         break;
@@ -304,9 +314,9 @@ public class Benchmark {
                             nbRead = nbRead + 1;
                             t.read(key);
                         } catch (AbortException e) {
-                            aborted = true;
                             nbReadAborts++;
-                            continue;
+                            aborted = true;
+                            break;
                         }
                         break;
                     }
