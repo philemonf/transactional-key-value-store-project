@@ -102,19 +102,19 @@ public class TransactionManager {
 
                 in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 input = in.readLine();
-                
-            	JSONObject json = new JSONObject(input);
-            	String messageType = json.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
-            	
-            	if (messageType.equals(ExitMessage.MESSAGE_TYPE)) {
-            		log.info("Stopping Server");
+
+                JSONObject json = new JSONObject(input);
+                String messageType = json.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
+
+                if (messageType.equals(ExitMessage.MESSAGE_TYPE)) {
+                    log.info("Stopping Server");
                     sock.close();
                     server.close();
                     threadPool.shutdown();
-            	} else {
-            		threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController));
-            	}
-                
+                } else {
+                    threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController));
+                }
+
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
@@ -165,7 +165,7 @@ public class TransactionManager {
         out.close();
         sock.close();
     }
-    
+
     /**
      * Send a message to a transaction manager identified by its locality hash.
      * @param localityHash the locality hash of the TM that will receive the message
@@ -174,8 +174,8 @@ public class TransactionManager {
      * @return the response or null if !shouldWait
      * @throws IOException in case of network failure or invalid message
      */
-    public JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
-    	return routing.findTM(localityHash).sendMessage(message, shouldWait);
+    public static JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
+        return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
 
     /**
@@ -183,17 +183,17 @@ public class TransactionManager {
      * @return the locality hash or -1 in case of error
      */
     public static int getLocalityHash() {
-    	int i = 0;
-    	for (RemoteTransactionManager tm : routing.getTMs()) {
-    		if (tm.getHostname().equals(tmHost) && tm.getPort() == tmPort) {
-    			return i;
-    		}
-    		++i;
-    	}
-    	
-    	return -1;
+        int i = 0;
+        for (RemoteTransactionManager tm : routing.getTMs()) {
+            if (tm.getHostname().equals(tmHost) && tm.getPort() == tmPort) {
+                return i;
+            }
+            ++i;
+        }
+
+        return -1;
     }
-    
+
     // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms
     private void startCheckpointThread(final ServerSocket mainServer, final CCAlgorithm ccAlg) {
         new Thread(new Runnable() {

@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
@@ -36,8 +37,8 @@ public class RemoteHandler {
         this.localAlgo = localAlgo;
     }
 
-    private JSONObject sendToRemoteTM(Message m, int hash, boolean shouldWaitforResponse) throws IOException {
-        return null;
+    private JSONObject sendToRemoteTM(Message m, int localityHash, boolean shouldWaitforResponse) throws IOException {
+        return TransactionManager.sendToTransactionManager(localityHash, m, shouldWaitforResponse);
     }
 
     /**
