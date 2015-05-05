@@ -27,6 +27,7 @@ public class Benchmark {
          * @param key id
          */
         public Action(ActionType type, MyKey key) {
+
             this.type = type;
             this.key = key;
         }
@@ -34,6 +35,7 @@ public class Benchmark {
     }
 
     private final String BENCHMARK_RESULTS_FILE = "results.bm";
+    private PrintWriter pw;
 
     // Keys the users will access
     private MyKey keys[];
@@ -46,21 +48,22 @@ public class Benchmark {
     private int maxNbActions;
     // Ratio of read compared to one write
     private int ratio;
-
-    private PrintWriter pw;
-
-    // Repeate the same number of action multiple time
+    // Repeat the same number of action multiple time
     private int repetitions;
+
+    // Time for one execution of the benchmark
+    private double runningTime;
 
     /**
      * 
-     * @param repetition
+     * @param repetition: Number of time the benchmark will be repeated with the same parameters
      * @param nbKeys: Number of keys that will be accessed by the users
      * @param nbUsers: Number of users for the benchmark
      * @param maxNbActions: Max number of actions that will be done by the user
      * @param ratio: Number of read for one write
      */
     public Benchmark(int nbKeys, int nbUsers, int maxNbActions, int ratio, int repetitions) {
+
         this.keys = new MyKey[nbKeys];
         for (int i = 0; i < nbKeys; i++) {
             keys[i] = new MyKey("Key" + i);
@@ -71,9 +74,7 @@ public class Benchmark {
 
         this.maxNbActions = maxNbActions;
         this.ratio = ratio;
-
         this.repetitions = repetitions;
-
     }
 
     public void run() throws FileNotFoundException {
@@ -99,6 +100,7 @@ public class Benchmark {
      * Print the different parameters entered
      */
     private void printBenchmarkParameters() {
+
         System.out.println("\tParameters:");
         System.out.println("\t\tNumber of transactions: " + users.length);
         System.out.println("\t\tMaximum number of requests: " + maxNbActions);
@@ -114,12 +116,12 @@ public class Benchmark {
 
         boolean isDone = false;
         boolean aborted = false;
-        while (!isDone) {
 
+        while (!isDone) {
             isDone = true;
             aborted = false;
-
             Transaction<Key> init = null;
+
             try {
                 init = new Transaction<Key>(new MyKey("init"));
             } catch (AbortException e) {
@@ -145,7 +147,6 @@ public class Benchmark {
                 isDone = false;
             }
         }
-
     }
 
     /**
@@ -153,6 +154,7 @@ public class Benchmark {
      *
      */
     private void initializeUsersActions() {
+
         for (int i = 0; i < userActions.length; i++) {
             // Generate a random number of Actions
             Random r = new Random();
@@ -171,7 +173,6 @@ public class Benchmark {
                     userActions[i][j] = new Action(ActionType.WRITE, keys[keyIndex]);
                 }
             }
-
         }
     }
 
@@ -184,6 +185,8 @@ public class Benchmark {
         for (int i = 0; i < users.length; i++) {
             users[i] = new User(i + 1, userActions[i]);
         }
+
+        runningTime = System.currentTimeMillis();
 
         // Launch the threads
         for (int i = 0; i < users.length; i++) {
@@ -198,6 +201,8 @@ public class Benchmark {
                 e.printStackTrace();
             }
         }
+
+        runningTime = System.currentTimeMillis() - runningTime;
     }
 
     /**
@@ -205,13 +210,14 @@ public class Benchmark {
      * @param pw
      */
     private void extractResults(PrintWriter pw) {
+
         int nbReadTotal = 0;
         int nbWriteTotal = 0;
         int nbBeginAbortsTotal = 0;
         int nbReadAbortsTotal = 0;
         int nbWriteAbortsTotal = 0;
         int nbCommitTotal = 0;
-        double latencyTotal = 0;
+        double sumLatency = 0;
 
         System.out.println("Benchmark results on " + keys.length + " keys");
 
@@ -227,7 +233,7 @@ public class Benchmark {
 
             System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " + nbWriteActions + "\t#aborts = " + (users[i].nbReadAborts + users[i].nbWriteAborts));
 
-            latencyTotal += users[i].latency;
+            sumLatency += users[i].latency;
             nbReadTotal += users[i].nbRead;
             nbWriteTotal += users[i].nbWrite;
             nbBeginAbortsTotal += users[i].nbBeginAborts;
@@ -235,6 +241,8 @@ public class Benchmark {
             nbReadAbortsTotal += users[i].nbReadAborts;
         }
 
+        double latency = sumLatency / users.length;
+        double throughput = runningTime / users.length;
         int nbAbortTotal = nbReadAbortsTotal + nbWriteAbortsTotal;
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
@@ -244,10 +252,11 @@ public class Benchmark {
         System.out.println("\tNumber of Aborts during Write: " + nbWriteAbortsTotal);
         System.out.println("\tTotal Commit: " + nbCommitTotal);
         System.out.println("\tTotal Aborts: " + nbAbortTotal);
-        System.out.println("\tTotal Latency: " + latencyTotal / users.length + " ms");
+        System.out.println("\tTotal Latency: " + latency + " ms/transaction");
+        System.out.println("\tThroughput: " + throughput + " transaction/ms");
 
-        pw.format("%d %d %d %d %d %d %d %d %d %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latencyTotal);
-
+        pw.format("%d %d %d %d %d %d %d %d %d %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput);
+        pw.flush();
     }
 
     private class User extends Thread {
@@ -277,6 +286,7 @@ public class Benchmark {
          * @param actions
          */
         public User(int userID, Action actions[]) {
+
             this.userID = userID;
             this.actions = actions;
 
@@ -292,13 +302,16 @@ public class Benchmark {
 
         @Override
         public void run() {
+
             boolean aborted = false;
             boolean isDone = false;
             latency = System.currentTimeMillis();
+
             while (!isDone) {
                 MyKey key = actions[0].key;
                 Transaction<MyKey> t = null;
                 aborted = false;
+
                 try {
                     t = new Transaction<MyKey>(key);
                 } catch (AbortException e) {
@@ -318,7 +331,6 @@ public class Benchmark {
                             aborted = true;
                             break;
                         }
-
                         break;
                     case READ:
                         try {
@@ -331,7 +343,6 @@ public class Benchmark {
                         }
                         break;
                     }
-
                 }
 
                 if (aborted) {
@@ -349,7 +360,6 @@ public class Benchmark {
                 }
 
             }
-
             latency = System.currentTimeMillis() - latency;
         }
     }
