@@ -6,6 +6,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -110,7 +111,7 @@ public abstract class CCAlgorithm {
     }
 
     protected boolean isLocalKey(int localityHash) {
-        return (remote == null);
+        return (remote == null) || localityHash == TransactionManager.getLocalityHash();
     }
 
     protected boolean isLocalTransaction(Transaction t) {
