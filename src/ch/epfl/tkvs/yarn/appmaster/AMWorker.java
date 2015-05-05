@@ -16,6 +16,7 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
@@ -76,15 +77,12 @@ public class AMWorker extends Thread {
     }
 
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
-        // TODO: Compute the hash of the key.
-        int hash = 0;
+        int localityHash = request.getLocalityHash();
 
-        // TODO: get by hash. Now it just get the 1st.
-        Entry<String, Integer> tm = routing.getTMs().entrySet().iterator().next();
+        RemoteTransactionManager tm = routing.findTM(localityHash);
 
-        // TODO: Create a unique transactionID
-        int transactionID = 0;
+        int transactionID = AppMaster.nextTransactionId();
 
-        return toJSON(new TransactionManagerResponse(true, transactionID, tm.getKey(), tm.getValue()));
+        return toJSON(new TransactionManagerResponse(true, transactionID, tm.getHostname(), tm.getPort()));
     }
 }

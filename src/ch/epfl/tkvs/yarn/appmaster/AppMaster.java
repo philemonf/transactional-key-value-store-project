@@ -28,7 +28,11 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
@@ -40,6 +44,7 @@ public class AppMaster {
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private static final int MAX_NUMBER_OF_WORKERS = 10;
     private static RMCallbackHandler rmHandler;
+    private static int nextXid = 0;
 
     public static void main(String[] args) {
         log.info("Initializing at " + NetUtils.getHostname());
@@ -123,10 +128,9 @@ public class AppMaster {
                 } else {
 
                     pingCount = 0;
-
                     String[] info = input.split(":");
                     log.info("Registering TM at " + info[0] + ":" + info[1]);
-                    rmHandler.getRoutingTable().addTM(info[0], Integer.parseInt(info[1]));
+                    rmHandler.getRoutingTable().addTM(new RemoteTransactionManager(info[0], Integer.parseInt(info[1])));
                 }
 
                 sock.close();
@@ -144,13 +148,10 @@ public class AppMaster {
         server.setSoTimeout(0); // reset timeout.
 
         log.info("Sending routing information to TMs");
-        String routingEncoded = Base64Utils.convertToBase64(rmHandler.getRoutingTable());
-        for (Entry<String, Integer> tm : rmHandler.getRoutingTable().getTMs().entrySet()) {
-            Socket sock = new Socket(tm.getKey(), tm.getValue());
-            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.print(routingEncoded);
-            out.close();
-            sock.close();
+        TMInitMessage initMessage = new TMInitMessage(rmHandler.getRoutingTable());
+        
+        for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
+        	tm.sendMessage(initMessage, false);
         }
 
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
@@ -180,12 +181,9 @@ public class AppMaster {
                     server.close();
 
                     log.info("Stopping TMs");
-                    for (Entry<String, Integer> ent : rmHandler.getRoutingTable().getTMs().entrySet()) {
-                        Socket exitSock = new Socket(ent.getKey(), ent.getValue());
-                        PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
-                        out.println(input);
-                        out.close();
-                        exitSock.close();
+                    ExitMessage exitMessage = new ExitMessage();
+                    for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
+                    	tm.sendMessage(exitMessage, false);
                     }
                     break;
                 default:
@@ -233,7 +231,17 @@ public class AppMaster {
         rmClient.stop();
     }
     
+    public static void sendMessageToTM(Message message, int tmHash) {
+    	//TODO implement it
+    }
+    
     public static int numberOfRegisteredTMs() {
     	return rmHandler.getContainerCount();
+    }
+    
+    public static int nextTransactionId() {
+    	int xid = nextXid;
+    	nextXid++;
+    	return xid;
     }
 }

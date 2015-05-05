@@ -11,13 +11,13 @@ public class TransactionManagerRequest extends Message {
     public static final String MESSAGE_TYPE = "transaction_manager_request";
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
-    private int hash;
+    private int localityHash;
 
     public TransactionManagerRequest(int hash) {
-        this.hash = hash;
+        this.localityHash = hash;
     }
 
-    public int getHash() {
-        return hash;
+    public int getLocalityHash() {
+        return localityHash;
     }
 }

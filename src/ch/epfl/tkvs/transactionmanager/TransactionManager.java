@@ -18,8 +18,12 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
+import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
+import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
@@ -71,10 +75,12 @@ public class TransactionManager {
         log.info("Starting server at " + tmHost + ":" + tmPort);
         ServerSocket server = new ServerSocket(tmPort);
 
+        // Wait for the TM initialization message
         Socket sock = server.accept();
         BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
         String input = in.readLine();
-        routing = (RoutingTable) Base64Utils.convertFromBase64(input);
+        TMInitMessage initMessage = (TMInitMessage) JSON2MessageConverter.parseJSON(new JSONObject(input), TMInitMessage.class);
+        routing = initMessage.getRoutingTable();
 
         // Select which concurrency algorithm to use
         CCAlgorithm concurrencyController = new Simple2PL(null);
@@ -92,17 +98,19 @@ public class TransactionManager {
 
                 in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 input = in.readLine();
-
-                switch (input) {
-                case ":exit":
-                    log.info("Stopping Server");
+                
+            	JSONObject json = new JSONObject(input);
+            	String messageType = json.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
+            	
+            	if (messageType.equals(ExitMessage.MESSAGE_TYPE)) {
+            		log.info("Stopping Server");
                     sock.close();
                     server.close();
                     threadPool.shutdown();
-                    break;
-                default:
-                    threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController));
-                }
+            	} else {
+            		threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController));
+            	}
+                
             } catch (IOException e) {
                 log.error("sock.accept ", e);
             }
@@ -153,6 +161,18 @@ public class TransactionManager {
     	in.close();
     	out.close();
     	sock.close();
+    }
+    
+    /**
+     * Send a message to a transaction manager identified by its locality hash.
+     * @param localityHash the locality hash of the TM that will receive the message
+     * @param message the message to send
+     * @param shouldWait whether or not the method should wait for a response
+     * @return the response or null if !shouldWait
+     * @throws IOException in case of network failure or invalid message
+     */
+    public JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
+    	return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
     
     // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms 
