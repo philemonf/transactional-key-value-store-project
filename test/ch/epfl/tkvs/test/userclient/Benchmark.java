@@ -88,33 +88,6 @@ public class Benchmark {
     }
 
     /**
-     * Initialize the list of action the users will execute in the benchmark
-     * 
-     */
-    private void initializeUsersActions() {
-        for (int i = 0; i < userActions.length; i++) {
-            // Generate a random number of Actions
-            Random r = new Random();
-            int nbActions = r.nextInt(maxNbActions) + 1;
-            userActions[i] = new Action[nbActions];
-
-            for (int j = 0; j < userActions[i].length; j++) {
-                int keyIndex = 0;
-                keyIndex = r.nextInt(keys.length);
-
-                // Determine if we want to read or write a key
-                int write = r.nextInt(ratio);
-                if (write != 0) {
-                    userActions[i][j] = new Action(ActionType.READ, keys[keyIndex]);
-                } else {
-                    userActions[i][j] = new Action(ActionType.WRITE, keys[keyIndex]);
-                }
-            }
-
-        }
-    }
-
-    /**
      * Create a transaction to write into the Key Value store in order to initialize the keys used for the benchmark
      * 
      */
@@ -131,6 +104,7 @@ public class Benchmark {
             try {
                 init = new Transaction<Key>(new MyKey("init"));
             } catch (AbortException e) {
+                // TODO Handle this case
                 e.printStackTrace();
             }
 
@@ -153,6 +127,33 @@ public class Benchmark {
             }
         }
 
+    }
+
+    /**
+     * Initialize the list of action the users will execute in the benchmark
+     *
+     */
+    private void initializeUsersActions() {
+        for (int i = 0; i < userActions.length; i++) {
+            // Generate a random number of Actions
+            Random r = new Random();
+            int nbActions = r.nextInt(maxNbActions) + 1;
+            userActions[i] = new Action[nbActions];
+
+            for (int j = 0; j < userActions[i].length; j++) {
+                int keyIndex = 0;
+                keyIndex = r.nextInt(keys.length);
+
+                // Determine if we want to read or write a key
+                int write = r.nextInt(ratio);
+                if (write != 0) {
+                    userActions[i][j] = new Action(ActionType.READ, keys[keyIndex]);
+                } else {
+                    userActions[i][j] = new Action(ActionType.WRITE, keys[keyIndex]);
+                }
+            }
+
+        }
     }
 
     /**
@@ -192,7 +193,20 @@ public class Benchmark {
         int nbCommitTotal = 0;
         double latencyTotal = 0;
 
+        System.out.println("Benchmark results on " + keys.length + " keys");
+
         for (int i = 0; i < users.length; i++) {
+
+            int nbReadActions = 0;
+            for (int j = 0; j < users[i].actions.length; j++) {
+                if (users[i].actions[j].type == ActionType.READ) {
+                    nbReadActions++;
+                }
+            }
+            int nbWriteActions = users[i].actions.length - nbReadActions;
+
+            System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " + nbWriteActions + "\t#aborts = " + (users[i].nbReadAborts + users[i].nbWriteAborts));
+
             latencyTotal += users[i].latency;
             nbReadTotal += users[i].nbRead;
             nbWriteTotal += users[i].nbWrite;
@@ -214,7 +228,6 @@ public class Benchmark {
         System.out.println("\tTotal Latency: " + latencyTotal / users.length + " ms");
     }
 
-    
     private class User extends Thread {
 
         // ID of the user
