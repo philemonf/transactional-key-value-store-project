@@ -149,10 +149,10 @@ public enum LockingUnit {
     }
 
     public DeadlockGraph getDeadlockGraph() {
-    	//TODO might have to do something before, think about it
-    	return graph;
+        // TODO might have to do something before, think about it
+        return graph;
     }
-    
+
     private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
 
         HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();
@@ -294,5 +294,14 @@ public enum LockingUnit {
         }
         incompatibleTransactions.remove(transactionID);
         return incompatibleTransactions;
+    }
+
+    /**
+     * Interrupts all waiting threads from a particular transaction. Interrupted threads must throw AbortException
+     * @param transactionID the id of the transaction
+     * @return true if there was any thread waiting, false otherwise
+     */
+    public boolean interruptWaitingLocks(int transactionID) {
+        return false;
     }
 }

@@ -16,17 +16,17 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 
+
 /**
- * This abstract class represents an concurrency control algorithm.
- * One must come up with actual implementation of such a class and inject
- * it in the transaction manager in order to get a custom concurrency algorithm.
+ * This abstract class represents an concurrency control algorithm. One must come up with actual implementation of such
+ * a class and inject it in the transaction manager in order to get a custom concurrency algorithm.
  */
 public abstract class CCAlgorithm {
 
     protected RemoteHandler remote;
 
     /**
-     * Called whenever the transaction manager receives a read request.
+     * Called whenever the transaction manager receives a read request
      * @param request the incoming read request
      * @return the response to be sent to the sender
      */
@@ -40,7 +40,7 @@ public abstract class CCAlgorithm {
     public abstract GenericSuccessResponse write(WriteRequest request);
 
     /**
-     * Called whenever the transaction manager receives a request to begin a transaction.
+     * Called whenever the transaction manager receives a request to begin a transaction
      * @param request the incoming begin request
      * @return the response to be sent to the sender
      */
@@ -75,9 +75,10 @@ public abstract class CCAlgorithm {
     public abstract Transaction getTransaction(int xid);
 
     /**
-     * TODO: comment it please
-     * @param request
-     * @return
+     * Called by user client to prepare and commit the transaction, using 2-Phase Commit protocol in case of distributed
+     * transaction
+     * @param request incoming TryCommitRequests
+     * @return the response to be sent to the sender
      */
     public GenericSuccessResponse tryCommit(TryCommitRequest request) {
         int xid = request.getTransactionId();
@@ -95,18 +96,12 @@ public abstract class CCAlgorithm {
         } else
             return remote.tryCommit(transaction);
     }
-    
+
     /**
-     * This method is called periodically by the transaction manager.
-     * It can be used for a lot of purpose including:
-     * <ul>
-     * 	<li>Fault tolerance</li>
-     * 	<li>Sending report to some node</li>
-     * 	<li>Internal state audit</li>
-     * </ul>
-     * This is up to the actual implementation of the concurrency control
-     * algorithm to decide. If such a function is not needed, please leave
-     * it empty.
+     * This method is called periodically by the transaction manager. It can be used for a lot of purpose including:
+     * <ul> <li>Fault tolerance</li> <li>Sending report to some node</li> <li>Internal state audit</li> </ul> This is up
+     * to the actual implementation of the concurrency control algorithm to decide. If such a function is not needed,
+     * please leave it empty.
      */
     abstract public void checkpoint();
 
