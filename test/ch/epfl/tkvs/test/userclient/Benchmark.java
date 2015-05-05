@@ -33,6 +33,8 @@ public class Benchmark {
 
     }
 
+    private final String BENCHMARK_RESULTS_FILE = "results.bm";
+
     // Keys the users will access
     private MyKey keys[];
     // Users threads which will execute actions
@@ -47,14 +49,18 @@ public class Benchmark {
 
     private PrintWriter pw;
 
+    // Repeate the same number of action multiple time
+    private int repetitions;
+
     /**
      * 
+     * @param repetition
      * @param nbKeys: Number of keys that will be accessed by the users
      * @param nbUsers: Number of users for the benchmark
      * @param maxNbActions: Max number of actions that will be done by the user
      * @param ratio: Number of read for one write
      */
-    public Benchmark(int nbKeys, int nbUsers, int maxNbActions, int ratio) {
+    public Benchmark(int nbKeys, int nbUsers, int maxNbActions, int ratio, int repetitions) {
         this.keys = new MyKey[nbKeys];
         for (int i = 0; i < nbKeys; i++) {
             keys[i] = new MyKey("Key" + i);
@@ -66,19 +72,24 @@ public class Benchmark {
         this.maxNbActions = maxNbActions;
         this.ratio = ratio;
 
+        this.repetitions = repetitions;
+
     }
 
     public void run() throws FileNotFoundException {
 
         System.out.println("Benchmarking start");
+        // Append the results to the same file
+        pw = new PrintWriter(new FileOutputStream(BENCHMARK_RESULTS_FILE, true));
 
-        pw = new PrintWriter(new FileOutputStream("results.bm"));
         printBenchmarkParameters();
-        initializeKeys();
         initializeUsersActions();
 
-        startBenchmarking();
-        extractResults(pw);
+        for (int i = 0; i < repetitions; i++) {
+            initializeKeys();
+            startBenchmarking();
+            extractResults(pw);
+        }
 
         pw.close();
         System.out.println("Benchmarking end");

@@ -184,10 +184,10 @@ public class Client {
 
             case ":benchmark":
 
-                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)");
+                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
-                    System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio>");
+                    System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> <#repetitions>");
                     System.out.println("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
                     break;
                 }
@@ -197,7 +197,12 @@ public class Client {
                 int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
                 int ratio = Math.max(2, Integer.parseInt(matcher.group(4)));
 
-                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio).run();
+                int repetition = 1;
+                if (matcher.group(5) != null) {
+                    repetition = Integer.parseInt(matcher.group(5));
+                }
+
+                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition).run();
                 break;
 
             case "":
