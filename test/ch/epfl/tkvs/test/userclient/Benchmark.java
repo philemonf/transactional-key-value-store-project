@@ -3,12 +3,17 @@ package ch.epfl.tkvs.test.userclient;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
+import org.apache.log4j.Logger;
+
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.user.Key;
 import ch.epfl.tkvs.user.UserTransaction;
+import ch.epfl.tkvs.yarn.Client;
 
 
 public class Benchmark {
+
+    private static Logger log = Logger.getLogger(Client.class.getName());
 
     private enum ActionType {
         WRITE, READ
@@ -30,6 +35,15 @@ public class Benchmark {
             this.key = key;
         }
 
+    }
+
+    private class AbortBenchmarkException extends Exception {
+
+        private static final long serialVersionUID = -3818150142987278863L;
+
+        public AbortBenchmarkException(String string) {
+            super(string);
+        }
     }
 
     private enum BenchmarkStatus {
@@ -84,7 +98,11 @@ public class Benchmark {
         initializeUsersActions();
 
         for (int i = 0; i < repetitions; i++) {
-            initializeKeys();
+            try {
+                initializeKeys();
+            } catch (AbortBenchmarkException e) {
+                log.error("1st Transaction could not write all keys!");
+            }
             startBenchmarking();
             extractResults();
         }
@@ -106,9 +124,10 @@ public class Benchmark {
 
     /**
      * Create a transaction to write into the Key Value store in order to initialize the keys used for the benchmark
+     * @throws AbortBenchmarkException
      * 
      */
-    private void initializeKeys() {
+    private void initializeKeys() throws AbortBenchmarkException {
 
         boolean isDone = false;
         boolean aborted = false;
@@ -119,10 +138,10 @@ public class Benchmark {
             UserTransaction<Key> init = null;
 
             try {
-                init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better heuristic
+                init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better
+                                                                                          // heuristic
             } catch (AbortException e) {
-                // TODO Handle this case
-                e.printStackTrace();
+                throw new AbortBenchmarkException("Benchmark: 1st transaction could not write all keys!");
             }
 
             for (int i = 0; i < keys.length; i++) {
