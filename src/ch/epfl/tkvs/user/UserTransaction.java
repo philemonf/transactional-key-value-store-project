@@ -119,6 +119,7 @@ public class UserTransaction<K extends Key> {
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
+            log.warn(response.getExceptionMessage());
             throw new AbortToUserException(response.getExceptionMessage());
         }
 
