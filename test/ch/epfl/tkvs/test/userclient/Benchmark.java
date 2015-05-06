@@ -37,15 +37,6 @@ public class Benchmark {
 
     }
 
-    private class AbortBenchmarkException extends Exception {
-
-        private static final long serialVersionUID = -3818150142987278863L;
-
-        public AbortBenchmarkException(String string) {
-            super(string);
-        }
-    }
-
     private enum BenchmarkStatus {
         BEGIN, READ, WRITE, COMMIT
     }
@@ -100,8 +91,9 @@ public class Benchmark {
         for (int i = 0; i < repetitions; i++) {
             try {
                 initializeKeys();
-            } catch (AbortBenchmarkException e) {
+            } catch (AbortException e) {
                 log.error("1st Transaction could not write all keys!");
+                return;
             }
             startBenchmarking();
             extractResults();
@@ -124,43 +116,23 @@ public class Benchmark {
 
     /**
      * Create a transaction to write into the Key Value store in order to initialize the keys used for the benchmark
-     * @throws AbortBenchmarkException
+     * @throws AbortException
      * 
      */
-    private void initializeKeys() throws AbortBenchmarkException {
+    private void initializeKeys() throws AbortException {
 
         boolean isDone = false;
-        boolean aborted = false;
 
         while (!isDone) {
             isDone = true;
-            aborted = false;
             UserTransaction<Key> init = null;
-
-            try {
-                init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better
-                                                                                          // heuristic
-            } catch (AbortException e) {
-                throw new AbortBenchmarkException("Benchmark: 1st transaction could not write all keys!");
-            }
+            init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better
 
             for (int i = 0; i < keys.length; i++) {
-                try {
-                    init.write(keys[i], "init" + i);
-                } catch (AbortException e) {
-                    aborted = true;
-                }
+                init.write(keys[i], "init" + i);
             }
 
-            if (aborted) {
-                continue;
-            }
-
-            try {
-                init.commit();
-            } catch (AbortException e) {
-                isDone = false;
-            }
+            init.commit();
         }
     }
 
