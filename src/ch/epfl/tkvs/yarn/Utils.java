@@ -118,7 +118,7 @@ public class Utils {
     	List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
     	loggers.add(LogManager.getRootLogger());
     	for ( Logger logger : loggers ) {
-    	    logger.setLevel(ENABLE_LOG ? Level.INFO : Level.OFF);
+    	    logger.setLevel(ENABLE_LOG ? Level.INFO : Level.WARN);
     	}
     }
 }
