@@ -53,6 +53,7 @@ public class TransactionManager {
         try {
             String amIp = System.getenv("AM_IP");
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
+            
             tmPort = NetUtils.getFreeSocketPort();
             tmHost = Utils.extractIP(NetUtils.getHostname());
 
@@ -192,6 +193,10 @@ public class TransactionManager {
         }
 
         return -1;
+    }
+    
+    public static boolean isLocalLocalityHash(int localityHash) {
+    	return (localityHash % routing.getTMs().size()) == getLocalityHash();
     }
 
     // Start the thread responsible for calling the checkpoint methods of the concurrency control algorithms

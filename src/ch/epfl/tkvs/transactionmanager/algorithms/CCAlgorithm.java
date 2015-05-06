@@ -119,7 +119,7 @@ public abstract class CCAlgorithm {
      * Transaction Manager
      */
     protected boolean isLocalKey(int localityHash) {
-        return (remote == null) || localityHash == TransactionManager.getLocalityHash();
+        return (remote == null) || TransactionManager.isLocalLocalityHash(localityHash);
     }
 
     /**
