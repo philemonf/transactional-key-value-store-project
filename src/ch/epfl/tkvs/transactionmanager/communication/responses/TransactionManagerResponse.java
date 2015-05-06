@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
@@ -24,6 +25,7 @@ public class TransactionManagerResponse extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_PORT)
     private Integer port;
 
+    @JSONConstructor
     public TransactionManagerResponse(boolean success, int transactionId, String host, Integer port) throws IOException {
         this.success = success;
         this.transactionId = transactionId;

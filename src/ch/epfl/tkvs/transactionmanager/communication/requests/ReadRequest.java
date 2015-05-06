@@ -5,8 +5,10 @@ import java.io.Serializable;
 
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+
 import org.apache.log4j.Logger;
 
 
@@ -26,6 +28,7 @@ public class ReadRequest extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
     private int localityHash;
 
+    @JSONConstructor
     public ReadRequest(int transactionId, Serializable key, int hash) {
         this.transactionId = transactionId;
         try {

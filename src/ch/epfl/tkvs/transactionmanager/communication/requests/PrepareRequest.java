@@ -2,6 +2,7 @@ package ch.epfl.tkvs.transactionmanager.communication.requests;
 
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
@@ -22,6 +23,7 @@ public class PrepareRequest extends Message {
         return MESSAGE_TYPE + " : " + transactionId;
     }
 
+    @JSONConstructor
     public PrepareRequest(int transactionId) {
         this.transactionId = transactionId;
     }

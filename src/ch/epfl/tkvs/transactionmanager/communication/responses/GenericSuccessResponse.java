@@ -3,6 +3,7 @@ package ch.epfl.tkvs.transactionmanager.communication.responses;
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
@@ -32,6 +33,7 @@ public class GenericSuccessResponse extends Message {
         exceptionMessage = " ";
     }
 
+    @JSONConstructor
     public GenericSuccessResponse(boolean success, String exceptionMessage) {
         this.success = success;
         this.exceptionMessage = exceptionMessage;

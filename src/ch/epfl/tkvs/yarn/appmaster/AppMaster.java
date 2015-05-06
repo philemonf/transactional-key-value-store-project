@@ -1,5 +1,7 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import static java.util.Arrays.asList;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,8 +10,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,7 +34,6 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
@@ -95,11 +97,17 @@ public class AppMaster {
 
         // Request Containers from RM
         ArrayList<String> tmRequests = Utils.readTMHostnames();
-        HashMap<String, ContainerRequest> contRequests = new HashMap<>();
+        HashMap<String, List<ContainerRequest>> contRequests = new HashMap<>();
         for (String tmIp : tmRequests) {
             log.info("Requesting Container at " + tmIp);
             ContainerRequest req = new ContainerRequest(capability, new String[] { tmIp }, null, priority);
-            contRequests.put(tmIp, req);
+            
+            if (contRequests.containsKey(tmIp)) {
+            	contRequests.get(tmIp).add(req);
+            } else {
+            	contRequests.put(tmIp, asList(req));
+            }
+            
             rmClient.addContainerRequest(req);
         }
 
@@ -139,9 +147,21 @@ public class AppMaster {
         } catch (SocketTimeoutException e) {
             log.warn("Did not get reply from all TMs");
             for (String tmIp : tmRequests) {
+            	
+            	
+            	
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
+                	
+                	// FIXME This might have unexpected behavior in case of local 
+                	// testing where more than one TM has the same host
+                	// since TM that have responded may be removed
+                	// but this only concerns testing since the system
+                	// is not supposed to support multiple TM on a node at the moment
+                	
                     log.warn("TM at " + tmIp + " did not reply");
-                    rmClient.removeContainerRequest(contRequests.get(tmIp));
+                    for (ContainerRequest req : contRequests.get(tmIp)) {
+                    	rmClient.removeContainerRequest(req);
+                    }
                 }
             }
         }
@@ -231,8 +251,17 @@ public class AppMaster {
         rmClient.stop();
     }
 
-    public static void sendMessageToTM(Message message, int tmHash) {
-        // TODO implement it
+    /**
+     * /**
+	 * Send a message to a transaction manager (TM).
+	 * @param localityHash the locality hash of the node running the TM
+	 * @param message the message to send
+	 * @param shouldWait whether one should wait for a response
+	 * @return the response or null if !shouldWait
+	 * @throws IOException in case of network failure or bad message format
+	 */
+    public static JSONObject sendMessageToTM(int localityHash, Message message, boolean shouldWait) throws IOException {
+    	return rmHandler.getRoutingTable().findTM(localityHash).sendMessage(message, shouldWait);
     }
 
     public static int numberOfRegisteredTMs() {

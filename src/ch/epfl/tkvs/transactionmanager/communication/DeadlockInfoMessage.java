@@ -13,6 +13,7 @@ public class DeadlockInfoMessage extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_DEAD_LOCK_GRAPH)
     private String encodedGraph;
     
+    @JSONConstructor
     public DeadlockInfoMessage(DeadlockGraph graph) throws IOException {
     	encodedGraph = Base64Utils.convertToBase64(graph);
     }
