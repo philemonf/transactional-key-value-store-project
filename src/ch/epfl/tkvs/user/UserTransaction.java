@@ -155,4 +155,9 @@ public class UserTransaction<K extends Key> {
         }
 
     }
+    
+    
+    public int getTransactionID() {
+        return transactionID;
+    }
 }
