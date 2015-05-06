@@ -12,6 +12,7 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -104,7 +105,9 @@ public class AppMaster {
             if (contRequests.containsKey(tmIp)) {
             	contRequests.get(tmIp).add(req);
             } else {
-            	contRequests.put(tmIp, asList(req));
+            	List<ContainerRequest> crs = new LinkedList<ContainerRequest>();
+            	crs.add(req);
+            	contRequests.put(tmIp, crs);
             }
             
             rmClient.addContainerRequest(req);
