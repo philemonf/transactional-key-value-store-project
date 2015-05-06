@@ -44,7 +44,6 @@ import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 public class AppMaster {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
-    private static final int MAX_NUMBER_OF_WORKERS = 10;
     private static RMCallbackHandler rmHandler;
     private static int nextXid = 0;
 
@@ -176,7 +175,7 @@ public class AppMaster {
 
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
+        ExecutorService threadPool = Executors.newCachedThreadPool();
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
                 log.info("Waiting for message...");

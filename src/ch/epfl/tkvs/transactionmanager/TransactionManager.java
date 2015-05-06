@@ -38,7 +38,6 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
  */
 public class TransactionManager {
 
-    private static final int THREAD_POOL_SIZE = 15;
     private static final int CHECKPOINT_PERIOD_MS = 15000;
     private static String tmHost;
     private static int tmPort;
@@ -93,7 +92,7 @@ public class TransactionManager {
         // Start the thread that will call checkpoint on the concurrency controller
         startCheckpointThread(server, concurrencyController);
 
-        ExecutorService threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        ExecutorService threadPool = Executors.newCachedThreadPool();
 
         while (!server.isClosed()) {
             try {
