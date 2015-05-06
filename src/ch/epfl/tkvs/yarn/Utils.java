@@ -92,7 +92,7 @@ public class Utils {
     }
 
     public static void writeAMAddress(String address) throws Exception {
-        FileSystem fs = FileSystem.get(new YarnConfiguration());
+        FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(AM_ADDRESS_PATH, true)));
         pr.print(address);
         pr.close();
@@ -100,7 +100,7 @@ public class Utils {
     }
 
     public static InetSocketAddress readAMAddress() throws Exception {
-        FileSystem fs = FileSystem.get(new YarnConfiguration());
+        FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(AM_ADDRESS_PATH)));
         String[] info = reader.readLine().split(":");
         reader.close();

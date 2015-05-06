@@ -42,11 +42,16 @@ public class UserTransaction<K extends Key> {
     private int tmPort;
     private int transactionID;
     private TransactionStatus status;
+    
+    private static InetSocketAddress amAddress = null;
     private static Logger log = Logger.getLogger(UserTransaction.class.getName());
 
     public UserTransaction(K key) throws AbortException {
         try {
-            InetSocketAddress amAddress = Utils.readAMAddress();
+            if (amAddress == null) {
+            	amAddress = Utils.readAMAddress();
+            }
+            
             TransactionManagerRequest req = new TransactionManagerRequest(key.getLocalityHash());
 
             TransactionManagerResponse response = (TransactionManagerResponse) sendRequest(amAddress.getHostName(), amAddress.getPort(), req, TransactionManagerResponse.class);
