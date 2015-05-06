@@ -1,8 +1,10 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.PrepareException;
+import ch.epfl.tkvs.exceptions.RemoteTMException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
-import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -19,7 +21,6 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageCo
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONException;
 
 
 /**
@@ -37,34 +38,44 @@ public class RemoteHandler {
         this.localAlgo = localAlgo;
     }
 
-    private JSONObject sendToRemoteTM(Message m, int localityHash, boolean shouldWaitforResponse) throws IOException {
-        return TransactionManager.sendToTransactionManager(localityHash, m, shouldWaitforResponse);
+    private Message sendToRemoteTM(Message request, int localityHash, Class<? extends Message> messageClass) throws IOException, InvalidMessageException {
+
+        log.info(request);
+        JSONObject response = TransactionManager.sendToTransactionManager(localityHash, request, true);
+        Message responseMessage = parseJSON(response, messageClass);
+        log.info(response + "<--" + request);
+        return responseMessage;
+
+    }
+
+    private void sendToRemoteTM(Message request, int localityHash) throws IOException {
+        log.info(request);
+        TransactionManager.sendToTransactionManager(localityHash, request, false);
     }
 
     /**
      * Initiates a transaction on secondary Transaction Manager for distributed transaction
+     *
      * @param t The transaction running on primary Transaction Manager
      * @param hash The hash code of key for identifying the remote Transaction Manager
      * @return the response from the secondary Transaction Manager
      */
-    private boolean begin(Transaction t, int hash) {
+    private void begin(Transaction t, int hash) throws IOException, InvalidMessageException, AbortException {
         if (!t.remoteIsPrepared.containsKey(hash)) {
-            try {
-                JSONObject response = sendToRemoteTM(new BeginRequest(t.transactionId), hash, true);
-                boolean success = response.getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
-                t.remoteIsPrepared.put(hash, Boolean.FALSE);
-                return success;
-            } catch (IOException | JSONException ex) {
-                log.fatal("Invalid or no response from remote TM", ex);
-                return false;
+            GenericSuccessResponse response = (GenericSuccessResponse) sendToRemoteTM(new BeginRequest(t.transactionId), hash, GenericSuccessResponse.class);
+            if (!response.getSuccess()) {
+
+                throw new RemoteTMException(response.getExceptionMessage());
             }
+            t.remoteIsPrepared.put(hash, Boolean.FALSE);
         }
-        return true;
+
     }
 
     /**
      * Performs a remote read on secondary Transaction Manager for distributed transaction Invokes distributed abort in
      * case of error
+     *
      * @param t The transaction running on primary Transaction Manager
      * @param request the original request received by primary Transaction Manager
      * @return the response from the secondary Transaction Manager
@@ -72,18 +83,21 @@ public class RemoteHandler {
     public ReadResponse read(Transaction t, ReadRequest request) {
 
         int id = request.getTransactionId();
-        int tmHash = request.getTMhash();
-        if (!begin(t, tmHash)) {
-            return new ReadResponse(false, null);
-        }
+        int tmHash = request.getLocalityHash();
         try {
-            ReadResponse rr = (ReadResponse) parseJSON(sendToRemoteTM(request, tmHash, true), ReadResponse.class);
-            if (!rr.getSuccess())
-                abort(t);
+            begin(t, tmHash);
+            ReadResponse rr = (ReadResponse) sendToRemoteTM(request, tmHash, ReadResponse.class);
+            if (!rr.getSuccess()) {
+                throw new RemoteTMException(rr.getExceptionMessage());
+            }
             return rr;
         } catch (IOException | InvalidMessageException ex) {
-            log.fatal("Invalid or no response from remote TM", ex);
-            return new ReadResponse(false, null);
+            log.fatal("Remote error", ex);
+            abortAll(t);
+            return new ReadResponse(new RemoteTMException(ex.getMessage()));
+        } catch (AbortException e) {
+            abortAll(t);
+            return new ReadResponse(e);
         }
 
     }
@@ -91,101 +105,111 @@ public class RemoteHandler {
     /**
      * Performs a remote write on secondary Transaction Manager for distributed transaction Invokes distributed abort in
      * case of error
+     *
      * @param t The transaction running on primary Transaction Manager
      * @param request the original request received by primary Transaction Manager
      * @return the response from the secondary Transaction Manager
      */
     public GenericSuccessResponse write(Transaction t, WriteRequest request) {
         int id = request.getTransactionId();
-        int tmHash = request.getTMhash();
-        if (!begin(t, tmHash)) {
-            return new GenericSuccessResponse(false);
-        }
+        int tmHash = request.getLocalityHash();
         try {
-            GenericSuccessResponse gsr = (GenericSuccessResponse) parseJSON(sendToRemoteTM(request, tmHash, true), GenericSuccessResponse.class);
-            if (!gsr.getSuccess())
-                abort(t);
+            begin(t, tmHash);
+
+            GenericSuccessResponse gsr = (GenericSuccessResponse) sendToRemoteTM(request, tmHash, GenericSuccessResponse.class);
+            if (!gsr.getSuccess()) {
+                throw new RemoteTMException(gsr.getExceptionMessage());
+            }
             return gsr;
         } catch (IOException | InvalidMessageException ex) {
-            log.fatal("Invalid or no response from remote TM", ex);
-            return new GenericSuccessResponse(false);
+            log.fatal("Remote error", ex);
+            abortAll(t);
+            return new GenericSuccessResponse(new RemoteTMException(ex.getMessage()));
+        } catch (AbortException ex) {
+            abortAll(t);
+            return new GenericSuccessResponse(ex);
         }
     }
 
     /**
      * Performs 2-Phase commit protocol to try to commit a distributed transaction Invokes distributed abort in case of
      * error
+     *
      * @param t The transaction running on primary Transaction Manager
      * @return the response from the secondary Transaction Manager
      */
     public GenericSuccessResponse tryCommit(Transaction t) {
         PrepareRequest pr = new PrepareRequest(t.transactionId);
-        boolean canCommit = localAlgo.prepare(pr).getSuccess();
-        for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
+        GenericSuccessResponse response = localAlgo.prepare(pr);
 
-            if (!canCommit)
-                break;
-
-            boolean response = false;
-            try {
-                response = sendToRemoteTM(pr, remoteHash, true).getBoolean(JSONCommunication.KEY_FOR_SUCCESS);
-            } catch (IOException | JSONException ex) {
-                log.fatal("Invalid or no response from remote TM", ex);
+        try {
+            if (!response.getSuccess())
+                throw new PrepareException(response.getExceptionMessage());
+            for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
+                response = (GenericSuccessResponse) sendToRemoteTM(pr, remoteHash, GenericSuccessResponse.class);
+                if (!response.getSuccess()) {
+                    throw new PrepareException(response.getExceptionMessage());
+                }
 
             }
-            canCommit &= response;
 
+            CommitRequest cr = new CommitRequest(t.transactionId);
+            localAlgo.commit(cr);
+            commitOthers(t);
+
+            return new GenericSuccessResponse();
+
+        } catch (IOException | InvalidMessageException ex) {
+            abortAll(t);
+            log.fatal("remote error", ex);
+            return new GenericSuccessResponse(new RemoteTMException(ex.getMessage()));
+        } catch (AbortException ex) {
+            abortAll(t);
+            return new GenericSuccessResponse(ex);
         }
-        if (canCommit) {
-            try {
-                CommitRequest cr = new CommitRequest(t.transactionId);
-                localAlgo.commit(cr);
-                commit(t);
-            } catch (Exception ex) {
-                // TODO: something in case of network error? return true or false?
-                log.fatal("Network error, incomplete commit", ex);
-                return new GenericSuccessResponse(false);
-            }
-        } else {
-            AbortRequest ar = new AbortRequest(t.transactionId);
-            localAlgo.abort(ar);
-            abort(t);
-        }
-        return new GenericSuccessResponse(canCommit);
 
     }
 
     /**
-     * Sends commit message to secondary Transaction Managers
+     * Sends commit message to secondary Transaction Managers. TODO: ensure that all commits are successful
      * @param t Transaction to be committed
      */
-    private void commit(Transaction t) throws IOException {
+    private void commitOthers(Transaction t) throws IOException {
         CommitRequest cr = new CommitRequest(t.transactionId);
         for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
-            sendToRemoteTM(cr, remoteHash, false);
+            sendToRemoteTM(cr, remoteHash);
             // TODO: check response and do something?
         }
+    }
+
+    // Sends abort message to local algorithm which in turn would invoke abortOthers()
+    private void abortAll(Transaction t) {
+        AbortRequest ar = new AbortRequest(t.transactionId);
+        localAlgo.abort(ar);
     }
 
     // TODO: return true or false?
     /**
      * Sends abort message to secondary Transaction Managers
+     *
      * @param t Transaction to be committed
-     * @return response to be sent
-     **/
-    public GenericSuccessResponse abort(Transaction t) {
-        if (t.areAllRemoteAborted)
-            return new GenericSuccessResponse(true);
+     * 
+     */
+    public void abortOthers(Transaction t) {
+        if (t.areAllRemoteAborted) {
+            return;
+        }
         AbortRequest ar = new AbortRequest(t.transactionId);
         try {
             for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
-                sendToRemoteTM(ar, remoteHash, false);
+                sendToRemoteTM(ar, remoteHash);
                 // TODO: check response and do something?
             }
         } catch (IOException ex) {
-            return new GenericSuccessResponse(false);
+            // TODO: check response and do something?
+
         }
         t.areAllRemoteAborted = true;
-        return new GenericSuccessResponse(true);
+
     }
 }

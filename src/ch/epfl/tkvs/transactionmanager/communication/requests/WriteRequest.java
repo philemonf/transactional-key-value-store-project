@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 
 public class WriteRequest extends Message {
 
-    private static Logger log = Logger.getLogger(WriteRequest.class);
+    private static final Logger log = Logger.getLogger(WriteRequest.class);
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "write_request";
 
@@ -26,12 +26,12 @@ public class WriteRequest extends Message {
     private String encodedValue;
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
-    private int TMhash;
+    private int localityHash;
 
     public WriteRequest(int transactionId, Serializable key, Serializable value, int hash) {
 
         this.transactionId = transactionId;
-        this.TMhash = hash;
+        this.localityHash = hash;
         try {
             this.encodedKey = Base64Utils.convertToBase64(key);
             this.encodedValue = Base64Utils.convertToBase64(value);
@@ -39,6 +39,26 @@ public class WriteRequest extends Message {
         } catch (IOException ex) {
             log.fatal("Cannot encode key or value", ex);
         }
+    }
+
+    @Override
+    public String toString()
+
+    {
+        String key;
+        String value;
+
+        try {
+            key = Base64Utils.convertFromBase64(encodedKey).toString();
+        } catch (Exception ex) {
+            key = encodedKey;
+        }
+        try {
+            value = Base64Utils.convertFromBase64(encodedValue).toString();
+        } catch (Exception ex) {
+            value = encodedValue;
+        }
+        return MESSAGE_TYPE + " : " + transactionId + "   key=" + key + "  hash=" + localityHash + "  value=" + value;
     }
 
     public int getTransactionId() {
@@ -53,7 +73,7 @@ public class WriteRequest extends Message {
         return encodedValue;
     }
 
-    public int getTMhash() {
-        return TMhash;
+    public int getLocalityHash() {
+        return localityHash;
     }
 }

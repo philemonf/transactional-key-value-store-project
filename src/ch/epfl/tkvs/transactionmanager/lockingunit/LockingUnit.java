@@ -13,7 +13,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.DeadlockException;
 
 
 /**
@@ -92,7 +93,7 @@ public enum LockingUnit {
             internalLock.lock();
             while (!canLock(key, lockType)) {
                 if (checkforDeadlock(transactionID, key, lockType)) {
-                    throw new AbortException("Deadlock");
+                    throw new DeadlockException();
                 }
 
                 waitOn(key, lockType);
@@ -124,7 +125,7 @@ public enum LockingUnit {
                 if (!theLocks.isEmpty()) {
                     while (!lct.areCompatible(newType, theLocks.keySet())) {
                         if (checkforDeadlock(transactionID, key, newType)) {
-                            throw new AbortException("Deadlock");
+                            throw new DeadlockException();
                         }
 
                         waitOn(key, newType);

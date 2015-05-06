@@ -44,8 +44,13 @@ public class JSON2MessageConverter {
             if (constructors.length == 0) {
                 throw new InvalidMessageException(messageClass + " has no public constructor.");
             }
-
+            // TODO: check if it is the right constructor
             Constructor<? extends Message> constructor = (Constructor<? extends Message>) constructors[0];
+            //
+            // System.err.println("Constructor for " + messageClass);
+            // for (Class c : constructor.getParameterTypes())
+            // System.err.println("*" + c);
+
             List<Object> dummyParams = new LinkedList<Object>();
 
             for (Class parameterType : constructor.getParameterTypes()) {
@@ -56,7 +61,8 @@ public class JSON2MessageConverter {
                 }
             }
 
-            System.err.println(dummyParams);
+            // System.err.println("Dummy object" + dummyParams);
+            // System.err.println("json object" + json);
 
             Message message = constructor.newInstance(dummyParams.toArray());
 

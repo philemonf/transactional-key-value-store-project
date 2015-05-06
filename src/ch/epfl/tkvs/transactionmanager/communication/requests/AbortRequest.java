@@ -13,6 +13,11 @@ public class AbortRequest extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_TRANSACTION_ID)
     private int transactionId;
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + " : " + transactionId;
+    }
+
     public int getTransactionId() {
         return transactionId;
     }

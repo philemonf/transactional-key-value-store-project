@@ -5,6 +5,8 @@
  */
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
@@ -88,7 +90,7 @@ public abstract class CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
 
         if (isLocalTransaction(transaction)) {
@@ -110,10 +112,21 @@ public abstract class CCAlgorithm {
         this.remote = remote;
     }
 
+    /**
+     * Checks if the key is managed locally or by another Transaction Manager
+     * @param localityHash hash of the key
+     * @return true if either remote handling is disabled or if the locality hash of key matches that handled by local
+     * Transaction Manager
+     */
     protected boolean isLocalKey(int localityHash) {
         return (remote == null) || localityHash == TransactionManager.getLocalityHash();
     }
 
+    /**
+     * Checks if transaction is either a secondary transaction or primary local transaction
+     * @param t
+     * @return
+     */
     protected boolean isLocalTransaction(Transaction t) {
         return (remote == null) || (t.remoteIsPrepared.isEmpty());
     }

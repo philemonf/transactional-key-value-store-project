@@ -17,6 +17,11 @@ public class TransactionManagerRequest extends Message {
         this.localityHash = hash;
     }
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + " : " + localityHash;
+    }
+
     public int getLocalityHash() {
         return localityHash;
     }

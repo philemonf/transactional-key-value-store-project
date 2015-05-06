@@ -149,13 +149,13 @@ public class AppMaster {
 
         log.info("Sending routing information to TMs");
         TMInitMessage initMessage = new TMInitMessage(rmHandler.getRoutingTable());
-        
+
         for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
-        	tm.sendMessage(initMessage, false);
+            tm.sendMessage(initMessage, false);
         }
 
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
-        
+
         ExecutorService threadPool = Executors.newFixedThreadPool(MAX_NUMBER_OF_WORKERS);
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
@@ -183,7 +183,7 @@ public class AppMaster {
                     log.info("Stopping TMs");
                     ExitMessage exitMessage = new ExitMessage();
                     for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
-                    	tm.sendMessage(exitMessage, false);
+                        tm.sendMessage(exitMessage, false);
                     }
                     break;
                 default:
@@ -230,18 +230,18 @@ public class AppMaster {
 
         rmClient.stop();
     }
-    
+
     public static void sendMessageToTM(Message message, int tmHash) {
-    	//TODO implement it
+        // TODO implement it
     }
-    
+
     public static int numberOfRegisteredTMs() {
-    	return rmHandler.getContainerCount();
+        return rmHandler.getContainerCount();
     }
-    
-    public static int nextTransactionId() {
-    	int xid = nextXid;
-    	nextXid++;
-    	return xid;
+
+    public static synchronized int nextTransactionId() {
+        int xid = nextXid;
+        nextXid++;
+        return xid;
     }
 }

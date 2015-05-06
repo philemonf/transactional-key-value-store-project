@@ -17,6 +17,11 @@ public class PrepareRequest extends Message {
         return transactionId;
     }
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + " : " + transactionId;
+    }
+
     public PrepareRequest(int transactionId) {
         this.transactionId = transactionId;
     }

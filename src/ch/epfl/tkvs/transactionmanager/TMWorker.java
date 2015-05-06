@@ -12,6 +12,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
+import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -41,45 +42,62 @@ public class TMWorker extends Thread {
         try {
 
             // Create the response
-            JSONObject response = null;
-
+            Message response = null;
+            Message request = null;
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
 
             switch (requestType) {
             case BeginRequest.MESSAGE_TYPE:
-                BeginRequest beginRequest = (BeginRequest) JSON2MessageConverter.parseJSON(jsonRequest, BeginRequest.class);
-                response = toJSON(concurrencyController.begin(beginRequest));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, BeginRequest.class);
+                BeginRequest beginRequest = (BeginRequest) request;
+                log.info(beginRequest.toString());
+                response = concurrencyController.begin(beginRequest);
                 break;
             case ReadRequest.MESSAGE_TYPE:
-                ReadRequest readRequest = (ReadRequest) JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
-                response = toJSON(concurrencyController.read(readRequest));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, ReadRequest.class);
+                ReadRequest readRequest = (ReadRequest) request;
+                log.info(readRequest.toString());
+                response = concurrencyController.read(readRequest);
                 break;
             case WriteRequest.MESSAGE_TYPE:
-                WriteRequest writeRequest = (WriteRequest) JSON2MessageConverter.parseJSON(jsonRequest, WriteRequest.class);
-                response = toJSON(concurrencyController.write(writeRequest));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, WriteRequest.class);
+                WriteRequest writeRequest = (WriteRequest) request;
+                log.info(writeRequest.toString());
+                response = concurrencyController.write(writeRequest);
                 break;
             case CommitRequest.MESSAGE_TYPE:
-                CommitRequest commitRequest = (CommitRequest) JSON2MessageConverter.parseJSON(jsonRequest, CommitRequest.class);
-                response = toJSON(concurrencyController.commit(commitRequest));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, CommitRequest.class);
+                CommitRequest commitRequest = (CommitRequest) request;
+                log.info(commitRequest.toString());
+                response = concurrencyController.commit(commitRequest);
                 break;
             case PrepareRequest.MESSAGE_TYPE:
-                PrepareRequest prepareRequest = (PrepareRequest) JSON2MessageConverter.parseJSON(jsonRequest, PrepareRequest.class);
-                response = toJSON(concurrencyController.prepare(prepareRequest));
-
+                request = JSON2MessageConverter.parseJSON(jsonRequest, PrepareRequest.class);
+                PrepareRequest prepareRequest = (PrepareRequest) request;
+                log.info(prepareRequest.toString());
+                response = concurrencyController.prepare(prepareRequest);
+                break;
             case AbortRequest.MESSAGE_TYPE:
-                AbortRequest abortRequest = (AbortRequest) JSON2MessageConverter.parseJSON(jsonRequest, AbortRequest.class);
-                response = toJSON(concurrencyController.abort(abortRequest));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, AbortRequest.class);
+                AbortRequest abortRequest = (AbortRequest) request;
+                log.info(abortRequest.toString());
+                response = concurrencyController.abort(abortRequest);
+                break;
             case TryCommitRequest.MESSAGE_TYPE:
-                TryCommitRequest tr = (TryCommitRequest) JSON2MessageConverter.parseJSON(jsonRequest, TryCommitRequest.class);
-                response = toJSON(concurrencyController.tryCommit(tr));
+                request = JSON2MessageConverter.parseJSON(jsonRequest, TryCommitRequest.class);
+                TryCommitRequest tr = (TryCommitRequest) request;
+                log.info(tr.toString());
+                response = concurrencyController.tryCommit(tr);
+                break;
             }
 
             // Send the response
             if (response != null) {
-                log.info("Response" + response.toString());
+                log.info(response + "<--" + request);
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-                out.println(response.toString());
-            }
+                out.println(toJSON(response).toString());
+            } else
+                log.info("NULL response to " + jsonRequest.toString());
             sock.close(); // Closing this socket will also close the socket's
             // InputStream and OutputStream.
         } catch (IOException | InvalidMessageException | JSONException e) {

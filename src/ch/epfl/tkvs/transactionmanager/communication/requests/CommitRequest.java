@@ -17,6 +17,11 @@ public class CommitRequest extends Message {
         return transactionId;
     }
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + ":" + transactionId;
+    }
+
     public CommitRequest(int transactionId) {
         this.transactionId = transactionId;
     }

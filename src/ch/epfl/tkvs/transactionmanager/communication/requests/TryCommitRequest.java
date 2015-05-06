@@ -17,6 +17,11 @@ public class TryCommitRequest extends Message {
         return transactionId;
     }
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + " : " + transactionId;
+    }
+
     public TryCommitRequest(int transactionId) {
         this.transactionId = transactionId;
 

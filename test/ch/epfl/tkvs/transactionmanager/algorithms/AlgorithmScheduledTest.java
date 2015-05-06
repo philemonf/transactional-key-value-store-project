@@ -11,15 +11,22 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 
 import static junit.framework.TestCase.assertEquals;
+import org.junit.Before;
 import org.junit.Test;
 
 
-public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
+public class AlgorithmScheduledTest extends ScheduledTestCase {
 
     CCAlgorithm instance;
     final boolean t = true;
     final boolean f = false;
     final ScheduledCommand _______________ = _______;
+
+    @Before
+    public void setUp() {
+        instance = new MVCC2PL(null);
+        System.out.println("\nNew Test");
+    }
 
     public ScheduledCommand BEGIN() {
         return new ScheduledCommand() {
@@ -91,13 +98,22 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
         ReadResponse result = instance.read(request);
         assertEquals(false, result.getSuccess());
 
-        GenericSuccessResponse br;
-        br = instance.begin(new BeginRequest(0));
-        assertEquals(true, br.getSuccess());
+        GenericSuccessResponse gsr;
+        gsr = instance.begin(new BeginRequest(0));
+        assertEquals(true, gsr.getSuccess());
+
+        result = instance.read(request);
+        assertEquals(false, result.getSuccess());
+
+        gsr = instance.begin(new BeginRequest(0));
+        assertEquals(true, gsr.getSuccess());
+
+        gsr = instance.write(new WriteRequest(0, 0, "init", 0));
+        assertEquals(true, gsr.getSuccess());
 
         result = instance.read(request);
         assertEquals(true, result.getSuccess());
-        assertEquals(null, result.getValue());
+        assertEquals("init", result.getValue());
 
     }
 
@@ -229,6 +245,20 @@ public abstract class AlgorithmScheduledTest extends ScheduledTestCase {
         gsr = instance.commit(new CommitRequest(1));
         assertEquals(true, gsr.getSuccess());
 
+    }
+
+    public void initializeKeys(String... keys) {
+        ScheduledCommand[][] init = new ScheduledCommand[1][];
+        init[0] = new ScheduledCommand[keys.length + 2];
+        int i = 0;
+        init[0][i++] = BEGIN();
+
+        for (String key : keys) {
+            init[0][i++] = W(key, key + "0", t);
+
+        }
+        init[0][i++] = COMM(t);
+        new ScheduleExecutor(init).execute();
     }
 
     @Test

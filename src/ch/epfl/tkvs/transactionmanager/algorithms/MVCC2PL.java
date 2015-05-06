@@ -8,7 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
+import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
 import ch.epfl.tkvs.transactionmanager.Transaction_2PL;
 import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
@@ -39,9 +41,9 @@ public class MVCC2PL extends Algo2PL {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new ReadResponse(false, null);
+            return new ReadResponse(new TransactionNotLiveException());
         }
-        if (isLocalKey(request.getTMhash())) {
+        if (isLocalKey(request.getLocalityHash())) {
             Lock lock = MVCC2PL.Lock.READ_LOCK;
             try {
                 if (!transaction.checkLock(key, lock)) {
@@ -49,10 +51,12 @@ public class MVCC2PL extends Algo2PL {
                     transaction.addLock(key, lock);
                 }
                 Serializable value = versioningUnit.get(xid, key);
-                return new ReadResponse(true, (String) value);
+                if (value == null)
+                    throw new ValueDoesNotExistException();
+                return new ReadResponse((String) value);
             } catch (AbortException e) {
                 terminate(transaction, false);
-                return new ReadResponse(false, null);
+                return new ReadResponse(e);
             }
         } else {
             return remote.read(transaction, request);
@@ -69,9 +73,9 @@ public class MVCC2PL extends Algo2PL {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
-        if (isLocalKey(request.getTMhash())) {
+        if (isLocalKey(request.getLocalityHash())) {
             Lock lock = Lock.WRITE_LOCK;
             try {
                 if (!transaction.checkLock(key, lock)) {
@@ -79,10 +83,10 @@ public class MVCC2PL extends Algo2PL {
                     transaction.addLock(key, lock);
                 }
                 versioningUnit.put(xid, key, value);
-                return new GenericSuccessResponse(true);
+                return new GenericSuccessResponse();
             } catch (AbortException e) {
                 terminate(transaction, false);
-                return new GenericSuccessResponse(false);
+                return new GenericSuccessResponse(e);
             }
         } else
             return remote.write(transaction, request);
@@ -96,7 +100,7 @@ public class MVCC2PL extends Algo2PL {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
         try {
             for (Serializable key : transaction.getLockedKeys()) {
@@ -109,11 +113,11 @@ public class MVCC2PL extends Algo2PL {
                 }
             }
             transaction.isPrepared = true;
-            return new GenericSuccessResponse(true);
+            return new GenericSuccessResponse();
 
         } catch (AbortException e) {
             terminate(transaction, false);
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(e);
         }
     }
 

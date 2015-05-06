@@ -13,7 +13,7 @@ import junit.framework.TestCase;
 
 import org.junit.Test;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
 
 
 public class LockingUnitTest extends TestCase {

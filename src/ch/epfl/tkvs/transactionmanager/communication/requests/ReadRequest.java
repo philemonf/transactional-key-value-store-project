@@ -12,7 +12,7 @@ import org.apache.log4j.Logger;
 
 public class ReadRequest extends Message {
 
-    private static Logger log = Logger.getLogger(ReadRequest.class);
+    private static final Logger log = Logger.getLogger(ReadRequest.class);
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "read_request";
@@ -24,7 +24,7 @@ public class ReadRequest extends Message {
     private String encodedKey;
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_HASH)
-    private int TMhash;
+    private int localityHash;
 
     public ReadRequest(int transactionId, Serializable key, int hash) {
         this.transactionId = transactionId;
@@ -32,9 +32,19 @@ public class ReadRequest extends Message {
             this.encodedKey = Base64Utils.convertToBase64(key);
         } catch (IOException ex) {
             log.fatal("Cannot encode key", ex);
-            this.encodedKey = null;
         }
-        this.TMhash = hash;
+        this.localityHash = hash;
+    }
+
+    @Override
+    public String toString() {
+        String key;
+        try {
+            key = Base64Utils.convertFromBase64(encodedKey).toString();
+        } catch (Exception ex) {
+            key = encodedKey;
+        }
+        return MESSAGE_TYPE + " : " + transactionId + "   key=" + key + "  hash=" + localityHash;
     }
 
     public int getTransactionId() {
@@ -45,7 +55,7 @@ public class ReadRequest extends Message {
         return encodedKey;
     }
 
-    public int getTMhash() {
-        return TMhash;
+    public int getLocalityHash() {
+        return localityHash;
     }
 }

@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import ch.epfl.tkvs.ScheduledTestCase;
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
 
 
 public class VersioningUnitMVTOTest extends ScheduledTestCase {

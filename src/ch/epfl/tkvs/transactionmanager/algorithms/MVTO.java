@@ -3,7 +3,11 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
+import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
+import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
+import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -36,11 +40,15 @@ public class MVTO extends CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new ReadResponse(false, null);
+            return new ReadResponse(new TransactionNotLiveException());
         }
-        if (isLocalKey(request.getTMhash())) {
+        if (isLocalKey(request.getLocalityHash())) {
             Serializable value = versioningUnit.get(xid, key);
-            return new ReadResponse(true, (String) value);
+            if (value == null) {
+                terminate(transaction, false);
+                return new ReadResponse(new ValueDoesNotExistException());
+            }
+            return new ReadResponse((String) value);
         } else {
             return remote.read(transaction, request);
         }
@@ -56,15 +64,15 @@ public class MVTO extends CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
-        if (isLocalKey(request.getTMhash())) {
+        if (isLocalKey(request.getLocalityHash())) {
             try {
                 versioningUnit.put(xid, key, value);
-                return new GenericSuccessResponse(true);
+                return new GenericSuccessResponse();
             } catch (AbortException e) {
                 terminate(transaction, false);
-                return new GenericSuccessResponse(false);
+                return new GenericSuccessResponse(e);
             }
         } else {
             return remote.write(transaction, request);
@@ -77,13 +85,13 @@ public class MVTO extends CCAlgorithm {
 
         // Transaction with duplicate id
         if (transactions.containsKey(xid)) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionAlreadyExistsException());
         }
         transactions.put(xid, new Transaction(xid));
 
         versioningUnit.beginTransaction(xid);
 
-        return new GenericSuccessResponse(true);
+        return new GenericSuccessResponse();
     }
 
     @Override
@@ -93,11 +101,15 @@ public class MVTO extends CCAlgorithm {
         Transaction transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated
-        if (transaction == null || !transaction.isPrepared) {
-            return new GenericSuccessResponse(false);
+        if (transaction == null) {
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
         terminate(transaction, true);
-        return new GenericSuccessResponse(true);
+        if (!transaction.isPrepared) {
+            return new GenericSuccessResponse(new CommitWithoutPrepareException());
+        }
+        terminate(transaction, true);
+        return new GenericSuccessResponse();
 
     }
 
@@ -111,7 +123,7 @@ public class MVTO extends CCAlgorithm {
             versioningUnit.abort(transaction.transactionId);
         }
         if (!success && !isLocalTransaction(transaction))
-            remote.abort(transaction);
+            remote.abortOthers(transaction);
         transactions.remove(transaction.transactionId);
     }
 
@@ -123,11 +135,11 @@ public class MVTO extends CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
 
         terminate(transaction, false);
-        return new GenericSuccessResponse(true);
+        return new GenericSuccessResponse();
     }
 
     @Override
@@ -138,15 +150,15 @@ public class MVTO extends CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
         try {
             versioningUnit.prepareCommit(xid);
             transaction.isPrepared = true;
-            return new GenericSuccessResponse(true);
+            return new GenericSuccessResponse();
         } catch (AbortException e) {
             terminate(transaction, false);
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(e);
         }
     }
 
@@ -155,8 +167,8 @@ public class MVTO extends CCAlgorithm {
         return transactions.get(xid);
     }
 
-	@Override
-	public void checkpoint() {
-	}
+    @Override
+    public void checkpoint() {
+    }
 
 }

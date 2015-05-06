@@ -11,7 +11,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.TimestampOrderingException;
 
 
 public class VersioningUnitMVTO {
@@ -137,7 +138,7 @@ public class VersioningUnitMVTO {
         // Is the write possible ?
         if (RTS.get(key) != null && xid < RTS.get(key)) {
             abort(xid);
-            throw new AbortException("Abort xact " + xid + " as it wanted to write " + key + " with value " + value + " but RTS is " + RTS.get(key));
+            throw new TimestampOrderingException("Abort xact " + xid + " as it wanted to write " + key + " with value " + value + " but RTS is " + RTS.get(key));
         }
 
         // The write is possible, create a new version
@@ -195,7 +196,7 @@ public class VersioningUnitMVTO {
             causes.retainAll(readFromXacts.get(xid));
             abort(xid);
             notifyAll();
-            throw new AbortException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + causes);
+            throw new TimestampOrderingException("Abort xact " + xid + " as it wanted to commit but it has read" + " for transactions that have aborted: " + causes);
         }
     }
 

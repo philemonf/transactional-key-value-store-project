@@ -43,4 +43,8 @@ public class TransactionManagerResponse extends Message {
         return transactionId;
     }
 
+    @Override
+    public String toString() {
+        return MESSAGE_TYPE + " : " + success + "  id=" + transactionId + "  host=" + host + "  port=" + port;
+    }
 }

@@ -1,5 +1,9 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
+import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
+import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,7 +49,7 @@ public abstract class Algo2PL extends CCAlgorithm {
         }
         lockingUnit.releaseAll(transaction.transactionId, transaction.getCurrentLocks());
         if (!success && !isLocalTransaction(transaction))
-            remote.abort(transaction);
+            remote.abortOthers(transaction);
         transactions.remove(transaction.transactionId);
     }
 
@@ -62,11 +66,11 @@ public abstract class Algo2PL extends CCAlgorithm {
 
         // Transaction not begun or already terminated
         if (transaction == null) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionNotLiveException());
         }
         if (!lockingUnit.interruptWaitingLocks(xid))
             terminate(transaction, false);
-        return new GenericSuccessResponse(true);
+        return new GenericSuccessResponse();
     }
 
     @Override
@@ -75,11 +79,11 @@ public abstract class Algo2PL extends CCAlgorithm {
 
         // Transaction with duplicate id
         if (transactions.containsKey(xid)) {
-            return new GenericSuccessResponse(false);
+            return new GenericSuccessResponse(new TransactionAlreadyExistsException());
         }
         transactions.put(xid, new Transaction_2PL(xid));
 
-        return new GenericSuccessResponse(true);
+        return new GenericSuccessResponse();
     }
 
     @Override
@@ -89,11 +93,15 @@ public abstract class Algo2PL extends CCAlgorithm {
         Transaction_2PL transaction = transactions.get(xid);
 
         // Transaction not begun or already terminated or not prepared
-        if (transaction == null || !transaction.isPrepared) {
-            return new GenericSuccessResponse(false);
+        if (transaction == null) {
+            return new GenericSuccessResponse(new TransactionNotLiveException());
+        }
+
+        if (!transaction.isPrepared) {
+            return new GenericSuccessResponse(new CommitWithoutPrepareException());
         }
         terminate(transaction, true);
-        return new GenericSuccessResponse(true);
+        return new GenericSuccessResponse();
 
     }
 
