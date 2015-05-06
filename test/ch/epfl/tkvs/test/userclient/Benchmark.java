@@ -314,6 +314,13 @@ public class Benchmark {
                     t = new UserTransaction<MyKey>(key);
                     
                     Log.warn("I, T" + userID + ", (re)starts with transactionID = " + t.getTransactionID());
+                    
+                    int alive = 0;
+                    for(User u: users) {
+                        if(u.isAlive())
+                            alive++;
+                    }
+                    log.warn("Remaining alive transactions: " + alive + "/" + users.length);
 
                     for (int i = 0; i < actions.length; i++) {
                         key = actions[i].key;
