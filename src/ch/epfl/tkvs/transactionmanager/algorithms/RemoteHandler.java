@@ -62,6 +62,7 @@ public class RemoteHandler {
      * @return the response from the secondary Transaction Manager
      */
     private void begin(Transaction t, int hash) throws IOException, InvalidMessageException, AbortException {
+    	hash = hash % TransactionManager.getNumberOfTMs();
         if (!t.remoteIsPrepared.containsKey(hash)) {
             GenericSuccessResponse response = (GenericSuccessResponse) sendToRemoteTM(new BeginRequest(t.transactionId), hash, GenericSuccessResponse.class);
             if (!response.getSuccess()) {

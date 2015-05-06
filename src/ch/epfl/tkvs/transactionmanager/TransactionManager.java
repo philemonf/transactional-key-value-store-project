@@ -195,6 +195,14 @@ public class TransactionManager {
 
         return -1;
     }
+    
+    /**
+     * Returns the number of transaction managers.
+     * @return the number of transaction managers
+     */
+    public static int getNumberOfTMs() {
+    	return routing.size();
+    }
 
     public static boolean isLocalLocalityHash(int localityHash) {
         return (localityHash % routing.getTMs().size()) == getLocalityHash();
