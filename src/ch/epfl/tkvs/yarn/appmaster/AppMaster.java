@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
-import static java.util.Arrays.asList;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,7 +8,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -98,20 +95,20 @@ public class AppMaster {
         // Request Containers from RM
         ArrayList<String> tmRequests = Utils.readTMHostnames();
         log.info("All TM request: " + tmRequests);
-        
+
         HashMap<String, List<ContainerRequest>> contRequests = new HashMap<>();
         int tmRequestsCount = 0;
         for (String tmIp : tmRequests) {
             log.info("Requesting Container at " + tmIp);
-            ContainerRequest req = new ContainerRequest(capability, new String[] {tmIp}, null, priority);
-            
+            ContainerRequest req = new ContainerRequest(capability, new String[] { tmIp }, null, priority);
+
             if (!contRequests.containsKey(tmIp)) {
-            	contRequests.put(tmIp, new LinkedList<ContainerRequest>());
-            	
+                contRequests.put(tmIp, new LinkedList<ContainerRequest>());
+
             }
-            
+
             contRequests.get(tmIp).add(req);
-            
+
             rmClient.addContainerRequest(req);
             ++tmRequestsCount;
         }
@@ -126,7 +123,6 @@ public class AppMaster {
             // pings occurred.
             int pingCount = 0;
 
-            
             log.info("Waiting for " + tmRequestsCount + " TM to be registered.");
             while (rmHandler.getRoutingTable().size() < tmRequestsCount || pingCount < 3) {
                 Socket sock = server.accept();
@@ -154,20 +150,18 @@ public class AppMaster {
         } catch (SocketTimeoutException e) {
             log.warn("Did not get reply from all TMs");
             for (String tmIp : tmRequests) {
-            	
-            	
-            	
+
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
-                	
-                	// FIXME This might have unexpected behavior in case of local 
-                	// testing where more than one TM has the same host
-                	// since TM that have responded may be removed
-                	// but this only concerns testing since the system
-                	// is not supposed to support multiple TM on a node at the moment
-                	
+
+                    // FIXME This might have unexpected behavior in case of local
+                    // testing where more than one TM has the same host
+                    // since TM that have responded may be removed
+                    // but this only concerns testing since the system
+                    // is not supposed to support multiple TM on a node at the moment
+
                     log.warn("TM at " + tmIp + " did not reply");
                     for (ContainerRequest req : contRequests.get(tmIp)) {
-                    	rmClient.removeContainerRequest(req);
+                        rmClient.removeContainerRequest(req);
                     }
                 }
             }
@@ -259,16 +253,15 @@ public class AppMaster {
     }
 
     /**
-     * /**
-	 * Send a message to a transaction manager (TM).
-	 * @param localityHash the locality hash of the node running the TM
-	 * @param message the message to send
-	 * @param shouldWait whether one should wait for a response
-	 * @return the response or null if !shouldWait
-	 * @throws IOException in case of network failure or bad message format
-	 */
+     * /** Send a message to a transaction manager (TM).
+     * @param localityHash the locality hash of the node running the TM
+     * @param message the message to send
+     * @param shouldWait whether one should wait for a response
+     * @return the response or null if !shouldWait
+     * @throws IOException in case of network failure or bad message format
+     */
     public static JSONObject sendMessageToTM(int localityHash, Message message, boolean shouldWait) throws IOException {
-    	return rmHandler.getRoutingTable().findTM(localityHash).sendMessage(message, shouldWait);
+        return rmHandler.getRoutingTable().findTM(localityHash).sendMessage(message, shouldWait);
     }
 
     public static int numberOfRegisteredTMs() {

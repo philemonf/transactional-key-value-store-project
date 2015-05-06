@@ -5,13 +5,14 @@
  */
 package ch.epfl.tkvs.transactionmanager;
 
-import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
 
 
 public class Transaction_2PL extends Transaction {

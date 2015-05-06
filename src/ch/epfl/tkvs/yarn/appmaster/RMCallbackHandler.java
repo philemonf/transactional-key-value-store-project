@@ -72,16 +72,16 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     @Override
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
-        	log.info("Container allocated: " + container);
-            //if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
-                try {
-                    registeredContainers.add(container);
-                    nmClient.startContainerAsync(container, initContainer());
-                    log.info("Container launched " + container.getId());
-                } catch (Exception ex) {
-                    log.error("Container not launched " + container.getId(), ex);
-                }
-            //}
+            log.info("Container allocated: " + container);
+            // if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
+            try {
+                registeredContainers.add(container);
+                nmClient.startContainerAsync(container, initContainer());
+                log.info("Container launched " + container.getId());
+            } catch (Exception ex) {
+                log.error("Container not launched " + container.getId(), ex);
+            }
+            // }
         }
     }
 
