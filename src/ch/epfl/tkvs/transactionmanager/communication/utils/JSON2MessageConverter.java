@@ -51,7 +51,6 @@ public class JSON2MessageConverter {
             
             for (Constructor<?> candidateConstructor : constructors) {
             	if (candidateConstructor.isAnnotationPresent(JSONConstructor.class)) {
-            		System.err.println("ANNOTATION FOUND: " + candidateConstructor);
             		constructor = (Constructor<? extends Message>)candidateConstructor;
             		break;
             	}
