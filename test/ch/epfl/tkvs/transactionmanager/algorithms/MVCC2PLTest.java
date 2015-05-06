@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import ch.epfl.tkvs.ScheduledTestCase.ScheduledCommand;
-
 import org.junit.Before;
 import org.junit.Test;
 

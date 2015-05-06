@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
@@ -52,7 +51,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     private ContainerLaunchContext initContainer() throws Exception {
         // Create Container Context
         ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager 1> $HADOOP_LOG/stdout 2> $HADOOP_LOG/stderr"));
 
         // Set Container jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -61,7 +60,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
 
         // Set Container CLASSPATH
         Map<String, String> env = new HashMap<>();
-        Utils.setUpEnv(env, conf);
+        Utils.setUpEnv(env, conf, System.getenv("HADOOP_LOG"));
         env.put("AM_IP", routing.getAMIp());
         env.put("AM_PORT", String.valueOf(routing.getAMPort()));
         cCLC.setEnvironment(env);
@@ -72,16 +71,16 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     @Override
     public void onContainersAllocated(List<Container> containers) {
         for (Container container : containers) {
-        	log.info("Container allocated: " + container);
-            //if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
-                try {
-                    registeredContainers.add(container);
-                    nmClient.startContainerAsync(container, initContainer());
-                    log.info("Container launched " + container.getId());
-                } catch (Exception ex) {
-                    log.error("Container not launched " + container.getId(), ex);
-                }
-            //}
+            log.info("Container allocated: " + container);
+            // if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
+            try {
+                registeredContainers.add(container);
+                nmClient.startContainerAsync(container, initContainer());
+                log.info("Container launched " + container.getId());
+            } catch (Exception ex) {
+                log.error("Container not launched " + container.getId(), ex);
+            }
+            // }
         }
     }
 

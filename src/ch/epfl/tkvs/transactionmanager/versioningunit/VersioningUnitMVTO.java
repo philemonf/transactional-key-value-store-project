@@ -10,9 +10,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TimestampOrderingException;
+import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
 public class VersioningUnitMVTO {

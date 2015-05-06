@@ -76,7 +76,7 @@ public class Client {
 
         // Set AM CLASSPATH
         Map<String, String> env = new HashMap<>();
-        Utils.setUpEnv(env, conf);
+        Utils.setUpEnv(env, conf, ApplicationConstants.LOG_DIR_EXPANSION_VAR);
         amCLC.setEnvironment(env);
 
         // Set AM resources
@@ -143,7 +143,7 @@ public class Client {
         String amIPAddress = Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort();
         Utils.writeAMAddress(amIPAddress);
 
-        log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
+        log.info("AM IP: " + amIPAddress + " - Port: " + appReport.getRpcPort());
 
         Thread.sleep(2000); // Wait a bit until everything is set up.
 

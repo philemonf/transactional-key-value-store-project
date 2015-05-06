@@ -5,7 +5,6 @@
  */
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
