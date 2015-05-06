@@ -97,20 +97,23 @@ public class AppMaster {
 
         // Request Containers from RM
         ArrayList<String> tmRequests = Utils.readTMHostnames();
+        log.info("All TM request: " + tmRequests);
+        
         HashMap<String, List<ContainerRequest>> contRequests = new HashMap<>();
+        int tmRequestsCount = 0;
         for (String tmIp : tmRequests) {
             log.info("Requesting Container at " + tmIp);
-            ContainerRequest req = new ContainerRequest(capability, new String[] { tmIp }, null, priority);
+            ContainerRequest req = new ContainerRequest(capability, new String[] {tmIp}, null, priority);
             
-            if (contRequests.containsKey(tmIp)) {
-            	contRequests.get(tmIp).add(req);
-            } else {
-            	List<ContainerRequest> crs = new LinkedList<ContainerRequest>();
-            	crs.add(req);
-            	contRequests.put(tmIp, crs);
+            if (!contRequests.containsKey(tmIp)) {
+            	contRequests.put(tmIp, new LinkedList<ContainerRequest>());
+            	
             }
             
+            contRequests.get(tmIp).add(req);
+            
             rmClient.addContainerRequest(req);
+            ++tmRequestsCount;
         }
 
         // Get TM network info from all TMs.
@@ -123,7 +126,9 @@ public class AppMaster {
             // pings occurred.
             int pingCount = 0;
 
-            while (rmHandler.getRoutingTable().size() < tmRequests.size() && pingCount < 3) {
+            
+            log.info("Waiting for " + tmRequestsCount + " TM to be registered.");
+            while (rmHandler.getRoutingTable().size() < tmRequestsCount || pingCount < 3) {
                 Socket sock = server.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();

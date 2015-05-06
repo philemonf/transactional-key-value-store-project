@@ -78,8 +78,12 @@ public class AMWorker extends Thread {
 
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
         int localityHash = request.getLocalityHash();
+        
+        log.info("Get a transaction manager request for locality hash: " + localityHash);
 
         RemoteTransactionManager tm = routing.findTM(localityHash);
+        
+        log.info("Assigned a TM to it: " + tm.getHostname() + " - " + tm.getPort());
 
         int transactionID = AppMaster.nextTransactionId();
 

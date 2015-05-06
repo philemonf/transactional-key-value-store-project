@@ -150,7 +150,7 @@ public class Client {
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
-            Thread.sleep(5000);
+            Thread.sleep(2000);
         }
 
         System.out.println("\nClient REPL: ");
