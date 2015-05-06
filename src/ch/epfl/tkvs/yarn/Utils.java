@@ -7,6 +7,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -22,10 +24,15 @@ import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 
 public class Utils {
 
+	private static final boolean ENABLE_LOG = true;
+	
     public static final int AM_MEMORY = 4096;
     public static final int AM_CORES = 8;
     public static final int TM_MEMORY = 4096;
@@ -105,5 +112,13 @@ public class Utils {
         String[] info = reader.readLine().split(":");
         reader.close();
         return new InetSocketAddress(info[0], Integer.parseInt(info[1]));
+    }
+    
+    public static void initLogLevel() {
+    	List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
+    	loggers.add(LogManager.getRootLogger());
+    	for ( Logger logger : loggers ) {
+    	    logger.setLevel(ENABLE_LOG ? Level.INFO : Level.OFF);
+    	}
     }
 }

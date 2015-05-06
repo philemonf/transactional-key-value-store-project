@@ -47,6 +47,8 @@ public class AppMaster {
 
 
     public static void main(String[] args) {
+    	Utils.initLogLevel();
+    	
         log.info("Initializing at " + NetUtils.getHostname());
         try {
             new AppMaster().run();
