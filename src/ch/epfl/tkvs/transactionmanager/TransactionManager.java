@@ -11,12 +11,11 @@ import java.util.concurrent.Executors;
 
 import org.apache.hadoop.net.NetUtils;
 import org.apache.log4j.Logger;
-
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
@@ -25,8 +24,6 @@ import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
-import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
-import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
@@ -49,7 +46,8 @@ public class TransactionManager {
     private final static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     public static void main(String[] args) throws Exception {
-
+    	Utils.initLogLevel();
+    	
         log.info("Initializing...");
         try {
             String amIp = System.getenv("AM_IP");

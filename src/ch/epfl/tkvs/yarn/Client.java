@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -33,6 +34,8 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -50,6 +53,8 @@ public class Client {
     private static Logger log = Logger.getLogger(Client.class.getName());
 
     public static void main(String[] args) {
+    	Utils.initLogLevel();
+    	
         try {
             log.info("Initializing...");
             new Client().run();
