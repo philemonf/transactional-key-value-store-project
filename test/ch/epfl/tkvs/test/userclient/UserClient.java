@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.test.userclient;
 
 import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.user.UserTransaction;
 
 
@@ -13,7 +14,7 @@ public class UserClient implements Runnable {
             System.out.println("User Client starting");
             final MyKey k0 = new MyKey("k0", 0);
             final MyKey k1 = new MyKey("k1", 1);
-
+            
             UserTransaction t0 = new UserTransaction<MyKey>(k0);
             t0.write(k0, "k0_main");
             t0.commit();

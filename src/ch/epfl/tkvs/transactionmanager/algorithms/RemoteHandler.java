@@ -1,12 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
-
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
-import org.codehaus.jettison.json.JSONObject;
-
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.PrepareException;
 import ch.epfl.tkvs.exceptions.RemoteTMException;
@@ -22,6 +15,12 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import org.codehaus.jettison.json.JSONObject;
+
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+import java.io.IOException;
+
+import org.apache.log4j.Logger;
 
 
 /**

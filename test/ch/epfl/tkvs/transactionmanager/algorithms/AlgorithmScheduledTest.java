@@ -1,9 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import ch.epfl.tkvs.ScheduledTestCase;
+import static ch.epfl.tkvs.ScheduledTestCase._______;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
@@ -11,6 +9,10 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+
+import static junit.framework.TestCase.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 
 public class AlgorithmScheduledTest extends ScheduledTestCase {

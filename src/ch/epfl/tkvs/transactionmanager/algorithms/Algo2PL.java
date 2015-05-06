@@ -1,13 +1,14 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
+import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
+import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.log4j.Logger;
 
-import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
-import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
-import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
 import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.Transaction_2PL;

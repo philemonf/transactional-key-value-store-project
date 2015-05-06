@@ -7,7 +7,8 @@ public class MyKey extends Key {
 
     String k;
     int localityHash;
-
+    
+    
     public MyKey(String k, int localityHash) {
         this.k = k;
         this.localityHash = localityHash;

@@ -3,13 +3,13 @@ package ch.epfl.tkvs.transactionmanager.communication.requests;
 import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.log4j.Logger;
-
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
+
+import org.apache.log4j.Logger;
 
 
 public class WriteRequest extends Message {

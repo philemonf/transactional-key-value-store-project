@@ -9,6 +9,8 @@ import java.util.List;
 
 public class RoutingTable implements Serializable {
 
+	
+	
     private final static long serialVersionUID = 1;
 
     private final String AM_IP;
@@ -25,20 +27,21 @@ public class RoutingTable implements Serializable {
         tms.add(tm);
         Collections.sort(tms, new Comparator<RemoteTransactionManager>() {
 
-            @Override
-            public int compare(RemoteTransactionManager o1, RemoteTransactionManager o2) {
-                return 0;
-            }
+    		@Override
+    		public int compare(RemoteTransactionManager o1,
+    				RemoteTransactionManager o2) {
+    			return 0;
+    		}
 
-        });
+    	});
     }
-
+    
     public RemoteTransactionManager findTM(int localityHash) {
-        if (tms.isEmpty()) {
-            throw new IllegalStateException("findTM called on an empty routing table");
-        }
-
-        return tms.get(localityHash % tms.size());
+    	if (tms.isEmpty()) {
+    		throw new IllegalStateException("findTM called on an empty routing table");
+    	}
+    	
+    	return tms.get(localityHash % tms.size());
     }
 
     public List<RemoteTransactionManager> getTMs() {
@@ -59,9 +62,9 @@ public class RoutingTable implements Serializable {
 
     public boolean contains(String tmIp) {
         for (RemoteTransactionManager tm : getTMs()) {
-            if (tm.getHostname().equals(tmIp)) {
-                return true;
- 	}
+        	if (tm.getHostname().equals(tmIp)) {
+        		return true;
+        	}
         }
         
         return false;

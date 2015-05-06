@@ -1,10 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import static ch.epfl.tkvs.transactionmanager.lockingunit.LockType.Default;
-
-import java.io.Serializable;
-import java.util.Arrays;
-
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
@@ -14,7 +9,10 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import static ch.epfl.tkvs.transactionmanager.lockingunit.LockType.Default;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import java.io.Serializable;
+import java.util.Arrays;
 
 
 public class Simple2PL extends Algo2PL {

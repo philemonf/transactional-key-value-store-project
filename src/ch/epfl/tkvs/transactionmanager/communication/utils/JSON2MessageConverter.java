@@ -5,6 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -42,23 +43,23 @@ public class JSON2MessageConverter {
 
         try {
             Constructor<?>[] constructors = messageClass.getConstructors();
-
+            
             if (constructors.length == 0) {
                 throw new InvalidMessageException(messageClass + " has no public constructor.");
             }
             Constructor<? extends Message> constructor = null;
-
+            
             for (Constructor<?> candidateConstructor : constructors) {
-                if (candidateConstructor.isAnnotationPresent(JSONConstructor.class)) {
-                    constructor = (Constructor<? extends Message>) candidateConstructor;
-                    break;
-                }
+            	if (candidateConstructor.isAnnotationPresent(JSONConstructor.class)) {
+            		constructor = (Constructor<? extends Message>)candidateConstructor;
+            		break;
+            	}
             }
-
+            
             if (constructor == null) {
-                constructor = (Constructor<? extends Message>) constructors[0];
+            	constructor = (Constructor<? extends Message>) constructors[0];
             }
-
+            
             //
             // System.err.println("Constructor for " + messageClass);
             // for (Class c : constructor.getParameterTypes())

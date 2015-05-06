@@ -6,6 +6,7 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
@@ -17,6 +18,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManage
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
@@ -26,8 +28,9 @@ public class AMWorker extends Thread {
     private JSONObject jsonRequest;
     private Socket sock;
     private ICentralizedDecider centralizedDecider;
-
+    
     private static Logger log = Logger.getLogger(AMWorker.class.getName());
+    
 
     public AMWorker(RoutingTable routing, JSONObject input, Socket sock, ICentralizedDecider decider) {
         this.routing = routing;
@@ -42,7 +45,7 @@ public class AMWorker extends Thread {
             JSONObject response = null;
 
             String messageType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
-
+            
             switch (messageType) {
 
             case TransactionManagerRequest.MESSAGE_TYPE:
@@ -50,19 +53,19 @@ public class AMWorker extends Thread {
                 response = getResponseForRequest(request);
                 break;
             default:
-                if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
-
-                    centralizedDecider.handleMessage(jsonRequest);
-
-                    if (centralizedDecider.readyToDecide()) {
-                        centralizedDecider.performDecision();
-                    }
-                }
+            	if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
+            		
+            		centralizedDecider.handleMessage(jsonRequest);
+            		
+            		if (centralizedDecider.readyToDecide()) {
+            			centralizedDecider.performDecision();
+            		}
+            	}
             }
 
             // Send the response if it exists
             if (response != null) {
-                log.info("Response" + response.toString());
+            	log.info("Response" + response.toString());
                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
                 out.println(response.toString());
             }
@@ -75,11 +78,11 @@ public class AMWorker extends Thread {
 
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
         int localityHash = request.getLocalityHash();
-
+        
         log.info("Get a transaction manager request for locality hash: " + localityHash);
 
         RemoteTransactionManager tm = routing.findTM(localityHash);
-
+        
         log.info("Assigned a TM to it: " + tm.getHostname() + " - " + tm.getPort());
 
         int transactionID = AppMaster.nextTransactionId();
