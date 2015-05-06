@@ -3,9 +3,9 @@ package ch.epfl.tkvs.test.userclient;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
-import ch.epfl.tkvs.transactionmanager.AbortException;
+import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.user.Key;
-import ch.epfl.tkvs.user.Transaction;
+import ch.epfl.tkvs.user.UserTransaction;
 
 
 public class Benchmark {
@@ -65,7 +65,7 @@ public class Benchmark {
 
         this.keys = new MyKey[nbKeys];
         for (int i = 0; i < nbKeys; i++) {
-            keys[i] = new MyKey("Key" + i);
+            keys[i] = new MyKey("Key" + i, new Random().nextInt(300)); // TODO: think about the key locality hashes
         }
 
         this.users = new User[nbUsers];
@@ -116,10 +116,10 @@ public class Benchmark {
         while (!isDone) {
             isDone = true;
             aborted = false;
-            Transaction<Key> init = null;
+            UserTransaction<Key> init = null;
 
             try {
-                init = new Transaction<Key>(new MyKey("init"));
+                init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better heuristic
             } catch (AbortException e) {
                 // TODO Handle this case
                 e.printStackTrace();
@@ -312,12 +312,12 @@ public class Benchmark {
 
             while (!isDone) {
                 MyKey key = actions[0].key;
-                Transaction<MyKey> t = null;
+                UserTransaction<MyKey> t = null;
 
                 try {
 
                     benchmarkStatus = BenchmarkStatus.BEGIN;
-                    t = new Transaction<MyKey>(key);
+                    t = new UserTransaction<MyKey>(key);
 
                     for (int i = 0; i < actions.length; i++) {
                         key = actions[i].key;

@@ -56,7 +56,7 @@ echo "Executing YARN Client...\n"
 if [ $# -gt 1 ];
 then
 	hadoop fs -copyFromLocal $2 /projects/transaction-manager/
-	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < $2
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < "$2"
 
 else
 	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client	
