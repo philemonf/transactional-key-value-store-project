@@ -236,7 +236,8 @@ public class Benchmark {
             }
             int nbWriteActions = users[i].actions.length - nbReadActions;
 
-            System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " + nbWriteActions + "\t#aborts = " + (users[i].nbReadAborts + users[i].nbWriteAborts));
+            int nbAborts = users[i].nbBeginAborts + users[i].nbReadAborts + users[i].nbWriteAborts + users[i].nbCommitAborts;
+            System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " + nbWriteActions + "\t#aborts = " + (nbAborts));
 
             sumLatency += users[i].latency;
             nbReadTotal += users[i].nbRead;
@@ -249,7 +250,7 @@ public class Benchmark {
         }
 
         double latency = sumLatency / users.length;
-        double throughput = runningTime / users.length;
+        double throughput = users.length / runningTime;
         int nbAbortTotal = nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
