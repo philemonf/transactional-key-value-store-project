@@ -1,8 +1,6 @@
 package ch.epfl.tkvs.test.userclient;
 
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 import java.util.Random;
 
 import ch.epfl.tkvs.transactionmanager.AbortException;
@@ -37,9 +35,6 @@ public class Benchmark {
     private enum BenchmarkStatus {
         BEGIN, READ, WRITE, COMMIT
     }
-
-    private final String BENCHMARK_RESULTS_FILE = "results.bm";
-    private PrintWriter pw;
 
     // Keys the users will access
     private MyKey keys[];
@@ -85,18 +80,15 @@ public class Benchmark {
 
         System.out.println("Benchmarking start");
         // Append the results to the same file
-        pw = new PrintWriter(new FileOutputStream(BENCHMARK_RESULTS_FILE, true));
-
         printBenchmarkParameters();
         initializeUsersActions();
 
         for (int i = 0; i < repetitions; i++) {
             initializeKeys();
             startBenchmarking();
-            extractResults(pw);
+            extractResults();
         }
 
-        pw.close();
         System.out.println("Benchmarking end");
     }
 
@@ -211,9 +203,8 @@ public class Benchmark {
 
     /**
      * Extract all the information needed from the User threads
-     * @param pw
      */
-    private void extractResults(PrintWriter pw) {
+    private void extractResults() {
 
         int nbReadTotal = 0;
         int nbWriteTotal = 0;
@@ -264,8 +255,8 @@ public class Benchmark {
         System.out.println("\tTotal Latency: " + latency + " ms/transaction");
         System.out.println("\tThroughput: " + throughput + " transaction/ms");
 
-        pw.format("%d %d %d %d %d %d %d %d %d %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput);
-        pw.flush();
+        System.out.format("#BM- %d %d %d %d %d %d %d %d %d %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput);
+        System.out.flush();
     }
 
     private class User extends Thread {

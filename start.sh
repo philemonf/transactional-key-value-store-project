@@ -3,9 +3,9 @@
 #create slaves if local mode is set as a parameter
 if [ "$1" = "local" ];
 then
-HOSTNAME=$(hostname)
-mkdir -p config
-echo "$HOSTNAME" > config/slaves
+	HOSTNAME=$(hostname)
+	mkdir -p config
+	echo "$HOSTNAME" > config/slaves
 fi
 
 # Hide stderr
@@ -31,7 +31,6 @@ jar cf TKVS.jar -C build .
 rm -f .sources
 rm -r -f build
 
-
 # Puts the jar in HDFS under /projects/transaction-manager/.
 hadoop fs -rm -r -f "/projects/transaction-manager/*"
 
@@ -51,4 +50,14 @@ hadoop fs -chmod -R 777 "$CONFIG_PATH"
 
 # Executes the Client.
 echo "Executing YARN Client...\n"
-hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client
+
+
+
+if [ $# -gt 1 ];
+then
+	hadoop fs -copyFromLocal $2 /projects/transaction-manager/
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < $2
+
+else
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client	
+fi

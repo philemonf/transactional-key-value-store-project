@@ -12,6 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -157,9 +158,19 @@ public class Client {
         }
 
         System.out.println("\nClient REPL: ");
+        Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
 
-            String input = System.console().readLine("> ");
+            // Don't know why this is needed..
+            Thread.sleep(1000);
+            String input = ":exit";
+
+            System.out.print("> ");
+            if (scanner.hasNext()) {
+                input = scanner.nextLine();
+                System.out.println(input);
+            }
+
             if (input.equals(":exit")) {
                 log.info("Stopping gracefully " + id);
                 Socket exitSock = new Socket(appReport.getHost(), appReport.getRpcPort());
@@ -214,6 +225,8 @@ public class Client {
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
         }
+
+        scanner.close();
 
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             appReport = client.getApplicationReport(id);
