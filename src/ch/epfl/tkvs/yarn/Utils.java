@@ -1,12 +1,18 @@
 package ch.epfl.tkvs.yarn;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
@@ -126,5 +133,29 @@ public class Utils {
         for (Logger logger : loggers) {
             logger.setLevel(ENABLE_LOG ? Level.INFO : Level.WARN);
         }
+    }
+
+    public static void writeREPLHist(ArrayList<String> hist) throws Exception {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(".hist"));
+        oos.writeObject(hist);
+        oos.close();
+    }
+
+    public static ArrayList<String> loadREPLHist() {
+        ArrayList<String> res = new ArrayList<>();
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(".hist"));
+            res.addAll((ArrayList<String>) ois.readObject());
+            ois.close();
+        } catch (Exception e) {
+            //we dont care about missing file.
+        }
+        return res;
+    }
+
+    public static void writeAppId(ApplicationId id) throws Exception {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
+        writer.write(id.toString());
+        writer.close();
     }
 }

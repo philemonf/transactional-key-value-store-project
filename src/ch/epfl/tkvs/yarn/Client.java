@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.yarn;
 
+import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -9,7 +10,10 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -82,9 +86,7 @@ public class Client {
         client.submitApplication(appContext);
 
         // Write the id of the app in a hidden file.
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
-        writer.write(id.toString());
-        writer.close();
+        Utils.writeAppId(id);
 
         // REPL
         ApplicationReport appReport = client.getApplicationReport(id);
@@ -113,10 +115,12 @@ public class Client {
             Thread.sleep(3000);
         }
 
+        ArrayList<String> hist = Utils.loadREPLHist();
         System.out.println("\nClient REPL: ");
         Scanner scanner = new Scanner(System.in);
+        String input = ":exit";
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
-            String input = ":exit";
+            Thread.sleep(500);
             System.out.print("> ");
             if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
@@ -134,7 +138,13 @@ public class Client {
 
             // TODO: support more commands with more cases ..
             switch (input.split(" ")[0]) {
+            case ":hist":
+                for (int i = 0; i < hist.size(); ++i) {
+                    System.out.println(i + ": " + hist.get(i));
+                }
+                break;
             case ":test":
+                hist.add(input);
                 System.out.println("Running test client...\n");
 
                 log.info("Running example client program...");
@@ -145,7 +155,7 @@ public class Client {
                 break;
 
             case ":benchmark":
-
+                hist.add(input);
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
@@ -170,6 +180,7 @@ public class Client {
             case "":
                 break;
             default:
+                hist.add(input);
                 System.out.println("Command Not Found!");
             }
 
@@ -179,6 +190,7 @@ public class Client {
 
         // Wait for the AM to finish.
         scanner.close();
+        Utils.writeREPLHist(hist);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
