@@ -47,7 +47,7 @@ import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
 
 /**
  * The YARN Client is responsible for launching the Application Master (AM). Prepares the AM's container and launches
- * the process in it. As soon as the AM is ready, the REPL shows up to the user (read–eval–print loop). The REPL
+ * the process in it. As soon as the AM is ready, the REPL shows up to the user (read-eval-print loop). The REPL
  * supports testing, benchmarking, exiting gracefully, and is extensible.
  * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
  */
