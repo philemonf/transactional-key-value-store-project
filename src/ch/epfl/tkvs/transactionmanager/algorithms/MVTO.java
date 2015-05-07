@@ -18,6 +18,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
+import java.io.IOException;
 
 
 public class MVTO extends CCAlgorithm {
@@ -104,7 +105,7 @@ public class MVTO extends CCAlgorithm {
         if (transaction == null) {
             return new GenericSuccessResponse(new TransactionNotLiveException());
         }
-        terminate(transaction, true);
+
         if (!transaction.isPrepared) {
             return new GenericSuccessResponse(new CommitWithoutPrepareException());
         }

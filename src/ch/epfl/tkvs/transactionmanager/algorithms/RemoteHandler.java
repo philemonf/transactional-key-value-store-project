@@ -22,6 +22,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import java.util.logging.Level;
 
 
 /**
@@ -202,14 +203,14 @@ public class RemoteHandler {
             return;
         }
         AbortRequest ar = new AbortRequest(t.transactionId);
-        try {
-            for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
+
+        for (Integer remoteHash : t.remoteIsPrepared.keySet()) {
+            try {
                 sendToRemoteTM(ar, remoteHash);
                 // TODO: check response and do something?
+            } catch (IOException ex) {
+                log.error(ex);
             }
-        } catch (IOException ex) {
-            // TODO: check response and do something?
-
         }
         t.areAllRemoteAborted = true;
 
