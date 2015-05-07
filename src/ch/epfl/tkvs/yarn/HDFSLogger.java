@@ -11,10 +11,11 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.log4j.Logger;
 
 
+//TODO: In the future, use log aggregation instead!
 public class HDFSLogger {
 
     private final boolean ALSO_USE_LOG4J = false;
-    private final String TKVS_LOGS_PATH = "hdfs:///projects/transaction-manager/logs/";
+    private final String TKVS_LOGS_PATH = "hdfs:///tmp/tkvs/logs/";
     private Logger log;
     private ArrayList<Object> hdfsLog;
     private String className;
@@ -80,6 +81,7 @@ public class HDFSLogger {
         try {
             Path logFile = new Path(TKVS_LOGS_PATH, className + "_" + address.hashCode());
             FileSystem fs = logFile.getFileSystem(new YarnConfiguration());
+            fs.delete(new Path(TKVS_LOGS_PATH), true); // delete old log dir.
             PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(logFile, true)));
             pr.println("**************************************************");
             pr.println("Class: " + className);
