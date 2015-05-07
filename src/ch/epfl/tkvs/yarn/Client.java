@@ -1,19 +1,13 @@
 package ch.epfl.tkvs.yarn;
 
-import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -119,8 +113,9 @@ public class Client {
         System.out.println("\nClient REPL: ");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
-            String input = ":exit";
-            Thread.sleep(500);
+            String input = ":exit"; // Default REPL command is :exit.
+            Thread.sleep(500); // Useful for batch commands.
+
             System.out.print("> ");
             if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
