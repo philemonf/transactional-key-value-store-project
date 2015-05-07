@@ -12,7 +12,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -148,7 +147,7 @@ public class Utils {
             res.addAll((ArrayList<String>) ois.readObject());
             ois.close();
         } catch (Exception e) {
-            //we dont care about missing file.
+            // we dont care about missing file.
         }
         return res;
     }

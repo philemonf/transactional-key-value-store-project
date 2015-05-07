@@ -4,7 +4,6 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageCo
 
 import java.io.IOException;
 
-import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.exceptions.AbortException;
@@ -22,36 +21,37 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
-import java.util.logging.Level;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 /**
- ** This class acts as a proxy for user client for distributed tranasactions running on secondary Transaction Managers.
- * Also responsbile for 2 Phase Commit protocol
+ ** This class acts as a proxy for user client for distributed transactions running on secondary Transaction Managers.
+ * Also responsible for 2 Phase Commit protocol
  */
 public class RemoteHandler {
 
     // The concurrency control algorithm being executed locally to which the remote handler is attached to.
     private CCAlgorithm localAlgo;
-    private static final Logger log = Logger.getLogger(RemoteHandler.class);
+    private HDFSLogger log;
 
     // public RemoteHandler(CCAlgorithm localAlgo)
-    public void setAlgo(CCAlgorithm localAlgo) {
+    public void setAlgo(CCAlgorithm localAlgo, HDFSLogger log) {
         this.localAlgo = localAlgo;
+        this.log = log;
     }
 
     private Message sendToRemoteTM(Message request, int localityHash, Class<? extends Message> messageClass) throws IOException, InvalidMessageException {
 
-        log.info(request);
+        log.info(request, RemoteHandler.class);
         JSONObject response = TransactionManager.sendToTransactionManager(localityHash, request, true);
         Message responseMessage = parseJSON(response, messageClass);
-        log.info(response + "<--" + request);
+        log.info(response + "<--" + request, RemoteHandler.class);
         return responseMessage;
 
     }
 
     private void sendToRemoteTM(Message request, int localityHash) throws IOException {
-        log.info(request);
+        log.info(request, RemoteHandler.class);
         TransactionManager.sendToTransactionManager(localityHash, request, false);
     }
 
@@ -95,7 +95,7 @@ public class RemoteHandler {
             }
             return rr;
         } catch (IOException | InvalidMessageException ex) {
-            log.fatal("Remote error", ex);
+            log.fatal("Remote error", ex, RemoteHandler.class);
             abortAll(t);
             return new ReadResponse(new RemoteTMException(ex));
         } catch (AbortException e) {
@@ -125,7 +125,7 @@ public class RemoteHandler {
             }
             return gsr;
         } catch (IOException | InvalidMessageException ex) {
-            log.fatal("Remote error", ex);
+            log.fatal("Remote error", ex, RemoteHandler.class);
             abortAll(t);
             return new GenericSuccessResponse(new RemoteTMException(ex));
         } catch (AbortException ex) {
@@ -164,7 +164,7 @@ public class RemoteHandler {
 
         } catch (IOException | InvalidMessageException ex) {
             abortAll(t);
-            log.fatal("remote error", ex);
+            log.fatal("remote error", ex, RemoteHandler.class);
             return new GenericSuccessResponse(new RemoteTMException(ex));
         } catch (AbortException ex) {
             abortAll(t);
@@ -209,7 +209,7 @@ public class RemoteHandler {
                 sendToRemoteTM(ar, remoteHash);
                 // TODO: check response and do something?
             } catch (IOException ex) {
-                log.error(ex);
+                log.error(ex, RemoteHandler.class);
             }
         }
         t.areAllRemoteAborted = true;

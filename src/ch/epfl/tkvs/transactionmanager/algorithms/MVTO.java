@@ -18,15 +18,16 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
-import java.io.IOException;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
 
-    public MVTO(RemoteHandler rh) {
-        super(rh);
+    public MVTO(RemoteHandler rh, HDFSLogger log) {
+        super(rh, log);
+
         transactions = new ConcurrentHashMap<>();
         versioningUnit = VersioningUnitMVTO.getInstance();
         versioningUnit.init();

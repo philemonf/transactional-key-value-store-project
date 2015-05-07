@@ -9,12 +9,11 @@ import org.mortbay.log.Log;
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.user.Key;
 import ch.epfl.tkvs.user.UserTransaction;
-import ch.epfl.tkvs.yarn.Client;
 
 
 public class Benchmark {
 
-    private static Logger log = Logger.getLogger(Client.class.getName());
+    private static Logger log = Logger.getLogger(Benchmark.class.getName());
 
     private enum ActionType {
         WRITE, READ

@@ -10,7 +10,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.hadoop.net.NetUtils;
-import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -23,6 +22,7 @@ import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
@@ -43,12 +43,11 @@ public class TransactionManager {
     private static RoutingTable routing;
     private static boolean isAMReady = false;
 
-    private final static Logger log = Logger.getLogger(TransactionManager.class.getName());
+    private final static HDFSLogger log = new HDFSLogger(TransactionManager.class);
 
     public static void main(String[] args) throws Exception {
         Utils.initLogLevel();
-
-        log.info("Initializing...");
+        log.info("Initializing...", TransactionManager.class);
         try {
             String amIp = System.getenv("AM_IP");
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
@@ -56,7 +55,7 @@ public class TransactionManager {
             tmPort = NetUtils.getFreeSocketPort();
             tmIp = Utils.extractIP(NetUtils.getHostname());
 
-            log.info("Sending ip:port to AppMaster");
+            log.info("Sending ip:port to AppMaster", TransactionManager.class);
             Socket sock = new Socket(amIp, amPort);
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(tmIp + ":" + tmPort);
@@ -65,14 +64,15 @@ public class TransactionManager {
 
             new TransactionManager().run();
         } catch (Exception ex) {
-            log.fatal("Could not run transaction manager", ex);
+            log.fatal("Could not run transaction manager", ex, TransactionManager.class);
         }
-        log.info("Finished");
+        log.info("Finished", TransactionManager.class);
+        log.writeToHDFS(tmIp + ":" + tmPort);
         System.exit(0);
     }
 
     public void run() throws Exception {
-        log.info("Starting server at " + tmIp + ":" + tmPort);
+        log.info("Starting server at " + tmIp + ":" + tmPort, TransactionManager.class);
         ServerSocket server = new ServerSocket(tmPort);
 
         // Wait for the TM initialization message
@@ -85,9 +85,9 @@ public class TransactionManager {
         RemoteHandler remoteHandler = new RemoteHandler();
 
         // Select which concurrency algorithm to use
-        CCAlgorithm concurrencyController = new MVTO(remoteHandler); // MVCC2PL(remoteHandler);
+        CCAlgorithm concurrencyController = new MVTO(remoteHandler, log); // MVCC2PL(remoteHandler);
 
-        remoteHandler.setAlgo(concurrencyController);
+        remoteHandler.setAlgo(concurrencyController, log);
 
         // Start the thread that will call checkpoint on the concurrency controller
         startCheckpointThread(server, concurrencyController);
@@ -96,9 +96,9 @@ public class TransactionManager {
 
         while (!server.isClosed()) {
             try {
-                log.info("Waiting for message...");
+                log.info("Waiting for message...", TransactionManager.class);
                 sock = server.accept();
-                log.info("Processing message...");
+                log.info("Processing message...", TransactionManager.class);
 
                 in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 input = in.readLine();
@@ -107,19 +107,19 @@ public class TransactionManager {
                 String messageType = json.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
 
                 if (messageType.equals(ExitMessage.MESSAGE_TYPE)) {
-                    log.info("Stopping Server");
+                    log.info("Stopping Server", TransactionManager.class);
                     sock.close();
                     server.close();
                     threadPool.shutdown();
                 } else {
-                    threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController));
+                    threadPool.execute(new TMWorker(new JSONObject(input), sock, concurrencyController, log));
                 }
 
             } catch (IOException e) {
-                log.error("sock.accept ", e);
+                log.error("sock.accept ", e, TransactionManager.class);
             }
         }
-        log.info("Finalizing");
+        log.info("Finalizing", TransactionManager.class);
         server.close();
     }
 
@@ -154,7 +154,7 @@ public class TransactionManager {
         try {
             json = Message2JSONConverter.toJSON(message);
         } catch (JSONException e) {
-            log.error(e);
+            log.error("Error", e, TransactionManager.class);
             throw new IOException("An exception occurred while converting the message to json: " + e);
         }
 

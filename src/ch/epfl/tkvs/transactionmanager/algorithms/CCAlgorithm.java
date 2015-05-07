@@ -17,6 +17,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.TryCommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 /**
@@ -26,6 +27,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 public abstract class CCAlgorithm {
 
     protected RemoteHandler remote;
+    protected HDFSLogger log;
 
     /**
      * Called whenever the transaction manager receives a read request
@@ -107,8 +109,9 @@ public abstract class CCAlgorithm {
      */
     abstract public void checkpoint();
 
-    public CCAlgorithm(RemoteHandler remote) {
+    public CCAlgorithm(RemoteHandler remote, HDFSLogger log) {
         this.remote = remote;
+        this.log = log;
     }
 
     /**

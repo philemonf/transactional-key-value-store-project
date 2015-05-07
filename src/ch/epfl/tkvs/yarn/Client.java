@@ -105,8 +105,8 @@ public class Client {
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(amIp, amPort)) {
-            System.out.print(".");
             Thread.sleep(3000);
+            System.out.print(".");
         }
 
         ArrayList<String> hist = Utils.loadREPLHist();

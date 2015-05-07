@@ -11,8 +11,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Logger;
-
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.DeadlockException;
 
@@ -25,13 +23,11 @@ public enum LockingUnit {
     instance;
 
     private LockCompatibilityTable lct;
-    private Map<Serializable, HashMap<LockType, List<Integer>>> locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
+    private Map<Serializable, HashMap<LockType, List<Integer>>> locks = new HashMap<>();
 
-    private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+    private Map<Serializable, HashMap<LockType, Condition>> waitingLists = new HashMap<>();
     private Lock internalLock = new ReentrantLock();
     private DeadlockGraph graph = new DeadlockGraph();
-
-    private static Logger log = Logger.getLogger(LockingUnit.class.getName());
 
     /**
      * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
@@ -40,8 +36,8 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void init() {
-        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        locks = new HashMap<>();
+        waitingLists = new HashMap<>();
         graph = new DeadlockGraph();
         lct = new LockCompatibilityTable(false);
     }
@@ -53,8 +49,8 @@ public enum LockingUnit {
      * For simplicity, please call this method before running the threads.
      */
     public void initOnlyExclusiveLock() {
-        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        locks = new HashMap<>();
+        waitingLists = new HashMap<>();
         graph = new DeadlockGraph();
         lct = new LockCompatibilityTable(true);
     }
@@ -69,11 +65,10 @@ public enum LockingUnit {
      * @param table the lock compatibility table - if null, use default parameter
      */
     public void initWithLockCompatibilityTable(Map<LockType, List<LockType>> table) {
-        locks = new HashMap<Serializable, HashMap<LockType, List<Integer>>>();
-        waitingLists = new HashMap<Serializable, HashMap<LockType, Condition>>();
+        locks = new HashMap<>();
+        waitingLists = new HashMap<>();
         graph = new DeadlockGraph();
         if (table == null) {
-            log.warn("LockCompatibilityTable is null. Using default compatibility table.");
             lct = new LockCompatibilityTable(false);
         } else {
             lct = new LockCompatibilityTable(table);
@@ -101,7 +96,6 @@ public enum LockingUnit {
             addLock(transactionID, key, lockType);
         } catch (InterruptedException e) {
             // TODO: something
-            log.error("Shit happens...");
         } finally {
             internalLock.unlock();
         }
@@ -143,7 +137,6 @@ public enum LockingUnit {
 
         } catch (InterruptedException e) {
             // TODO: something
-            log.error("Shit happens...");
         } finally {
             internalLock.unlock();
         }
