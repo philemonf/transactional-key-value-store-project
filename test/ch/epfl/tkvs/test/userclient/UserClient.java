@@ -14,7 +14,8 @@ public class UserClient implements Runnable {
             final MyKey k0 = new MyKey("k0", 0);
             final MyKey k1 = new MyKey("k1", 1);
 
-            UserTransaction t0 = new UserTransaction<MyKey>(k0);
+            UserTransaction t0 = new UserTransaction<MyKey>();
+            t0.begin(k0);
             t0.write(k0, "k0_main");
             t0.commit();
 
@@ -23,7 +24,8 @@ public class UserClient implements Runnable {
                 @Override
                 public void run() {
                     try {
-                        UserTransaction<MyKey> t = new UserTransaction<MyKey>(k0);
+                        UserTransaction<MyKey> t = new UserTransaction<MyKey>();
+                        t.begin(k0);
 
                         t.write(k0, "k0_thread1");
                         System.out.println((String) t.read(k0));
@@ -40,7 +42,8 @@ public class UserClient implements Runnable {
                 @Override
                 public void run() {
                     try {
-                        UserTransaction<MyKey> t = new UserTransaction<MyKey>(k1);
+                        UserTransaction<MyKey> t = new UserTransaction<MyKey>();
+                        t.begin(k1);
 
                         t.write(k1, "myValue");
                         System.out.println((String) t.read(k0));

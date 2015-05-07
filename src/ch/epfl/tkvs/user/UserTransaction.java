@@ -46,7 +46,7 @@ public class UserTransaction<K extends Key> {
     private static InetSocketAddress amAddress = null;
     private static Logger log = Logger.getLogger(UserTransaction.class.getName());
 
-    public UserTransaction(K key) throws AbortException {
+    public void begin(K key) throws AbortException {
         try {
             if (amAddress == null) {
                 amAddress = Utils.readAMAddress();

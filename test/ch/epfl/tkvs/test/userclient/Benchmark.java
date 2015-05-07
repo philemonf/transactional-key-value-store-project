@@ -126,7 +126,8 @@ public class Benchmark {
         while (!isDone) {
             isDone = true;
             UserTransaction<Key> init = null;
-            init = new UserTransaction<Key>(keys[new Random().nextInt(keys.length)]); // TODO: choose a better
+            init = new UserTransaction<Key>();
+            init.begin(keys[new Random().nextInt(keys.length)]); // TODO: choose a better
 
             for (int i = 0; i < keys.length; i++) {
                 init.write(keys[i], "init" + i);
@@ -310,7 +311,8 @@ public class Benchmark {
                 try {
 
                     benchmarkStatus = BenchmarkStatus.BEGIN;
-                    t = new UserTransaction<MyKey>(key);
+                    t = new UserTransaction<MyKey>();
+                    t.begin(key);
 
                     Log.warn("I, T" + userID + ", (re)starts with transactionID = " + t.getTransactionID());
 
