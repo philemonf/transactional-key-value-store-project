@@ -118,8 +118,8 @@ public class Client {
         ArrayList<String> hist = Utils.loadREPLHist();
         System.out.println("\nClient REPL: ");
         Scanner scanner = new Scanner(System.in);
-        String input = ":exit";
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
+            String input = ":exit";
             Thread.sleep(500);
             System.out.print("> ");
             if (scanner.hasNextLine()) {
