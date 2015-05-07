@@ -8,6 +8,7 @@ import org.apache.hadoop.yarn.api.records.ContainerStatus;
 import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.apache.log4j.Logger;
 
+
 /**
  * The YARN Node Manager Asynchronous Client, used to log container information.
  * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
@@ -15,9 +16,10 @@ import org.apache.log4j.Logger;
  */
 public class NMCallbackHandler implements NMClientAsync.CallbackHandler {
 
-    private static Logger log = Logger.getLogger(NMCallbackHandler.class.getName());
+    private final static Logger log = Logger.getLogger(NMCallbackHandler.class.getName());
 
-    public NMCallbackHandler() {}
+    public NMCallbackHandler() {
+    }
 
     @Override
     public void onContainerStopped(ContainerId containerId) {

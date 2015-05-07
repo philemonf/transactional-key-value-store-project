@@ -44,20 +44,19 @@ import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
 
+
 /**
- * The YARN Client is responsible for launching the Application Master (AM).
- * Prepares the AM's container and launches the process in it.
- * As soon as the AM is ready, the REPL shows up to the user (read–eval–print loop).
- * The REPL supports testing, benchmarking, exiting gracefully, and is extensible.
+ * The YARN Client is responsible for launching the Application Master (AM). Prepares the AM's container and launches
+ * the process in it. As soon as the AM is ready, the REPL shows up to the user (read–eval–print loop). The REPL
+ * supports testing, benchmarking, exiting gracefully, and is extensible.
  * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
  */
 public class Client {
 
-    private static Logger log = Logger.getLogger(Client.class.getName());
+    private final static Logger log = Logger.getLogger(Client.class.getName());
 
     public static void main(String[] args) {
         Utils.initLogLevel();
-
         try {
             log.info("Initializing...");
             new Client().run();
@@ -69,70 +68,20 @@ public class Client {
     private void run() throws Exception {
         YarnConfiguration conf = new YarnConfiguration();
 
-        // Create Yarn Client
+        // Create Yarn Client.
         YarnClient client = YarnClient.createYarnClient();
         client.init(conf);
         client.start();
 
-        // Create Application
-        YarnClientApplication app = client.createApplication();
+        // Create Application.
+        ApplicationSubmissionContext appContext = createAppMaster(client.createApplication(), conf);
 
-        // Create AM Container
-        ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
-
-        // Set AM jar
-        LocalResource jar = Records.newRecord(LocalResource.class);
-        Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
-        amCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
-
-        // Set AM CLASSPATH
-        Map<String, String> env = new HashMap<>();
-        Utils.setUpEnv(env, conf);
-        amCLC.setEnvironment(env);
-
-        // Set AM resources
-        Resource res = Records.newRecord(Resource.class);
-        res.setMemory(Utils.AM_MEMORY);
-        res.setVirtualCores(Utils.AM_CORES);
-
-        if (UserGroupInformation.isSecurityEnabled()) {
-            log.info("Setting up security information");
-            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
-            Credentials credentials = new Credentials();
-            String tokenRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
-            if (tokenRenewer == null || tokenRenewer.length() == 0) {
-                throw new Exception("Can't get Master Kerberos principal for the RM to use as renewer");
-            }
-
-            // For now, only getting tokens for the default file-system.
-            FileSystem fs = FileSystem.get(conf);
-            final Token<?> tokens[] = fs.addDelegationTokens(tokenRenewer, credentials);
-            if (tokens != null) {
-                for (Token<?> token : tokens) {
-                    log.info("Got dt for " + fs.getUri() + "; " + token);
-                }
-            }
-            DataOutputBuffer dob = new DataOutputBuffer();
-            credentials.writeTokenStorageToStream(dob);
-            ByteBuffer fsTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
-            amCLC.setTokens(fsTokens);
-        }
-
-        // Create ApplicationSubmissionContext
-        ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
-        appContext.setKeepContainersAcrossApplicationAttempts(false);
-        appContext.setApplicationName("TKVS");
-        appContext.setQueue("default");
-        appContext.setAMContainerSpec(amCLC);
-        appContext.setResource(res);
-
-        // Submit Application
+        // Submit Application.
         ApplicationId id = appContext.getApplicationId();
         log.info("Submitting " + id);
         client.submitApplication(appContext);
 
-        // Write the id of the app in a hidden file
+        // Write the id of the app in a hidden file.
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
         writer.write(id.toString());
         writer.close();
@@ -141,7 +90,7 @@ public class Client {
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
 
-        // Wait until Client knows AM's host:port
+        // Wait until Client knows AM's host:port.
         log.info("Waiting for AppMaster.. ");
         while (appReport.getRpcPort() == -1) {
             appReport = client.getApplicationReport(id);
@@ -156,23 +105,16 @@ public class Client {
         Utils.writeAMAddress(amIPAddress);
 
         log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
-
-        Thread.sleep(2000); // Wait a bit until everything is set up.
-
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
-            Thread.sleep(2000);
+            Thread.sleep(3000);
         }
 
         System.out.println("\nClient REPL: ");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
-
-            // Don't know why this is needed..
-            Thread.sleep(1000);
             String input = ":exit";
-
             System.out.print("> ");
             if (scanner.hasNext()) {
                 input = scanner.nextLine();
@@ -234,8 +176,8 @@ public class Client {
             appState = appReport.getYarnApplicationState();
         }
 
+        // Wait for the AM to finish.
         scanner.close();
-
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             appReport = client.getApplicationReport(id);
             appState = appReport.getYarnApplicationState();
@@ -295,5 +237,57 @@ public class Client {
             in.close();
             sock.close();
         }
+    }
+
+    private ApplicationSubmissionContext createAppMaster(YarnClientApplication app, YarnConfiguration conf) throws Exception {
+        ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
+        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+
+        // Set AM jar
+        LocalResource jar = Records.newRecord(LocalResource.class);
+        Utils.setUpLocalResource(Utils.TKVS_JAR_PATH, jar, conf);
+        amCLC.setLocalResources(Collections.singletonMap(Utils.TKVS_JAR_NAME, jar));
+
+        // Set AM CLASSPATH
+        Map<String, String> env = new HashMap<>();
+        Utils.setUpEnv(env, conf);
+        amCLC.setEnvironment(env);
+
+        // Set AM resources
+        Resource res = Records.newRecord(Resource.class);
+        res.setMemory(Utils.AM_MEMORY);
+        res.setVirtualCores(Utils.AM_CORES);
+
+        if (UserGroupInformation.isSecurityEnabled()) {
+            log.info("Setting up security information");
+            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
+            Credentials credentials = new Credentials();
+            String tokenRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
+            if (tokenRenewer == null || tokenRenewer.length() == 0) {
+                throw new Exception("Can't get Master Kerberos principal for the RM to use as renewer");
+            }
+
+            // For now, only getting tokens for the default file-system.
+            FileSystem fs = FileSystem.get(conf);
+            final Token<?> tokens[] = fs.addDelegationTokens(tokenRenewer, credentials);
+            if (tokens != null) {
+                for (Token<?> token : tokens) {
+                    log.info("Got dt for " + fs.getUri() + "; " + token);
+                }
+            }
+            DataOutputBuffer dob = new DataOutputBuffer();
+            credentials.writeTokenStorageToStream(dob);
+            ByteBuffer fsTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+            amCLC.setTokens(fsTokens);
+        }
+
+        // Create ApplicationSubmissionContext
+        ApplicationSubmissionContext appContext = app.getApplicationSubmissionContext();
+        appContext.setKeepContainersAcrossApplicationAttempts(false);
+        appContext.setApplicationName("TKVS");
+        appContext.setQueue("default");
+        appContext.setAMContainerSpec(amCLC);
+        appContext.setResource(res);
+        return appContext;
     }
 }

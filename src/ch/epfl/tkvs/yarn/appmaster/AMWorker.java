@@ -29,12 +29,12 @@ import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
  */
 public class AMWorker extends Thread {
 
+    private final static Logger log = Logger.getLogger(AMWorker.class.getName());
+
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
     private ICentralizedDecider centralizedDecider;
-
-    private static Logger log = Logger.getLogger(AMWorker.class.getName());
 
     public AMWorker(RoutingTable routing, JSONObject input, Socket sock, ICentralizedDecider decider) {
         this.routing = routing;
@@ -47,11 +47,9 @@ public class AMWorker extends Thread {
         try {
             // Create the response
             JSONObject response = null;
-
             String messageType = jsonRequest.getString(KEY_FOR_MESSAGE_TYPE);
 
             switch (messageType) {
-
             case MESSAGE_TYPE:
                 TransactionManagerRequest request = (TransactionManagerRequest) parseJSON(jsonRequest, TransactionManagerRequest.class);
                 response = getResponseForRequest(request);

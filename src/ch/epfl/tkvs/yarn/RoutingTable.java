@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+
 /**
  * The Routing Table contains all necessary information concerning communication between AM to TM, and TM to TM
  * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
@@ -27,14 +28,14 @@ public class RoutingTable implements Serializable {
     public void addTM(RemoteTransactionManager tm) {
         tms.add(tm);
         // TODO: Sort TMs based on locality criteria.
-//        Collections.sort(tms, new Comparator<RemoteTransactionManager>() {
-//
-//            @Override
-//            public int compare(RemoteTransactionManager o1, RemoteTransactionManager o2) {
-//                return 0;
-//            }
-//
-//        });
+        // Collections.sort(tms, new Comparator<RemoteTransactionManager>() {
+        //
+        // @Override
+        // public int compare(RemoteTransactionManager o1, RemoteTransactionManager o2) {
+        // return 0;
+        // }
+        //
+        // });
     }
 
     public RemoteTransactionManager findTM(int localityHash) {

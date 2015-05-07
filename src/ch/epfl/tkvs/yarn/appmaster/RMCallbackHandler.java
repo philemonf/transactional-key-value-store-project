@@ -21,6 +21,7 @@ import org.apache.log4j.Logger;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 
+
 /**
  * The YARN Resource Manager Asynchronous Client, used to handle container allocations.
  * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
@@ -28,12 +29,11 @@ import ch.epfl.tkvs.yarn.Utils;
  */
 public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
 
-    private static Logger log = Logger.getLogger(RMCallbackHandler.class.getName());
+    private final static Logger log = Logger.getLogger(RMCallbackHandler.class.getName());
+
     private final NMClientAsync nmClient;
     private final YarnConfiguration conf;
-
     private RoutingTable routing;
-
     private List<Container> registeredContainers = Collections.synchronizedList(new LinkedList<Container>());
 
     public RMCallbackHandler(NMClientAsync nmClient, YarnConfiguration conf) {
@@ -95,7 +95,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
             log.info("Container finished " + status.getContainerId());
             Container containerToRemove = null;
             for (Container container : registeredContainers) {
-                if (container != null && status != null && container.getId().equals(status.getContainerId())) {
+                if (container != null && container.getId().equals(status.getContainerId())) {
                     containerToRemove = container;
                 }
             }
