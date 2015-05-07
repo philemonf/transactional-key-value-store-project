@@ -97,7 +97,7 @@ public class RemoteHandler {
         } catch (IOException | InvalidMessageException ex) {
             log.fatal("Remote error", ex);
             abortAll(t);
-            return new ReadResponse(new RemoteTMException(ex.getMessage()));
+            return new ReadResponse(new RemoteTMException(ex));
         } catch (AbortException e) {
             abortAll(t);
             return new ReadResponse(e);
@@ -127,7 +127,7 @@ public class RemoteHandler {
         } catch (IOException | InvalidMessageException ex) {
             log.fatal("Remote error", ex);
             abortAll(t);
-            return new GenericSuccessResponse(new RemoteTMException(ex.getMessage()));
+            return new GenericSuccessResponse(new RemoteTMException(ex));
         } catch (AbortException ex) {
             abortAll(t);
             return new GenericSuccessResponse(ex);
@@ -165,7 +165,7 @@ public class RemoteHandler {
         } catch (IOException | InvalidMessageException ex) {
             abortAll(t);
             log.fatal("remote error", ex);
-            return new GenericSuccessResponse(new RemoteTMException(ex.getMessage()));
+            return new GenericSuccessResponse(new RemoteTMException(ex));
         } catch (AbortException ex) {
             abortAll(t);
             return new GenericSuccessResponse(ex);
