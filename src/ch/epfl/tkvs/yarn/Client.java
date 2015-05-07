@@ -90,7 +90,7 @@ public class Client {
         ApplicationReport appReport = client.getApplicationReport(id);
         YarnApplicationState appState = appReport.getYarnApplicationState();
 
-        // Wait until Client knows AM's host:port.
+        // Wait until Client knows AM's ip:port.
         log.info("Waiting for AppMaster.. ");
         while (appReport.getRpcPort() == -1) {
             appReport = client.getApplicationReport(id);
@@ -101,13 +101,14 @@ public class Client {
             }
             Thread.sleep(100);
         }
-        String amIPAddress = Utils.extractIP(appReport.getHost()) + ":" + appReport.getRpcPort();
-        Utils.writeAMAddress(amIPAddress);
+        String amIp = Utils.extractIP(appReport.getHost());
+        int amPort = appReport.getRpcPort();
+        Utils.writeAMAddress(amIp + ":" + amPort);
 
-        log.info("AM IP: " + amIPAddress + " - Host: " + appReport.getHost() + " - Port: " + appReport.getRpcPort());
+        log.info("AppMaster Address: " + amIp + ":" + amPort);
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
-        while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
+        while (!pingAppMaster(amIp, amPort)) {
             System.out.print(".");
             Thread.sleep(3000);
         }
@@ -123,7 +124,7 @@ public class Client {
 
             if (input.equals(":exit")) {
                 log.info("Stopping gracefully " + id);
-                Socket exitSock = new Socket(appReport.getHost(), appReport.getRpcPort());
+                Socket exitSock = new Socket(amIp, amPort);
                 PrintWriter out = new PrintWriter(exitSock.getOutputStream(), true);
                 out.println(input);
                 out.close();
@@ -241,6 +242,7 @@ public class Client {
 
     private ApplicationSubmissionContext createAppMaster(YarnClientApplication app, YarnConfiguration conf) throws Exception {
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
+        // TODO: Fix the logging method from ApplicationConstants.LOG_DIR_EXPANSION_VAR.
         amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
@@ -260,7 +262,6 @@ public class Client {
 
         if (UserGroupInformation.isSecurityEnabled()) {
             log.info("Setting up security information");
-            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
             Credentials credentials = new Credentials();
             String tokenRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
             if (tokenRenewer == null || tokenRenewer.length() == 0) {

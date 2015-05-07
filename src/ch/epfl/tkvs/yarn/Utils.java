@@ -62,6 +62,7 @@ public class Utils {
         }
         env.put("CLASSPATH", classPathEnv.toString());
         env.put("HADOOP_HOME", System.getenv("HADOOP_HOME"));
+        // TODO: Add env variables if necessary for logging.
     }
 
     public static void setUpLocalResource(Path resPath, LocalResource res, YarnConfiguration conf) throws IOException {
@@ -83,7 +84,7 @@ public class Utils {
 
         String line = reader.readLine();
         while (line != null && line.length() > 0 && !line.startsWith("#")) {
-            tmHosts.add(NetUtils.normalizeHostName(line));
+            tmHosts.add(NetUtils.normalizeHostName(line)); // Get IP.
             line = reader.readLine();
         }
         reader.close();

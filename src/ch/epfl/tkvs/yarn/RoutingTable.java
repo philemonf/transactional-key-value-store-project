@@ -64,7 +64,7 @@ public class RoutingTable implements Serializable {
 
     public boolean contains(String tmIp) {
         for (RemoteTransactionManager tm : getTMs()) {
-            if (tm.getHostname().equals(tmIp)) {
+            if (tm.getIp().equals(tmIp)) {
                 return true;
             }
         }

@@ -81,8 +81,8 @@ public class AMWorker extends Thread {
         int localityHash = request.getLocalityHash();
         log.info("Get a transaction manager request for locality hash: " + localityHash);
         RemoteTransactionManager tm = routing.findTM(localityHash);
-        log.info("Assigned a TM to it: " + tm.getHostname() + " - " + tm.getPort());
+        log.info("Assigned a TM to it: " + tm.getIp() + " - " + tm.getPort());
         int transactionID = nextTransactionId();
-        return toJSON(new TransactionManagerResponse(true, transactionID, tm.getHostname(), tm.getPort()));
+        return toJSON(new TransactionManagerResponse(true, transactionID, tm.getIp(), tm.getPort()));
     }
 }

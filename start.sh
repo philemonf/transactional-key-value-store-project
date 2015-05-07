@@ -24,8 +24,8 @@ fi
 rm -f *.jar
 rm -r -f build
 
-echo ${CYAN}* Building TKVS.jar...${BLUE}
 # Builds the jar.
+echo ${CYAN}* Building TKVS.jar...${BLUE}
 mkdir build
 find . -name "*.java" > .sources
 javac -cp "lib:$HADOOP_CP" -d build @.sources || { echo ${RED}ERROR: javac! Exiting.${NC} ; exit 1; }
@@ -34,9 +34,9 @@ rm -f .sources
 rm -r -f build
 
 # Puts the jar in HDFS under /projects/transaction-manager/.
+echo ${CYAN}* Putting TKVS.jar and config in HDFS...${BLUE}
 hadoop fs -rm -r -f "/projects/transaction-manager/*" || { echo ${RED}ERROR: hadoop fs -rm! Exiting.${NC} ; exit 1; }
 
-echo ${CYAN}* Putting TKVS.jar and config in HDFS...${BLUE}
 PROJECT_HOME='/projects/transaction-manager/'
 JAR_PATH="$PROJECT_HOME/TKVS.jar"
 CONFIG_PATH="$PROJECT_HOME/config"
@@ -48,7 +48,7 @@ hadoop fs -copyFromLocal config "$PROJECT_HOME" || { echo ${RED}ERROR: hadoop -c
 hadoop fs -chmod -R 777 "$CONFIG_PATH" || { echo ${RED}ERROR: hadoop -chmod! Exiting.${NC} ; exit 1; }
 
 # Executes the Client.
-echo ${CYAN}* Executing YARN Client...\n${NC}
+echo ${CYAN}* Executing YARN Client...${NC}
 if [ $# -gt 1 ];
 then
 	hadoop fs -copyFromLocal $2 /projects/transaction-manager/

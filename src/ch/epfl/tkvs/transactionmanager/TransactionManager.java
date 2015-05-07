@@ -38,7 +38,7 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 public class TransactionManager {
 
     private static final int CHECKPOINT_PERIOD_MS = 15000;
-    private static String tmHost;
+    private static String tmIp;
     private static int tmPort;
     private static RoutingTable routing;
     private static boolean isAMReady = false;
@@ -54,12 +54,12 @@ public class TransactionManager {
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
 
             tmPort = NetUtils.getFreeSocketPort();
-            tmHost = Utils.extractIP(NetUtils.getHostname());
+            tmIp = Utils.extractIP(NetUtils.getHostname());
 
-            log.info("Sending Host:Port to AppMaster");
+            log.info("Sending ip:port to AppMaster");
             Socket sock = new Socket(amIp, amPort);
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.println(tmHost + ":" + tmPort);
+            out.println(tmIp + ":" + tmPort);
             out.close();
             sock.close();
 
@@ -72,7 +72,7 @@ public class TransactionManager {
     }
 
     public void run() throws Exception {
-        log.info("Starting server at " + tmHost + ":" + tmPort);
+        log.info("Starting server at " + tmIp + ":" + tmPort);
         ServerSocket server = new ServerSocket(tmPort);
 
         // Wait for the TM initialization message
@@ -185,7 +185,7 @@ public class TransactionManager {
     public static int getLocalityHash() {
         int i = 0;
         for (RemoteTransactionManager tm : routing.getTMs()) {
-            if (tm.getHostname().equals(tmHost) && tm.getPort() == tmPort) {
+            if (tm.getIp().equals(tmIp) && tm.getPort() == tmPort) {
                 return i;
             }
             ++i;

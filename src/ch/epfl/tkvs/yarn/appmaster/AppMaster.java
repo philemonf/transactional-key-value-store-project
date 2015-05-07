@@ -58,7 +58,7 @@ public class AppMaster {
     public static void main(String[] args) {
         Utils.initLogLevel();
 
-        log.info("Initializing at " + NetUtils.getHostname());
+        log.info("Initializing...");
         try {
             new AppMaster().run();
         } catch (Exception ex) {
@@ -84,16 +84,16 @@ public class AppMaster {
         rmClient.init(conf);
         rmClient.start();
 
-        // Get port and hostname.
-        String amIP = Utils.extractIP(NetUtils.getHostname());
+        // Get ip and port.
+        String amIp = Utils.extractIP(NetUtils.getHostname());
         int amPort = NetUtils.getFreeSocketPort();
 
         // Initialize the routing table with AM's ip:port.
-        rmHandler.setRoutingTable(new RoutingTable(amIP, amPort));
+        rmHandler.setRoutingTable(new RoutingTable(amIp, amPort));
 
         // Register with RM and create AM Socket.
-        rmClient.registerApplicationMaster(amIP, amPort, null);
-        log.info("Registered and starting server at " + amIP + ":" + amPort);
+        rmClient.registerApplicationMaster(amIp, amPort, null);
+        log.info("Registered and starting server at " + amIp + ":" + amPort);
         ServerSocket server = new ServerSocket(amPort);
 
         // Request Containers from RM.
@@ -146,7 +146,7 @@ public class AppMaster {
             for (String tmIp : tmRequests) {
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
                     // FIXME This might have unexpected behavior in case of local
-                    // testing where more than one TM has the same host
+                    // testing where more than one TM has the same ip
                     // since TM that have responded may be removed
                     // but this only concerns testing since the system
                     // is not supposed to support multiple TM on a node at the moment
