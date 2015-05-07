@@ -108,6 +108,7 @@ public class Client {
         // Ping the AppMaster until it is ready
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(appReport.getHost(), appReport.getRpcPort())) {
+            System.out.print(".");
             Thread.sleep(3000);
         }
 
@@ -116,9 +117,8 @@ public class Client {
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit";
             System.out.print("> ");
-            if (scanner.hasNext()) {
+            if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
-                System.out.println(input);
             }
 
             if (input.equals(":exit")) {
