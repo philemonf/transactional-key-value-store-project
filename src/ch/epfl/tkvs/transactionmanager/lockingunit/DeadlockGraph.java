@@ -6,8 +6,8 @@ import java.util.HashSet;
 
 
 public class DeadlockGraph implements Serializable {
-
-    HashMap<Integer, HashSet<Integer>> outgoingEdges;
+	private static final long serialVersionUID = 1L;
+	HashMap<Integer, HashSet<Integer>> outgoingEdges;
     HashMap<Integer, HashSet<Integer>> incomingEdges;
 
     public DeadlockGraph() {
@@ -103,5 +103,17 @@ public class DeadlockGraph implements Serializable {
             incomingEdges.remove(transactionID);
         }
     }
+
+	public DeadlockGraph copyOutgoingEdges() {
+		DeadlockGraph copy = new DeadlockGraph();
+		for (Integer key: outgoingEdges.keySet()) {
+			if (outgoingEdges.get(key)==null || outgoingEdges.get(key).isEmpty()) {
+				continue;
+			}
+			copy.outgoingEdges.put(key, new HashSet<Integer>());
+			copy.outgoingEdges.get(key).addAll(outgoingEdges.get(key));
+		}
+		return copy;
+	}
 
 }
