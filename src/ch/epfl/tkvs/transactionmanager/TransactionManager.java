@@ -67,7 +67,7 @@ public class TransactionManager {
             log.fatal("Could not run transaction manager", ex, TransactionManager.class);
         }
         log.info("Finished", TransactionManager.class);
-        log.writeToHDFS(tmIp + ":" + tmPort);
+        log.writeToHDFS(args[0]);
         System.exit(0);
     }
 

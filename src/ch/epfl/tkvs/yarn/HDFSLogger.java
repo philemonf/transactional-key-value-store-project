@@ -18,10 +18,8 @@ public class HDFSLogger {
     private final String TKVS_LOGS_PATH = "hdfs:///tmp/tkvs/logs/";
     private Logger log;
     private ArrayList<Object> hdfsLog;
-    private String className;
 
     public HDFSLogger(Class c) {
-        className = c.getSimpleName();
         if (ALSO_USE_LOG4J)
             log = Logger.getLogger(c);
         hdfsLog = new ArrayList<>();
@@ -75,18 +73,14 @@ public class HDFSLogger {
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " FATAL " + c.getSimpleName() + "]: " + m + "\n" + t);
     }
 
-    public void writeToHDFS(String address) {
+    public void writeToHDFS(String contId) {
         if (ALSO_USE_LOG4J)
             log.info("HDFSLogger writing to HDFS...");
         try {
-            Path logFile = new Path(TKVS_LOGS_PATH, className + "_" + address.hashCode());
+            Path logFile = new Path(TKVS_LOGS_PATH, contId);
             FileSystem fs = logFile.getFileSystem(new YarnConfiguration());
             fs.delete(new Path(TKVS_LOGS_PATH), true); // delete old log dir.
             PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(logFile, true)));
-            pr.println("**************************************************");
-            pr.println("Class: " + className);
-            pr.println("Address: " + address);
-            pr.println("**************************************************");
             for (Object s : hdfsLog) {
                 pr.println(s.toString());
             }
