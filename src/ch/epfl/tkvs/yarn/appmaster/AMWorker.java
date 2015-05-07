@@ -22,7 +22,13 @@ import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
+/**
+ * The AM's processing thread, launched for processing received JSON messages.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.yarn.RoutingTable
+ */
 public class AMWorker extends Thread {
+
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
@@ -52,9 +58,7 @@ public class AMWorker extends Thread {
                 break;
             default:
                 if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
-
                     centralizedDecider.handleMessage(jsonRequest);
-
                     if (centralizedDecider.readyToDecide()) {
                         centralizedDecider.performDecision();
                     }
@@ -69,24 +73,18 @@ public class AMWorker extends Thread {
                 out.close();
                 log.info("Finish sending response " + response.toString());
             }
-            sock.close(); // Closing this socket will also close the socket's
-                          // InputStream and OutputStream.
+            sock.close(); // Closing this socket will also close the socket's InputStream and OutputStream.
         } catch (IOException | JSONException | InvalidMessageException e) {
-            log.error("Err", e);
+            log.error(e);
         }
     }
 
     private JSONObject getResponseForRequest(TransactionManagerRequest request) throws JSONException, IOException {
         int localityHash = request.getLocalityHash();
-
         log.info("Get a transaction manager request for locality hash: " + localityHash);
-
         RemoteTransactionManager tm = routing.findTM(localityHash);
-
         log.info("Assigned a TM to it: " + tm.getHostname() + " - " + tm.getPort());
-
         int transactionID = nextTransactionId();
-
         return toJSON(new TransactionManagerResponse(true, transactionID, tm.getHostname(), tm.getPort()));
     }
 }

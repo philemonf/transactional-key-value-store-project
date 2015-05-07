@@ -28,11 +28,15 @@ import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
-
+/**
+ * The Utils class contains useful utilities throughout the lifetime of the YARN application.
+ * @see ch.epfl.tkvs.yarn.Client
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ */
 public class Utils {
 
-	private static final boolean ENABLE_LOG = true;
-	
+    private static final boolean ENABLE_LOG = true;
+
     public static final int AM_MEMORY = 4096;
     public static final int AM_CORES = 8;
     public static final int TM_MEMORY = 4096;
@@ -113,12 +117,12 @@ public class Utils {
         reader.close();
         return new InetSocketAddress(info[0], Integer.parseInt(info[1]));
     }
-    
+
     public static void initLogLevel() {
-    	List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
-    	loggers.add(LogManager.getRootLogger());
-    	for ( Logger logger : loggers ) {
-    	    logger.setLevel(ENABLE_LOG ? Level.INFO : Level.WARN);
-    	}
+        List<Logger> loggers = Collections.<Logger> list(LogManager.getCurrentLoggers());
+        loggers.add(LogManager.getRootLogger());
+        for (Logger logger : loggers) {
+            logger.setLevel(ENABLE_LOG ? Level.INFO : Level.WARN);
+        }
     }
 }

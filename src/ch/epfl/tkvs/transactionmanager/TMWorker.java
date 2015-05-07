@@ -40,12 +40,12 @@ public class TMWorker extends Thread {
 
     public void run() {
         try {
-        	
+
             // Create the response
             Message response = null;
             Message request = null;
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
-            
+
             log.info("Just received: " + jsonRequest.toString());
 
             switch (requestType) {
@@ -100,13 +100,12 @@ public class TMWorker extends Thread {
                 out.println(toJSON(response).toString());
                 out.close();
             } else {
-            	log.info("NULL response to " + jsonRequest.toString());
+                log.info("NULL response to " + jsonRequest.toString());
             }
 
-            sock.close(); // Closing this socket will also close the socket's
-            // InputStream and OutputStream.
+            sock.close(); // Closing this socket will also close the socket's InputStream and OutputStream.
         } catch (IOException | InvalidMessageException | JSONException e) {
-            e.printStackTrace();
+            log.error(e);
         }
     }
 }

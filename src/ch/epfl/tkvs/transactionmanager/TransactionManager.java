@@ -46,8 +46,8 @@ public class TransactionManager {
     private final static Logger log = Logger.getLogger(TransactionManager.class.getName());
 
     public static void main(String[] args) throws Exception {
-    	Utils.initLogLevel();
-    	
+        Utils.initLogLevel();
+
         log.info("Initializing...");
         try {
             String amIp = System.getenv("AM_IP");
@@ -193,13 +193,13 @@ public class TransactionManager {
 
         return -1;
     }
-    
+
     /**
      * Returns the number of transaction managers.
      * @return the number of transaction managers
      */
     public static int getNumberOfTMs() {
-    	return routing.size();
+        return routing.size();
     }
 
     public static boolean isLocalLocalityHash(int localityHash) {

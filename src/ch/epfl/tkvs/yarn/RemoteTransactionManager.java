@@ -16,6 +16,8 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter
 
 /**
  * Represents a transaction manager that is remote compared to the node having this object.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.transactionmanager.TransactionManager
  */
 public class RemoteTransactionManager implements Serializable {
 

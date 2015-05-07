@@ -21,7 +21,11 @@ import org.apache.log4j.Logger;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 
-
+/**
+ * The YARN Resource Manager Asynchronous Client, used to handle container allocations.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.yarn.appmaster.NMCallbackHandler
+ */
 public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
 
     private static Logger log = Logger.getLogger(RMCallbackHandler.class.getName());

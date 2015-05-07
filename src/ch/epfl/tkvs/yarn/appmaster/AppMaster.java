@@ -38,17 +38,24 @@ import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
-
+/**
+ * The YARN Application Master is responsible for launching containers that contain Transaction Managers (TM).
+ * Prepares the TM containers and launches the process in each.
+ * As soon as TMs reply when they are ready, the AM listens for messages that have to do with centralized control.
+ * On exit, it gracefully stops all active TMs.
+ * @see ch.epfl.tkvs.transactionmanager.TransactionManager
+ * @see ch.epfl.tkvs.yarn.appmaster.AMWorker
+ * @see ch.epfl.tkvs.yarn.RoutingTable
+ */
 public class AppMaster {
 
     private static Logger log = Logger.getLogger(AppMaster.class.getName());
     private static RMCallbackHandler rmHandler;
     private static int nextXid = 0;
 
-
     public static void main(String[] args) {
-    	Utils.initLogLevel();
-    	
+        Utils.initLogLevel();
+
         log.info("Initializing at " + NetUtils.getHostname());
         try {
             new AppMaster().run();
@@ -180,7 +187,7 @@ public class AppMaster {
 
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
         ExecutorService threadPool = Executors.newCachedThreadPool();
-        
+
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
                 log.info("Waiting for message...");

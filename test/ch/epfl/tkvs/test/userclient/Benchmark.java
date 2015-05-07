@@ -301,7 +301,7 @@ public class Benchmark {
             BenchmarkStatus benchmarkStatus = BenchmarkStatus.BEGIN;
             boolean isDone = false;
             latency = System.currentTimeMillis();
-            
+
             Log.warn("I, T" + userID + ", is now running. Be sure I will try to finish before T" + ((userID % users.length) + 1));
 
             while (!isDone) {
@@ -312,12 +312,12 @@ public class Benchmark {
 
                     benchmarkStatus = BenchmarkStatus.BEGIN;
                     t = new UserTransaction<MyKey>(key);
-                    
+
                     Log.warn("I, T" + userID + ", (re)starts with transactionID = " + t.getTransactionID());
-                    
+
                     int alive = 0;
-                    for(User u: users) {
-                        if(u.isAlive())
+                    for (User u : users) {
+                        if (u.isAlive())
                             alive++;
                     }
                     log.warn("Remaining alive transactions: " + alive + "/" + users.length);
@@ -342,13 +342,13 @@ public class Benchmark {
                     t.commit();
                     nbCommit = nbCommit + 1;
                     isDone = true;
-                    
+
                     Log.warn("I, T" + userID + ", am proud to announce I have been able to commit. Nah!");
 
                 } catch (AbortException e) {
-                    
+
                     Log.warn("Oh no! I, T" + userID + ", has been aborted by a bitch. I have to restart");
-                    
+
                     switch (benchmarkStatus) {
                     case BEGIN:
                         nbBeginAborts++;

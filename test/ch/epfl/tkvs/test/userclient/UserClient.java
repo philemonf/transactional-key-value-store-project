@@ -58,7 +58,7 @@ public class UserClient implements Runnable {
 
             thread1.join();
             thread2.join();
-            
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -11,7 +11,6 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -34,8 +33,6 @@ import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
@@ -47,14 +44,20 @@ import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
 
-
+/**
+ * The YARN Client is responsible for launching the Application Master (AM).
+ * Prepares the AM's container and launches the process in it.
+ * As soon as the AM is ready, the REPL shows up to the user (read–eval–print loop).
+ * The REPL supports testing, benchmarking, exiting gracefully, and is extensible.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ */
 public class Client {
 
     private static Logger log = Logger.getLogger(Client.class.getName());
 
     public static void main(String[] args) {
-    	Utils.initLogLevel();
-    	
+        Utils.initLogLevel();
+
         try {
             log.info("Initializing...");
             new Client().run();
