@@ -35,7 +35,7 @@ import ch.epfl.tkvs.yarn.Utils;
 public class UserTransaction<K extends Key> {
 
     public enum TransactionStatus {
-        live, aborted, commited
+        uninitialized, live, aborted, commited
     }
 
     private String tmIp;

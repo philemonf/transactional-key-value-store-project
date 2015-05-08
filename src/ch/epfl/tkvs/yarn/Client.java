@@ -37,10 +37,10 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.test.userclient.Benchmark;
-import ch.epfl.tkvs.test.userclient.UserClient;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
+import ch.epfl.tkvs.test.userclient.*;
 
 
 /**
@@ -140,15 +140,19 @@ public class Client {
                 break;
             case ":test":
                 hist.add(input);
-                System.out.println("Running test client...\n");
 
-                log.info("Running example client program...");
-                new UserClient().run();
-                runTestCases();
+                System.out.println("Running test client...\n");
+                runTestCase(UserClientScheduledTest.class);
+                // log.info("Running example client program...");
+                // new UserClient().run();
+                // runTestCases();
 
                 System.out.println();
                 break;
-
+            case ":testall":
+                System.out.println("Running unit tests...\n");
+                runTestCases();
+                break;
             case ":benchmark":
                 hist.add(input);
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)(?: )?(\\d+)?");
@@ -213,7 +217,7 @@ public class Client {
         Result res = JUnitCore.runClasses(testCase);
 
         if (res.getFailureCount() == 0) {
-            log.info("All tests passed for " + testCase.getSimpleName());
+            log.info(res.getRunCount() + " tests passed for " + testCase.getSimpleName());
         }
 
         for (Failure failure : res.getFailures()) {
