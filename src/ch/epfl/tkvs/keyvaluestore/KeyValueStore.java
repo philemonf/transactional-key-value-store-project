@@ -5,8 +5,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * <Key,Value> Store
+ * A simple in memory <Key,Value> Store.
  */
+// TODO: Extend this in a future version to support data storage, resilience and replication.
 public enum KeyValueStore {
     instance;
 

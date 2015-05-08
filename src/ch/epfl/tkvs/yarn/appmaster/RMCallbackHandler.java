@@ -22,14 +22,18 @@ import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 
 
+/**
+ * The YARN Resource Manager Asynchronous Client, used to handle container allocations.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.yarn.appmaster.NMCallbackHandler
+ */
 public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
 
-    private static Logger log = Logger.getLogger(RMCallbackHandler.class.getName());
+    private final static Logger log = Logger.getLogger(RMCallbackHandler.class.getName());
+
     private final NMClientAsync nmClient;
     private final YarnConfiguration conf;
-
     private RoutingTable routing;
-
     private List<Container> registeredContainers = Collections.synchronizedList(new LinkedList<Container>());
 
     public RMCallbackHandler(NMClientAsync nmClient, YarnConfiguration conf) {
@@ -49,10 +53,10 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
         return registeredContainers.size();
     }
 
-    private ContainerLaunchContext initContainer() throws Exception {
+    private ContainerLaunchContext initContainer(String contId) throws Exception {
         // Create Container Context
         ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + "1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + contId + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set Container jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -76,7 +80,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
             // if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
             try {
                 registeredContainers.add(container);
-                nmClient.startContainerAsync(container, initContainer());
+                nmClient.startContainerAsync(container, initContainer(container.getId().toString()));
                 log.info("Container launched " + container.getId());
             } catch (Exception ex) {
                 log.error("Container not launched " + container.getId(), ex);
@@ -91,7 +95,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
             log.info("Container finished " + status.getContainerId());
             Container containerToRemove = null;
             for (Container container : registeredContainers) {
-                if (container != null && status != null && container.getId().equals(status.getContainerId())) {
+                if (container != null && container.getId().equals(status.getContainerId())) {
                     containerToRemove = container;
                 }
             }

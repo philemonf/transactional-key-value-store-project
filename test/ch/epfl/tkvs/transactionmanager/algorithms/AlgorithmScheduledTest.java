@@ -22,7 +22,7 @@ public class AlgorithmScheduledTest extends ScheduledTestCase {
 
     @Before
     public void setUp() {
-        instance = new MVCC2PL(null);
+        instance = new MVCC2PL(null, null);
         System.out.println("\nNew Test");
     }
 

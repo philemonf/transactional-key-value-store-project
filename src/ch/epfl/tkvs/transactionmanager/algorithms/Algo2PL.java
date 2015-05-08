@@ -3,8 +3,6 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.log4j.Logger;
-
 import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
 import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
@@ -19,6 +17,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PL;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public abstract class Algo2PL extends CCAlgorithm {
@@ -27,15 +26,16 @@ public abstract class Algo2PL extends CCAlgorithm {
     protected VersioningUnitMVCC2PL versioningUnit;
 
     protected ConcurrentHashMap<Integer, Transaction_2PL> transactions;
-    private final static Logger log = Logger.getLogger(Algo2PL.class.getName());
+    private final HDFSLogger log;
 
-    public Algo2PL(RemoteHandler remote) {
-        super(remote);
+    public Algo2PL(RemoteHandler remote, HDFSLogger log) {
+        super(remote, log);
+        this.log = log;
+
         lockingUnit = LockingUnit.instance;
         versioningUnit = VersioningUnitMVCC2PL.getInstance();
         versioningUnit.init();
         transactions = new ConcurrentHashMap<>();
-
     }
 
     // Does cleaning up after end of transaction
@@ -112,11 +112,11 @@ public abstract class Algo2PL extends CCAlgorithm {
         try {
             // Create the message
             DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(graph);
-            log.info("About to send deadlock info to app master: " + deadlockMessage);
+            log.info("About to send deadlock info to app master: " + deadlockMessage, Algo2PL.class);
             TransactionManager.sendToAppMaster(deadlockMessage);
 
         } catch (IOException e) {
-            log.error(e);
+            log.error("Error", e, Algo2PL.class);
         }
     }
 

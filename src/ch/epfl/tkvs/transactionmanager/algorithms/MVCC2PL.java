@@ -18,12 +18,14 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public class MVCC2PL extends Algo2PL {
 
-    public MVCC2PL(RemoteHandler rh) {
-        super(rh);
+    public MVCC2PL(RemoteHandler rh, HDFSLogger log) {
+        super(rh, log);
+
         Map<LockType, List<LockType>> lockCompatibility = new HashMap<LockType, List<LockType>>();
         lockCompatibility.put(Lock.READ_LOCK, newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
         lockCompatibility.put(Lock.WRITE_LOCK, newCompatibilityList(Lock.READ_LOCK));

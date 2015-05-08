@@ -39,14 +39,26 @@ import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecid
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
+/**
+ * The YARN Application Master is responsible for launching containers that contain Transaction Managers (TM). Prepares
+ * the TM containers and launches the process in each. As soon as TMs reply when they are ready, the AM listens for
+ * messages that have to do with centralized control. On exit, it gracefully stops all active TMs.
+ * @see ch.epfl.tkvs.transactionmanager.TransactionManager
+ * @see ch.epfl.tkvs.yarn.appmaster.AMWorker
+ * @see ch.epfl.tkvs.yarn.RoutingTable
+ */
 public class AppMaster {
 
-    private static Logger log = Logger.getLogger(AppMaster.class.getName());
+    private final static Logger log = Logger.getLogger(AppMaster.class.getName());
+
     private static RMCallbackHandler rmHandler;
+    private static AMRMClientAsync<ContainerRequest> rmClient;
     private static int nextXid = 0;
 
     public static void main(String[] args) {
-        log.info("Initializing at " + NetUtils.getHostname());
+        Utils.initLogLevel();
+
+        log.info("Initializing...");
         try {
             new AppMaster().run();
         } catch (Exception ex) {
@@ -59,58 +71,42 @@ public class AppMaster {
     public void run() throws Exception {
         YarnConfiguration conf = new YarnConfiguration();
 
-        // Create NM Client
+        // Create NM Client.
         log.info("Creating NM client");
-        NMCallbackHandler nmHandler = new NMCallbackHandler();
-        NMClientAsync nmClient = new NMClientAsyncImpl(nmHandler);
+        NMClientAsync nmClient = new NMClientAsyncImpl(new NMCallbackHandler());
         nmClient.init(conf);
         nmClient.start();
 
-        // Create RM Client
+        // Create RM Client.
         log.info("Creating RM client");
         rmHandler = new RMCallbackHandler(nmClient, conf);
-        AMRMClientAsync<ContainerRequest> rmClient = new AMRMClientAsyncImpl<>(1000, rmHandler);
+        rmClient = new AMRMClientAsyncImpl<>(1000, rmHandler);
         rmClient.init(conf);
         rmClient.start();
 
-        // Get port and hostname.
-        String amIP = Utils.extractIP(NetUtils.getHostname());
+        // Get ip and port.
+        String amIp = Utils.extractIP(NetUtils.getHostname());
         int amPort = NetUtils.getFreeSocketPort();
-        rmHandler.setRoutingTable(new RoutingTable(amIP, amPort));
 
-        // Register with RM and create AM Socket
-        rmClient.registerApplicationMaster(amIP, amPort, null);
-        log.info("Registered and starting server at " + amIP + ":" + amPort);
+        // Initialize the routing table with AM's ip:port.
+        rmHandler.setRoutingTable(new RoutingTable(amIp, amPort));
+
+        // Register with RM and create AM Socket.
+        rmClient.registerApplicationMaster(amIp, amPort, null);
+        log.info("Registered and starting server at " + amIp + ":" + amPort);
         ServerSocket server = new ServerSocket(amPort);
 
-        // Priority for worker containers - priorities are intra-application
-        Priority priority = Records.newRecord(Priority.class);
-        priority.setPriority(0);
-
-        // Resource requirements for worker containers
-        Resource capability = Records.newRecord(Resource.class);
-        capability.setMemory(Utils.TM_MEMORY);
-        capability.setVirtualCores(Utils.TM_CORES);
-
-        // Request Containers from RM
+        // Request Containers from RM.
         ArrayList<String> tmRequests = Utils.readTMHostnames();
         log.info("All TM request: " + tmRequests);
 
         HashMap<String, List<ContainerRequest>> contRequests = new HashMap<>();
-        int tmRequestsCount = 0;
         for (String tmIp : tmRequests) {
-            log.info("Requesting Container at " + tmIp);
-            ContainerRequest req = new ContainerRequest(capability, new String[] { tmIp }, null, priority);
-
+            ContainerRequest req = requestContainer(tmIp);
             if (!contRequests.containsKey(tmIp)) {
                 contRequests.put(tmIp, new LinkedList<ContainerRequest>());
-
             }
-
             contRequests.get(tmIp).add(req);
-
-            rmClient.addContainerRequest(req);
-            ++tmRequestsCount;
         }
 
         // Get TM network info from all TMs.
@@ -123,8 +119,8 @@ public class AppMaster {
             // pings occurred.
             int pingCount = 0;
 
-            log.info("Waiting for " + tmRequestsCount + " TM to be registered.");
-            while (rmHandler.getRoutingTable().size() < tmRequestsCount || pingCount < 3) {
+            log.info("Waiting for " + contRequests.size() + " TM to be registered.");
+            while (rmHandler.getRoutingTable().size() < contRequests.size() || pingCount < 3) {
                 Socket sock = server.accept();
                 BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 String input = in.readLine();
@@ -135,9 +131,7 @@ public class AppMaster {
                     out.flush();
                     out.close();
                     ++pingCount;
-
                 } else {
-
                     pingCount = 0;
                     String[] info = input.split(":");
                     log.info("Registering TM at " + info[0] + ":" + info[1]);
@@ -150,15 +144,12 @@ public class AppMaster {
         } catch (SocketTimeoutException e) {
             log.warn("Did not get reply from all TMs");
             for (String tmIp : tmRequests) {
-
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
-
                     // FIXME This might have unexpected behavior in case of local
-                    // testing where more than one TM has the same host
+                    // testing where more than one TM has the same ip
                     // since TM that have responded may be removed
                     // but this only concerns testing since the system
                     // is not supposed to support multiple TM on a node at the moment
-
                     log.warn("TM at " + tmIp + " did not reply");
                     for (ContainerRequest req : contRequests.get(tmIp)) {
                         rmClient.removeContainerRequest(req);
@@ -168,15 +159,15 @@ public class AppMaster {
         }
         server.setSoTimeout(0); // reset timeout.
 
+        // Send the routing information to all TMs.
         log.info("Sending routing information to TMs");
         TMInitMessage initMessage = new TMInitMessage(rmHandler.getRoutingTable());
-
         for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
             tm.sendMessage(initMessage, false);
         }
 
+        // Start listening to messages.
         ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
-
         ExecutorService threadPool = Executors.newCachedThreadPool();
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
@@ -201,6 +192,7 @@ public class AppMaster {
                     sock.close();
                     server.close();
 
+                    // On exit, stop all TM containers.
                     log.info("Stopping TMs");
                     ExitMessage exitMessage = new ExitMessage();
                     for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
@@ -221,6 +213,7 @@ public class AppMaster {
             }
         }
 
+        // On exit, wait for all containers to stop.
         int waitIterationElapsed = 0;
         while (rmHandler.getContainerCount() > 0 && waitIterationElapsed < 10) {
             log.info("Still " + rmHandler.getContainerCount() + " containers need to be closed.");
@@ -239,6 +232,7 @@ public class AppMaster {
 
         }
 
+        // Stop remaining resources and unregister application.
         nmClient.stop();
         server.close();
 
@@ -248,7 +242,6 @@ public class AppMaster {
         } catch (Exception e) {
             log.error("Failed to unregister application", e);
         }
-
         rmClient.stop();
     }
 
@@ -273,4 +266,21 @@ public class AppMaster {
         nextXid++;
         return xid;
     }
+
+    private static ContainerRequest requestContainer(String ip) {
+        log.info("Requesting Container at " + ip);
+        // Priority for worker containers - priorities are intra-application
+        Priority priority = Records.newRecord(Priority.class);
+        priority.setPriority(0);
+
+        // Resource requirements for worker containers
+        Resource capability = Records.newRecord(Resource.class);
+        capability.setMemory(Utils.TM_MEMORY);
+        capability.setVirtualCores(Utils.TM_CORES);
+
+        ContainerRequest req = new ContainerRequest(capability, new String[] { ip }, null, priority);
+        rmClient.addContainerRequest(req);
+        return req;
+    }
+
 }

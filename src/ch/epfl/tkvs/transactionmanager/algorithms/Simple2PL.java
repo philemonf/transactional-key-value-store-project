@@ -15,12 +15,13 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public class Simple2PL extends Algo2PL {
 
-    public Simple2PL(RemoteHandler rh) {
-        super(rh);
+    public Simple2PL(RemoteHandler rh, HDFSLogger log) {
+        super(rh, log);
         lockingUnit.init();
     }
 

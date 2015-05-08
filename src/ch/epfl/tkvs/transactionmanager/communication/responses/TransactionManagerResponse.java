@@ -19,22 +19,22 @@ public class TransactionManagerResponse extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_TRANSACTION_ID)
     private int transactionId;
 
-    @JSONAnnotation(key = JSONCommunication.KEY_FOR_HOST)
-    private String host;
+    @JSONAnnotation(key = JSONCommunication.KEY_FOR_IP)
+    private String ip;
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_PORT)
     private Integer port;
 
     @JSONConstructor
-    public TransactionManagerResponse(boolean success, int transactionId, String host, Integer port) throws IOException {
+    public TransactionManagerResponse(boolean success, int transactionId, String ip, Integer port) throws IOException {
         this.success = success;
         this.transactionId = transactionId;
         this.port = port;
-        this.host = host;
+        this.ip = ip;
     }
 
-    public String getHost() {
-        return host;
+    public String getIp() {
+        return ip;
     }
 
     public int getPort() {
@@ -47,6 +47,6 @@ public class TransactionManagerResponse extends Message {
 
     @Override
     public String toString() {
-        return MESSAGE_TYPE + " : " + success + "  id=" + transactionId + "  host=" + host + "  port=" + port;
+        return MESSAGE_TYPE + " : " + success + "  id=" + transactionId + "  ip=" + ip + "  port=" + port;
     }
 }
