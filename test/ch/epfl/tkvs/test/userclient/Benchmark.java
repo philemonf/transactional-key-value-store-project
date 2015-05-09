@@ -233,8 +233,9 @@ public class Benchmark {
         }
 
         double latency = sumLatency / users.length;
-        double throughput = users.length / runningTime;
+        double throughput = users.length / runningTime * 1000;
         int nbAbortTotal = nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
+        double abortRate = nbAbortTotal / runningTime * 1000;
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
         System.out.println("\tNumber of Writes: " + nbWriteTotal);
@@ -245,9 +246,10 @@ public class Benchmark {
         System.out.println("\tTotal Commit: " + nbCommitTotal);
         System.out.println("\tTotal Aborts: " + nbAbortTotal);
         System.out.println("\tTotal Latency: " + latency + " ms/transaction");
-        System.out.println("\tThroughput: " + throughput + " transaction/ms");
+        System.out.println("\tThroughput: " + throughput + " transactions/s");
+        System.out.println("\tAbort Rate: " + abortRate + " aborts/s");
 
-        System.out.format("#BM- %d %d %d %d %d %d %d %d %d %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput);
+        System.out.format("#BM- %d %d %d %d %d %d %d %d %d %f %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput, abortRate);
         System.out.flush();
     }
 
