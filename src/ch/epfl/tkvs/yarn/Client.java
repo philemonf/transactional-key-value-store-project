@@ -41,6 +41,7 @@ import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
 import ch.epfl.tkvs.test.userclient.*;
+import ch.epfl.tkvs.user.UserTransaction;
 
 
 /**
@@ -142,7 +143,8 @@ public class Client {
                 hist.add(input);
 
                 System.out.println("Running test client...\n");
-                runTestCase(UserClientScheduledTest.class);
+                runTestCase(MVTOSystemTest.class);
+                UserTransaction.log.writeToHDFS("C");
                 // log.info("Running example client program...");
                 // new UserClient().run();
                 // runTestCases();

@@ -15,7 +15,7 @@ import org.junit.Test;
 
 public class UserClientScheduledTest extends TestCase {
 
-    private static final Logger log = Logger.getLogger(UserClientScheduledTest.class);
+    protected static final Logger log = Logger.getLogger(UserClientScheduledTest.class);
     public static final Boolean t = Boolean.TRUE;
     public static final Boolean f = Boolean.FALSE;
     public static int testcount = 0;
@@ -30,7 +30,7 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
-    public static TransactionExecutionCommand __________________ = new TransactionExecutionCommand() {
+    public static TransactionExecutionCommand _____________ = new TransactionExecutionCommand() {
 
         @Override
         boolean checkSuccess() {
@@ -45,6 +45,11 @@ public class UserClientScheduledTest extends TestCase {
 
     public static TransactionExecutionCommand WAITFOR(final int tid, final int step) {
         return new TransactionExecutionCommand() {
+
+            @Override
+            public String toString() {
+                return "Wait for step " + step + "  of transaciton " + tid;
+            }
 
             @Override
             void executeBy(TransactionExecutorService t, TransactionExecutionCommand[][] schedule) {
@@ -65,7 +70,7 @@ public class UserClientScheduledTest extends TestCase {
         };
     }
 
-    public static TransactionExecutionCommand BEGIN_______(final int hash, final Boolean expectedResult) {
+    public static TransactionExecutionCommand BEGIN__(final int hash, final Boolean expectedResult) {
 
         return new TransactionExecutionCommand() {
 
@@ -97,7 +102,7 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
-    public static TransactionExecutionCommand COMMIT_________(final Boolean expectedResult) {
+    public static TransactionExecutionCommand COMMIT____(final Boolean expectedResult) {
 
         return new TransactionExecutionCommand() {
 
@@ -210,7 +215,7 @@ public class UserClientScheduledTest extends TestCase {
         t0.begin(new MyKey("init", 0));
         try {
             for (MyKey k : keysToBeInit) {
-                t0.write(k, "init");
+                t0.write(k, "00");
             }
             t0.commit();
             t0.executor.shutdown();
@@ -223,7 +228,7 @@ public class UserClientScheduledTest extends TestCase {
                     if (step < schedule[i].length) {
                         canExecuteFurther = true;
                         TransactionExecutionCommand command = schedule[i][step];
-                        if (command != __________________) {
+                        if (command != _____________) {
                             System.out.println("@t" + i + " :: " + step + "     " + command);
                             command.executeBy(tes[i], schedule);
                         }
@@ -232,6 +237,7 @@ public class UserClientScheduledTest extends TestCase {
                     }
                 }
                 step++;
+                Thread.sleep(1000); // Wait for operations to terminate or block
             } while (canExecuteFurther);
             for (int s = 0; s < step; s++) {
                 for (int i = 0; i < numTrans; i++) {
@@ -325,7 +331,7 @@ public class UserClientScheduledTest extends TestCase {
         MyKey x = freshKey("x", 0);
         TransactionExecutionCommand schedule[][] = {
 
-        /* T1 */{ BEGIN_______(0, t), W(x, "x0", t), READ(x, "x0"), COMMIT_________(t) } };
+        /* T1 */{ BEGIN__(0, t), W(x, "x0", t), READ(x, "x0"), COMMIT____(t) } };
         execute(schedule);
     }
 
@@ -334,9 +340,8 @@ public class UserClientScheduledTest extends TestCase {
         MyKey x = freshKey("x", 0);
         MyKey y = freshKey("y", 1);
         TransactionExecutionCommand schedule[][] = {
-        /* T1 */
-        { BEGIN_______(0, t), W(x, "x0", t), READ(x, "x0"), COMMIT_________(t) },
-        /* T2 */{ __________________, __________________, __________________, __________________, WAITFOR(0, 3), BEGIN_______(1, t), W(y, "y1", t), READ(x, "x0"), READ(y, "y1"), COMMIT_________(t) } };
+        /* T1 */{ BEGIN__(0, t), W(x, "x0", t), READ(x, "x0"), COMMIT____(t), _____________, },
+        /* T2 */{ _____________, _____________, _____________, _____________, WAITFOR(0, 3), BEGIN__(1, t), W(y, "y1", t), READ(x, "x0"), READ(y, "y1"), COMMIT____(t) } };
         execute(schedule);
 
     }

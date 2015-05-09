@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
 public class HDFSLogger {
 
     private final boolean ALSO_USE_LOG4J = false;
-    private final String TKVS_LOGS_PATH = "hdfs:///tmp/tkvs/logs/";
+    public static final String TKVS_LOGS_PATH = "hdfs:///tmp/tkvs/logs/";
     private Logger log;
     private ArrayList<Object> hdfsLog;
 

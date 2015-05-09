@@ -37,6 +37,10 @@ public class RemoteTransactionManager implements Serializable {
         return port;
     }
 
+    public String toString() {
+        return "ip=" + ip + "  port=" + port;
+    }
+
     /**
      * Send a message to the represented TM.
      * @param message the message to send

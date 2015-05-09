@@ -47,7 +47,7 @@ public class TransactionManager {
 
     public static void main(String[] args) throws Exception {
         Utils.initLogLevel();
-        log.info("Initializing...", TransactionManager.class);
+        log.info("Initializing..." + args[0], TransactionManager.class);
         try {
             String amIp = System.getenv("AM_IP");
             int amPort = Integer.parseInt(System.getenv("AM_PORT"));
@@ -175,6 +175,7 @@ public class TransactionManager {
      * @throws IOException in case of network failure or invalid message
      */
     public static JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
+        log.info("Sending " + message + "to " + routing.findTM(localityHash), RemoteHandler.class);
         return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
 

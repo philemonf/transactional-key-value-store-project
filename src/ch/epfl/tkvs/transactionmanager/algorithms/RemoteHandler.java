@@ -45,13 +45,13 @@ public class RemoteHandler {
         log.info(request, RemoteHandler.class);
         JSONObject response = TransactionManager.sendToTransactionManager(localityHash, request, true);
         Message responseMessage = parseJSON(response, messageClass);
-        log.info(response + "<--" + request, RemoteHandler.class);
+        log.info(responseMessage + "<--" + request, RemoteHandler.class);
         return responseMessage;
 
     }
 
     private void sendToRemoteTM(Message request, int localityHash) throws IOException {
-        log.info(request, RemoteHandler.class);
+
         TransactionManager.sendToTransactionManager(localityHash, request, false);
     }
 

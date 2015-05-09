@@ -12,7 +12,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -29,6 +28,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 import ch.epfl.tkvs.yarn.Utils;
 
 
@@ -44,7 +44,7 @@ public class UserTransaction<K extends Key> {
     private TransactionStatus status;
 
     private static InetSocketAddress amAddress = null;
-    private static Logger log = Logger.getLogger(UserTransaction.class.getName());
+    public static HDFSLogger log = new HDFSLogger(UserTransaction.class);
 
     public void begin(K key) throws AbortException {
         try {
@@ -81,8 +81,7 @@ public class UserTransaction<K extends Key> {
 
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(toJSON(request).toString());
-            log.info("Sending request to " + ip + ":" + port);
-            log.info(request.toString());
+            log.info("Sending " + request + " to " + ip + ":" + port, UserTransaction.class);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
@@ -91,7 +90,7 @@ public class UserTransaction<K extends Key> {
             out.close();
             sock.close();
             Message response = parseJSON(new JSONObject(inputStr), expectedMessageType);
-            log.info(response + " <-- " + request);
+            log.info(response + " <-- " + request, UserTransaction.class);
             return response;
 
         } catch (UnknownHostException e) {
@@ -119,7 +118,7 @@ public class UserTransaction<K extends Key> {
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
-            log.warn(response.getExceptionMessage());
+            log.warn(response.getExceptionMessage(), UserTransaction.class);
             throw new AbortToUserException(response.getExceptionMessage());
         }
 

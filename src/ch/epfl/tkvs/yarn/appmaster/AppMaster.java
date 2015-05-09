@@ -32,11 +32,14 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
+import static ch.epfl.tkvs.yarn.HDFSLogger.TKVS_LOGS_PATH;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 
 /**
@@ -57,9 +60,12 @@ public class AppMaster {
 
     public static void main(String[] args) {
         Utils.initLogLevel();
-
         log.info("Initializing...");
         try {
+            Path logDir = new Path(TKVS_LOGS_PATH);
+            FileSystem fs = logDir.getFileSystem(new YarnConfiguration());
+            fs.delete(logDir, true); // delete old log dir.
+
             new AppMaster().run();
         } catch (Exception ex) {
             log.fatal("Failed", ex);
