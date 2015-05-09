@@ -149,7 +149,8 @@ public class DeadlockGraph implements Serializable {
 		HashSet<Integer> onStack;
 
 		Integer transactionInCycle;
-		HashSet<Integer> originalKeySet = new HashSet<Integer>(outgoingEdges.keySet());
+		HashSet<Integer> originalKeySet = new HashSet<Integer>(
+				outgoingEdges.keySet());
 		for (Integer node : originalKeySet) {
 			if (visited.contains(node))
 				continue;
@@ -196,6 +197,7 @@ public class DeadlockGraph implements Serializable {
 		if (!(other instanceof DeadlockGraph))
 			return false;
 		DeadlockGraph otherGraph = (DeadlockGraph) other;
-		return outgoingEdges.equals(otherGraph.outgoingEdges);//				&& incomingEdges.equals(otherGraph.incomingEdges);
+		return outgoingEdges.equals(otherGraph.outgoingEdges)
+				&& incomingEdges.equals(otherGraph.incomingEdges);
 	}
 }
