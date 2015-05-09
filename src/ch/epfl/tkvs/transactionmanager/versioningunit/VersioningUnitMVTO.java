@@ -255,20 +255,22 @@ public class VersioningUnitMVTO {
         }
 
         int minAliveXid = Collections.min(uncommitted);
-        CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
+        // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {
             boolean shouldRemoveAllFromNow = false;
             for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
                 Version version = iterator.next();
-                CCAlgorithm.log.info("Garbage collection :: Iterating version " + version.WTS, VersioningUnitMVTO.class);
+                // CCAlgorithm.log.info("Garbage collection :: Iterating version " + version.WTS,
+                // VersioningUnitMVTO.class);
                 if (shouldRemoveAllFromNow) {
-                    CCAlgorithm.log.info("Garbage collection:: Removing " + version.key, VersioningUnitMVTO.class);
+                    CCAlgorithm.log.info("Garbage collection:: Removing " + version.WTS, VersioningUnitMVTO.class);
                     KVS.remove(version.key);
                     iterator.remove();
                 } else if (version.WTS <= minAliveXid) {
                     if (!abortedXacts.contains(version.WTS) && !uncommitted.contains(version.WTS)) {
-                        CCAlgorithm.log.info("Garbage collection :: version triggerred remove" + version.WTS, VersioningUnitMVTO.class);
+                        // CCAlgorithm.log.info("Garbage collection :: version triggerred remove" + version.WTS,
+                        // VersioningUnitMVTO.class);
                         shouldRemoveAllFromNow = true;
                     }
                 }

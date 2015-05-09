@@ -9,6 +9,7 @@ import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -19,6 +20,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
 import ch.epfl.tkvs.yarn.HDFSLogger;
+import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 
 
 public class MVTO extends CCAlgorithm {
@@ -89,8 +91,20 @@ public class MVTO extends CCAlgorithm {
         if (transactions.containsKey(xid)) {
             return new GenericSuccessResponse(new TransactionAlreadyExistsException());
         }
-        transactions.put(xid, new Transaction(xid));
+        Transaction t = new Transaction(xid);
+        if (remote != null && request.isPrimary()) {
+            for (RemoteTransactionManager rtm : TransactionManager.getOtherTMs())
+                // log.info("Sending begin request to " + rtm + " with hash=" + TransactionManager.getLocalityHash(rtm),
+                // MVTO.class);
+                try {
+                    remote.begin(t, TransactionManager.getLocalityHash(rtm));
 
+                } catch (AbortException ex) {
+                    remote.abortOthers(t);
+                    return new GenericSuccessResponse(ex);
+                }
+        }
+        transactions.put(xid, t);
         versioningUnit.beginTransaction(xid);
 
         return new GenericSuccessResponse();

@@ -62,15 +62,20 @@ public class RemoteHandler {
      * @param hash The hash code of key for identifying the remote Transaction Manager
      * @return the response from the secondary Transaction Manager
      */
-    private void begin(Transaction t, int hash) throws IOException, InvalidMessageException, AbortException {
+    public void begin(Transaction t, int hash) throws AbortException {
         hash = hash % TransactionManager.getNumberOfTMs();
         if (!t.remoteIsPrepared.containsKey(hash)) {
-            GenericSuccessResponse response = (GenericSuccessResponse) sendToRemoteTM(new BeginRequest(t.transactionId), hash, GenericSuccessResponse.class);
-            if (!response.getSuccess()) {
+            try {
+                GenericSuccessResponse response = (GenericSuccessResponse) sendToRemoteTM(new BeginRequest(t.transactionId, false), hash, GenericSuccessResponse.class);
+                if (!response.getSuccess()) {
 
-                throw new RemoteTMException(response.getExceptionMessage());
+                    throw new RemoteTMException(response.getExceptionMessage());
+                }
+                t.remoteIsPrepared.put(hash, Boolean.FALSE);
+            } catch (IOException | InvalidMessageException ex) {
+                log.error("Remote error", ex, RemoteHandler.class);
+                throw new RemoteTMException(ex);
             }
-            t.remoteIsPrepared.put(hash, Boolean.FALSE);
         }
 
     }
