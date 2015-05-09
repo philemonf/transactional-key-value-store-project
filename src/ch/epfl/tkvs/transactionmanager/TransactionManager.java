@@ -189,7 +189,7 @@ public class TransactionManager {
     	List<RemoteTransactionManager> tms = new LinkedList<RemoteTransactionManager>();
     	
     	for (RemoteTransactionManager tm : routing.getTMs()) {
-    		if (!tm.getHostname().equals(tmHost) || tm.getPort() != tmPort) {
+    		if (!tm.getIp().equals(tmIp) || tm.getPort() != tmPort) {
                 tms.add(tm);
             }
     	}
