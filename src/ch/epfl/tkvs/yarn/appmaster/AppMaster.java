@@ -173,7 +173,7 @@ public class AppMaster {
         }
 
         // Start listening to messages.
-        ICentralizedDecider decider = new DeadlockCentralizedDecider(); // TODO make it configurable
+        ICentralizedDecider decider = new DeadlockCentralizedDecider(rmHandler.getRoutingTable());
         ExecutorService threadPool = Executors.newCachedThreadPool();
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {

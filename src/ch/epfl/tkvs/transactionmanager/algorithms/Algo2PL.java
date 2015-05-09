@@ -111,7 +111,7 @@ public abstract class Algo2PL extends CCAlgorithm {
 
         try {
             // Create the message
-            DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(graph);
+            DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(TransactionManager.getLocalityHash(), graph, transactions.keySet());
             log.info("About to send deadlock info to app master: " + deadlockMessage, Algo2PL.class);
             TransactionManager.sendToAppMaster(deadlockMessage);
 
