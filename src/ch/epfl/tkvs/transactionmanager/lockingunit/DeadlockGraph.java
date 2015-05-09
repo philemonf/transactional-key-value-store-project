@@ -16,6 +16,12 @@ public class DeadlockGraph implements Serializable {
 		incomingEdges = new HashMap<Integer, HashSet<Integer>>();
 	}
 
+	/**
+	 * 
+	 * @param graphs
+	 *            a collection of DeadlockGraph s to be merged to form this
+	 *            DeadlockGraph
+	 */
 	public DeadlockGraph(Collection<DeadlockGraph> graphs) {
 		outgoingEdges = new HashMap<Integer, HashSet<Integer>>();
 		incomingEdges = new HashMap<Integer, HashSet<Integer>>();
@@ -35,6 +41,16 @@ public class DeadlockGraph implements Serializable {
 		}
 	}
 
+	/**
+	 * Given edges are added to the graph iff they do not cause a cycle.
+	 * 
+	 * @param transactionID
+	 *            ID of the transaction which is waiting for other transactions
+	 * @param incompatibleTransactions
+	 *            IDs of the transactions that the given transaction started to
+	 *            wait for
+	 * @return true if the given dependencies cause a deadlock, false otherwise.
+	 */
 	public boolean isCyclicAfter(int transactionID,
 			HashSet<Integer> incompatibleTransactions) {
 		boolean cyclic;
@@ -74,6 +90,18 @@ public class DeadlockGraph implements Serializable {
 		}
 	}
 
+	/**
+	 * 
+	 * @param node
+	 *            start node of the DFS
+	 * @param visited
+	 *            set of nodes which are already visited
+	 * @param onStack
+	 *            set of nodes leading from the root to the current node. this
+	 *            parameter expected to be non-empty only when the method is
+	 *            called by itself.
+	 * @return ID of a transaction which is a part of the deadlock.
+	 */
 	private Integer checkForCycle(Integer node, HashSet<Integer> visited,
 			HashSet<Integer> onStack) {
 		Integer branchResult;
@@ -94,6 +122,14 @@ public class DeadlockGraph implements Serializable {
 		return null;
 	}
 
+	/**
+	 * 
+	 * @param transactionID
+	 *            ID of the transaction which is waiting for other transactions.
+	 * @param incompatibleTransactions
+	 *            IDs of the transactions that the given transaction started to
+	 *            wait for.
+	 */
 	public void addDependencies(int transactionID,
 			HashSet<Integer> incompatibleTransactions) {
 		if (!outgoingEdges.containsKey(transactionID)) {
@@ -114,6 +150,12 @@ public class DeadlockGraph implements Serializable {
 		}
 	}
 
+	/**
+	 * Removes a node with all of its edges
+	 * 
+	 * @param transactionID
+	 *            ID of the transaction whose node is to be removed
+	 */
 	public void removeTransaction(int transactionID) {
 		if (outgoingEdges.get(transactionID) != null) {
 			for (Integer next : outgoingEdges.get(transactionID)) {
@@ -129,6 +171,12 @@ public class DeadlockGraph implements Serializable {
 		}
 	}
 
+	/**
+	 * Creates a new DeadlockGraph by cloning its outgoingEdges only. Used to
+	 * create the graph to be sent to the centralized deadlock detection unit.
+	 * 
+	 * @return a new -independent- DeadlockGraph
+	 */
 	public DeadlockGraph copyOutgoingEdges() {
 		DeadlockGraph copy = new DeadlockGraph();
 		for (Integer key : outgoingEdges.keySet()) {
@@ -142,6 +190,12 @@ public class DeadlockGraph implements Serializable {
 		return copy;
 	}
 
+	/**
+	 * Detects and removes some transactions to make the graph acyclic
+	 * 
+	 * @return set of IDs of the transactions to be removed to make this graph
+	 *         acyclic.
+	 */
 	public Set<Integer> checkForCycles() {
 		HashSet<Integer> transactionsToBeKilled = new HashSet<Integer>();
 		HashSet<Integer> visited = new HashSet<Integer>();
