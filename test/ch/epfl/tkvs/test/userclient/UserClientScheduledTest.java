@@ -20,6 +20,9 @@ public class UserClientScheduledTest extends TestCase {
     public static final Boolean f = Boolean.FALSE;
     public static int testcount = 0;
 
+    /**
+     * The class that represents a single operation to be executed by any transaction at any step.
+     */
     public static abstract class TransactionExecutionCommand {
 
         protected Future result;
@@ -30,6 +33,9 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
+    /**
+     * Command that does nothing.
+     */
     public static TransactionExecutionCommand _____________ = new TransactionExecutionCommand() {
 
         @Override
@@ -43,6 +49,13 @@ public class UserClientScheduledTest extends TestCase {
         }
     };
 
+    /**
+     * Used to wait for any particular operation of another transaction, in case schedule synchronization is
+     * insufficient.
+     * @param tid Id of the transaction
+     * @param step The step of the given transaction on which we should wait
+     * @return
+     */
     public static TransactionExecutionCommand WAITFOR(final int tid, final int step) {
         return new TransactionExecutionCommand() {
 
@@ -70,6 +83,12 @@ public class UserClientScheduledTest extends TestCase {
         };
     }
 
+    /**
+     * Command to begin a transaction
+     * @param hash The hash of the key which determines the primary Transaction Manager for this transaction
+     * @param expectedResult t, if the operation should succeed, f otherwise. Objects t and f are already defined
+     * @return
+     */
     public static TransactionExecutionCommand BEGIN__(final int hash, final Boolean expectedResult) {
 
         return new TransactionExecutionCommand() {
@@ -102,6 +121,11 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
+    /**
+     * Command to commit a transaction
+     * @param expectedResult t, if the operation should succeed, f otherwise. Objects t and f are already defined
+     * @return
+     */
     public static TransactionExecutionCommand COMMIT____(final Boolean expectedResult) {
 
         return new TransactionExecutionCommand() {
@@ -134,6 +158,12 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
+    /**
+     * Command to read value of a key.
+     * @param key The key whose value is to be read
+     * @param expectedResult The expected value if the operation should succeed, null if the operation should fail
+     * @return
+     */
     public static TransactionExecutionCommand READ(final MyKey key, final String expectedResult
 
     ) {
@@ -167,6 +197,13 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
+    /**
+     * Command to write a value for a particular key
+     * @param key The key for which value is to be written
+     * @param value The value to be written
+     * @param expectedResult t, if the operation should succeed, f otherwise. Objects t and f are already defined
+     * @return
+     */
     public static TransactionExecutionCommand W(final MyKey key, final String value, final Boolean expectedResult) {
 
         return new TransactionExecutionCommand() {
@@ -199,10 +236,26 @@ public class UserClientScheduledTest extends TestCase {
 
     }
 
+    /**
+     * Generates fresh key required for each test case
+     * @param key
+     * @param hash
+     * @return
+     */
     public MyKey freshKey(String key, int hash) {
         return new MyKey("Test" + testcount + "::" + key, hash);
     }
 
+    /**
+     * Executes given schedule after initializing keys with default values and tests if the operations performed as
+     * expected. A transaction is represented by an array of TransactionExecutionCommands, each of which is guaranteed
+     * to run one after the other. A schedule is an array of transaction possibly of different lengths. The executor
+     * first creates transaction t0 which initializes the mentioned gives to default value 00 Then the executor proceeds
+     * step by step where in each step, 1. It executes the next command, if any, for all transactions 2. Waits for some
+     * time to allow each operation to either complete or get blocked
+     * @param schedule
+     * @param keysToBeInit
+     */
     public void execute(TransactionExecutionCommand[][] schedule, MyKey... keysToBeInit) {
         int numTrans = schedule.length;
 
@@ -259,7 +312,7 @@ public class UserClientScheduledTest extends TestCase {
         }
     }
 
-    public static class TransactionExecutorService {
+    private static class TransactionExecutorService {
 
         ExecutorService executor;
         UserTransaction<MyKey> t;
