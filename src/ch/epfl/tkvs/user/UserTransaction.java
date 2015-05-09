@@ -12,7 +12,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
@@ -29,34 +28,40 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessRes
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 import ch.epfl.tkvs.yarn.Utils;
 
 
 public class UserTransaction<K extends Key> {
 
     public enum TransactionStatus {
-        live, aborted, commited
+        uninitialized, live, aborted, commited
     }
 
-    private String tmHost;
+    private String tmIp;
     private int tmPort;
     private int transactionID;
     private TransactionStatus status;
-    private static Logger log = Logger.getLogger(UserTransaction.class.getName());
 
-    public UserTransaction(K key) throws AbortException {
+    private static InetSocketAddress amAddress = null;
+    public static HDFSLogger log = new HDFSLogger(UserTransaction.class);
+
+    public void begin(K key) throws AbortException {
         try {
-            InetSocketAddress amAddress = Utils.readAMAddress();
+            if (amAddress == null) {
+                amAddress = Utils.readAMAddress();
+            }
+
             TransactionManagerRequest req = new TransactionManagerRequest(key.getLocalityHash());
 
             TransactionManagerResponse response = (TransactionManagerResponse) sendRequest(amAddress.getHostName(), amAddress.getPort(), req, TransactionManagerResponse.class);
 
-            tmHost = response.getHost();
+            tmIp = response.getIp();
             tmPort = response.getPort();
             transactionID = response.getTransactionId();
 
             BeginRequest request = new BeginRequest(transactionID);
-            GenericSuccessResponse beginResponse = (GenericSuccessResponse) sendRequest(tmHost, tmPort, request, GenericSuccessResponse.class);
+            GenericSuccessResponse beginResponse = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
             if (!beginResponse.getSuccess()) {
                 status = TransactionStatus.aborted;
                 throw new AbortToUserException(beginResponse.getExceptionMessage());
@@ -65,19 +70,18 @@ public class UserTransaction<K extends Key> {
             }
 
         } catch (Exception e) {
-            tmHost = null;
+            tmIp = null;
             e.printStackTrace();
         }
     }
 
-    private Message sendRequest(String hostName, int portNumber, Message request, Class<? extends Message> expectedMessageType) {
+    private Message sendRequest(String ip, int port, Message request, Class<? extends Message> expectedMessageType) {
         try {
-            Socket sock = new Socket(hostName, portNumber);
+            Socket sock = new Socket(ip, port);
 
             PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
             out.println(toJSON(request).toString());
-            log.info("Sending request to " + hostName + ":" + portNumber);
-            log.info(request.toString());
+            log.info("Sending " + request + " to " + ip + ":" + port, UserTransaction.class);
 
             BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
             String inputStr = in.readLine();
@@ -86,14 +90,14 @@ public class UserTransaction<K extends Key> {
             out.close();
             sock.close();
             Message response = parseJSON(new JSONObject(inputStr), expectedMessageType);
-            log.info(response + " <-- " + request);
+            log.info(response + " <-- " + request, UserTransaction.class);
             return response;
 
         } catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + hostName);
+            System.err.println("Unknown Address " + ip + ":" + port);
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " + hostName + ":" + portNumber);
+            System.err.println("Couldn't get I/O for the connection to " + ip + ":" + port);
             e.printStackTrace();
             System.exit(1);
         } catch (InvalidMessageException | JSONException e) {
@@ -110,10 +114,11 @@ public class UserTransaction<K extends Key> {
 
         ReadRequest request = new ReadRequest(transactionID, key, key.getLocalityHash());
 
-        ReadResponse response = (ReadResponse) sendRequest(tmHost, tmPort, request, ReadResponse.class);
+        ReadResponse response = (ReadResponse) sendRequest(tmIp, tmPort, request, ReadResponse.class);
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
+            log.warn(response.getExceptionMessage(), UserTransaction.class);
             throw new AbortToUserException(response.getExceptionMessage());
         }
 
@@ -127,7 +132,7 @@ public class UserTransaction<K extends Key> {
             throw new TransactionNotLiveException();
         }
         WriteRequest request = new WriteRequest(transactionID, key, value, key.getLocalityHash());
-        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmHost, tmPort, request, GenericSuccessResponse.class);
+        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
@@ -142,12 +147,16 @@ public class UserTransaction<K extends Key> {
             throw new TransactionNotLiveException();
         }
         TryCommitRequest request = new TryCommitRequest(transactionID);
-        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmHost, tmPort, request, GenericSuccessResponse.class);
+        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
             throw new AbortToUserException(response.getExceptionMessage());
         }
 
+    }
+
+    public int getTransactionID() {
+        return transactionID;
     }
 }

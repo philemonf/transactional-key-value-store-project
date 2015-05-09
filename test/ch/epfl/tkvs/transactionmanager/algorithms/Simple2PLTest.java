@@ -8,7 +8,7 @@ public class Simple2PLTest extends AlgorithmScheduledTest {
 
     @Before
     public void setUp() {
-        instance = new Simple2PL(null);
+        instance = new Simple2PL(null, null);
         System.out.println("\nNew Test");
     }
 

@@ -8,7 +8,7 @@ public class MVCC2PLTest extends AlgorithmScheduledTest {
 
     @Before
     public void setUp() {
-        instance = new MVCC2PL(null);
+        instance = new MVCC2PL(null, null);
         System.out.println("\nNew Test");
     }
 

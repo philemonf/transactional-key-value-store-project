@@ -9,9 +9,14 @@ import org.apache.hadoop.yarn.client.api.async.NMClientAsync;
 import org.apache.log4j.Logger;
 
 
+/**
+ * The YARN Node Manager Asynchronous Client, used to log container information.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.yarn.appmaster.RMCallbackHandler
+ */
 public class NMCallbackHandler implements NMClientAsync.CallbackHandler {
 
-    private static Logger log = Logger.getLogger(NMCallbackHandler.class.getName());
+    private final static Logger log = Logger.getLogger(NMCallbackHandler.class.getName());
 
     public NMCallbackHandler() {
     }

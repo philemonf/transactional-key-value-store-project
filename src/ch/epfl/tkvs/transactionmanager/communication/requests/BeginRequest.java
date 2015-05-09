@@ -16,7 +16,7 @@ public class BeginRequest extends Message {
 
     @Override
     public String toString() {
-        return MESSAGE_TYPE + " : " + transactionId;
+        return MESSAGE_TYPE + " : t" + transactionId;
     }
 
     public int getTransactionId() {

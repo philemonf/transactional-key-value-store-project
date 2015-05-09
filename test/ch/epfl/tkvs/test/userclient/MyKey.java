@@ -5,11 +5,11 @@ import ch.epfl.tkvs.user.Key;
 
 public class MyKey extends Key {
 
-    String k;
+    String key;
     int localityHash;
 
     public MyKey(String k, int localityHash) {
-        this.k = k;
+        this.key = k;
         this.localityHash = localityHash;
     }
 
@@ -20,7 +20,7 @@ public class MyKey extends Key {
 
     @Override
     public String toString() {
-        return k;
+        return "key=" + key + "  hash=" + localityHash;
     }
 
 }

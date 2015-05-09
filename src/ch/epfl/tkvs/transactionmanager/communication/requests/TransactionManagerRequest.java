@@ -21,7 +21,7 @@ public class TransactionManagerRequest extends Message {
 
     @Override
     public String toString() {
-        return MESSAGE_TYPE + " : " + localityHash;
+        return MESSAGE_TYPE + " : hash=" + localityHash;
     }
 
     public int getLocalityHash() {

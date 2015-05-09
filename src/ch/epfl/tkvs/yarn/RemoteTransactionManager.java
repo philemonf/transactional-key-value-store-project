@@ -16,23 +16,29 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter
 
 /**
  * Represents a transaction manager that is remote compared to the node having this object.
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ * @see ch.epfl.tkvs.transactionmanager.TransactionManager
  */
 public class RemoteTransactionManager implements Serializable {
 
-    private String hostname;
+    private String ip;
     private int port;
 
-    public RemoteTransactionManager(String hostname, int port) {
-        this.hostname = hostname;
+    public RemoteTransactionManager(String ip, int port) {
+        this.ip = ip;
         this.port = port;
     }
 
-    public String getHostname() {
-        return hostname;
+    public String getIp() {
+        return ip;
     }
 
     public int getPort() {
         return port;
+    }
+
+    public String toString() {
+        return "ip=" + ip + "  port=" + port;
     }
 
     /**
@@ -43,7 +49,7 @@ public class RemoteTransactionManager implements Serializable {
      * @throws IOException in case of network failure or bad message format
      */
     public JSONObject sendMessage(Message message, boolean shouldWait) throws IOException {
-        Socket sock = new Socket(hostname, port);
+        Socket sock = new Socket(ip, port);
         PrintWriter out = new PrintWriter(sock.getOutputStream());
 
         try {

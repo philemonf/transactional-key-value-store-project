@@ -219,7 +219,7 @@ public class VersioningUnitMVTO {
 
     public synchronized void abort(int xid) {
 
-        if (abortedXacts.contains(xid)) {
+        if (abortedXacts.contains(xid) || !uncommitted.contains(xid)) {
             return; // already aborted
         }
 
@@ -241,6 +241,7 @@ public class VersioningUnitMVTO {
         }
 
         writtenKeys.remove(xid);
+        notifyAll();
         garbageCollector();
     }
 

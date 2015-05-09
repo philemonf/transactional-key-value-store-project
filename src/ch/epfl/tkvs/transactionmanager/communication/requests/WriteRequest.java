@@ -3,8 +3,6 @@ package ch.epfl.tkvs.transactionmanager.communication.requests;
 import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.log4j.Logger;
-
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
@@ -14,7 +12,6 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 
 public class WriteRequest extends Message {
 
-    private static final Logger log = Logger.getLogger(WriteRequest.class);
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
     public static final String MESSAGE_TYPE = "write_request";
 
@@ -40,7 +37,7 @@ public class WriteRequest extends Message {
             this.encodedValue = Base64Utils.convertToBase64(value);
 
         } catch (IOException ex) {
-            log.fatal("Cannot encode key or value", ex);
+            ex.printStackTrace();
         }
     }
 
@@ -61,7 +58,7 @@ public class WriteRequest extends Message {
         } catch (Exception ex) {
             value = encodedValue;
         }
-        return MESSAGE_TYPE + " : " + transactionId + "   key=" + key + "  hash=" + localityHash + "  value=" + value;
+        return MESSAGE_TYPE + " : t" + transactionId + "   key=" + key + "  hash=" + localityHash + "  value=" + value;
     }
 
     public int getTransactionId() {

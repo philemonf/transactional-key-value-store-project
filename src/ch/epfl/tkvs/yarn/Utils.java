@@ -1,12 +1,19 @@
 package ch.epfl.tkvs.yarn;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
@@ -17,14 +24,25 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 
+/**
+ * The Utils class contains useful utilities throughout the lifetime of the YARN application.
+ * @see ch.epfl.tkvs.yarn.Client
+ * @see ch.epfl.tkvs.yarn.appmaster.AppMaster
+ */
 public class Utils {
+
+    private static final boolean ENABLE_LOG = true;
 
     public static final int AM_MEMORY = 4096;
     public static final int AM_CORES = 8;
@@ -50,6 +68,7 @@ public class Utils {
         }
         env.put("CLASSPATH", classPathEnv.toString());
         env.put("HADOOP_HOME", System.getenv("HADOOP_HOME"));
+        // TODO: Add env variables if necessary for logging.
     }
 
     public static void setUpLocalResource(Path resPath, LocalResource res, YarnConfiguration conf) throws IOException {
@@ -71,7 +90,7 @@ public class Utils {
 
         String line = reader.readLine();
         while (line != null && line.length() > 0 && !line.startsWith("#")) {
-            tmHosts.add(NetUtils.normalizeHostName(line));
+            tmHosts.add(NetUtils.normalizeHostName(line)); // Get IP.
             line = reader.readLine();
         }
         reader.close();
@@ -92,7 +111,7 @@ public class Utils {
     }
 
     public static void writeAMAddress(String address) throws Exception {
-        FileSystem fs = FileSystem.get(new YarnConfiguration());
+        FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(AM_ADDRESS_PATH, true)));
         pr.print(address);
         pr.close();
@@ -100,10 +119,42 @@ public class Utils {
     }
 
     public static InetSocketAddress readAMAddress() throws Exception {
-        FileSystem fs = FileSystem.get(new YarnConfiguration());
+        FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(AM_ADDRESS_PATH)));
         String[] info = reader.readLine().split(":");
         reader.close();
         return new InetSocketAddress(info[0], Integer.parseInt(info[1]));
+    }
+
+    public static void initLogLevel() {
+        List<Logger> loggers = Collections.<Logger> list(LogManager.getCurrentLoggers());
+        loggers.add(LogManager.getRootLogger());
+        for (Logger logger : loggers) {
+            logger.setLevel(ENABLE_LOG ? Level.INFO : Level.WARN);
+        }
+    }
+
+    public static void writeREPLHist(ArrayList<String> hist) throws Exception {
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(".hist"));
+        oos.writeObject(hist);
+        oos.close();
+    }
+
+    public static ArrayList<String> loadREPLHist() {
+        ArrayList<String> res = new ArrayList<>();
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(".hist"));
+            res.addAll((ArrayList<String>) ois.readObject());
+            ois.close();
+        } catch (Exception e) {
+            // we dont care about missing file.
+        }
+        return res;
+    }
+
+    public static void writeAppId(ApplicationId id) throws Exception {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(".last_app_id")));
+        writer.write(id.toString());
+        writer.close();
     }
 }
