@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -175,6 +177,22 @@ public class TransactionManager {
      */
     public static JSONObject sendToTransactionManager(int localityHash, Message message, boolean shouldWait) throws IOException {
         return routing.findTM(localityHash).sendMessage(message, shouldWait);
+    }
+    
+    /**
+     * Returns a list of others TMs.
+     * @return a list of RemoteTransactionManager object
+     */
+    public static List<RemoteTransactionManager> getOtherTMs() {
+    	List<RemoteTransactionManager> tms = new LinkedList<RemoteTransactionManager>();
+    	
+    	for (RemoteTransactionManager tm : routing.getTMs()) {
+    		if (!tm.getHostname().equals(tmHost) || tm.getPort() != tmPort) {
+                tms.add(tm);
+            }
+    	}
+    	
+    	return tms;
     }
 
     /**
