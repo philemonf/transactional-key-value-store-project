@@ -18,6 +18,7 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
+import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
@@ -87,7 +88,7 @@ public class TransactionManager {
         RemoteHandler remoteHandler = new RemoteHandler();
 
         // Select which concurrency algorithm to use
-        CCAlgorithm concurrencyController = new MVTO(remoteHandler, log); // MVCC2PL(remoteHandler);
+        CCAlgorithm concurrencyController = new Simple2PL(remoteHandler, log);
 
         remoteHandler.setAlgo(concurrencyController, log);
 
@@ -180,43 +181,44 @@ public class TransactionManager {
         log.info("Sending " + message + "to " + routing.findTM(localityHash), RemoteHandler.class);
         return routing.findTM(localityHash).sendMessage(message, shouldWait);
     }
-    
+
     /**
      * Returns a list of others TMs.
      * @return a list of RemoteTransactionManager object
      */
     public static List<RemoteTransactionManager> getOtherTMs() {
-    	List<RemoteTransactionManager> tms = new LinkedList<RemoteTransactionManager>();
-    	
-    	for (RemoteTransactionManager tm : routing.getTMs()) {
-    		if (!tm.getIp().equals(tmIp) || tm.getPort() != tmPort) {
+        List<RemoteTransactionManager> tms = new LinkedList<RemoteTransactionManager>();
+
+        for (RemoteTransactionManager tm : routing.getTMs()) {
+            if (!tm.getIp().equals(tmIp) || tm.getPort() != tmPort) {
                 tms.add(tm);
             }
-    	}
-    	
-    	return tms;
+        }
+
+        return tms;
     }
-    
+
     /**
      * Returns the locality hash associated with the passed RemoteTransactionManager.
      * @param a remote transaction manager object
      * @return the locality hash or -1 in case of error
      */
     public static int getLocalityHash(RemoteTransactionManager tm) {
-    	
-    	if (tm == null) return -1;
-    	
-    	int hash = 0;
-    	for (RemoteTransactionManager anotherTM : routing.getTMs()) {
-    		
-    		if (anotherTM.getIp().equals(tm.getIp()) && anotherTM.getPort() == tm.getPort()) {
+
+        if (tm == null)
+            return -1;
+
+        int hash = 0;
+        for (RemoteTransactionManager anotherTM : routing.getTMs()) {
+
+            if (anotherTM.getIp().equals(tm.getIp()) && anotherTM.getPort() == tm.getPort()) {
                 return hash;
             }
-    		
-    		++hash;
-    	}
-    	
-    	return -1;
+
+            ++hash;
+        }
+
+        return -1;
     }
 
     /**

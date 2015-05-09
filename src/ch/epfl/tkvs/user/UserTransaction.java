@@ -17,6 +17,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.AbortToUserException;
+import ch.epfl.tkvs.exceptions.RemoteTMException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
@@ -30,6 +31,8 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManage
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.yarn.HDFSLogger;
 import ch.epfl.tkvs.yarn.Utils;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class UserTransaction<K extends Key> {
@@ -75,35 +78,24 @@ public class UserTransaction<K extends Key> {
         }
     }
 
-    private Message sendRequest(String ip, int port, Message request, Class<? extends Message> expectedMessageType) {
-        try {
-            Socket sock = new Socket(ip, port);
+    private Message sendRequest(String ip, int port, Message request, Class<? extends Message> expectedMessageType) throws Exception {
 
-            PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-            out.println(toJSON(request).toString());
-            log.info("Sending " + request + " to " + ip + ":" + port, UserTransaction.class);
+        Socket sock = new Socket(ip, port);
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
-            String inputStr = in.readLine();
+        PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+        out.println(toJSON(request).toString());
+        log.info("Sending " + request + " to " + ip + ":" + port, UserTransaction.class);
 
-            in.close();
-            out.close();
-            sock.close();
-            Message response = parseJSON(new JSONObject(inputStr), expectedMessageType);
-            log.info(response + " <-- " + request, UserTransaction.class);
-            return response;
+        BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        String inputStr = in.readLine();
 
-        } catch (UnknownHostException e) {
-            System.err.println("Unknown Address " + ip + ":" + port);
-            System.exit(1);
-        } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " + ip + ":" + port);
-            e.printStackTrace();
-            System.exit(1);
-        } catch (InvalidMessageException | JSONException e) {
-            e.printStackTrace();
-        }
-        return null;
+        in.close();
+        out.close();
+        sock.close();
+        Message response = parseJSON(new JSONObject(inputStr), expectedMessageType);
+        log.info(response + " <-- " + request, UserTransaction.class);
+        return response;
+
     }
 
     public Serializable read(K key) throws AbortException {
@@ -114,7 +106,13 @@ public class UserTransaction<K extends Key> {
 
         ReadRequest request = new ReadRequest(transactionID, key, key.getLocalityHash());
 
-        ReadResponse response = (ReadResponse) sendRequest(tmIp, tmPort, request, ReadResponse.class);
+        ReadResponse response;
+        try {
+            response = (ReadResponse) sendRequest(tmIp, tmPort, request, ReadResponse.class);
+        } catch (Exception ex) {
+            log.error("Remote error", ex, UserTransaction.class);
+            throw new RemoteTMException(ex);
+        }
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
@@ -132,7 +130,13 @@ public class UserTransaction<K extends Key> {
             throw new TransactionNotLiveException();
         }
         WriteRequest request = new WriteRequest(transactionID, key, value, key.getLocalityHash());
-        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
+        GenericSuccessResponse response;
+        try {
+            response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
+        } catch (Exception ex) {
+            log.error("Remote error", ex, UserTransaction.class);
+            throw new RemoteTMException(ex);
+        }
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;
@@ -147,7 +151,13 @@ public class UserTransaction<K extends Key> {
             throw new TransactionNotLiveException();
         }
         TryCommitRequest request = new TryCommitRequest(transactionID);
-        GenericSuccessResponse response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
+        GenericSuccessResponse response;
+        try {
+            response = (GenericSuccessResponse) sendRequest(tmIp, tmPort, request, GenericSuccessResponse.class);
+        } catch (Exception ex) {
+            log.error("Remote error", ex, UserTransaction.class);
+            throw new RemoteTMException(ex);
+        }
 
         if (!response.getSuccess()) {
             status = TransactionStatus.aborted;

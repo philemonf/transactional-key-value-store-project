@@ -14,12 +14,18 @@ import org.apache.log4j.Logger;
 //TODO: In the future, use log aggregation instead!
 public class HDFSLogger {
 
-    private final boolean ALSO_USE_LOG4J = false;
+    private boolean ALSO_USE_LOG4J;
     public static final String TKVS_LOGS_PATH = "hdfs:///tmp/tkvs/logs/";
     private Logger log;
     private ArrayList<Object> hdfsLog;
 
     public HDFSLogger(Class c) {
+        ALSO_USE_LOG4J = false;
+        hdfsLog = new ArrayList<>();
+    }
+
+    public HDFSLogger(Class c, boolean alsoLog) {
+        ALSO_USE_LOG4J = alsoLog;
         if (ALSO_USE_LOG4J)
             log = Logger.getLogger(c);
         hdfsLog = new ArrayList<>();

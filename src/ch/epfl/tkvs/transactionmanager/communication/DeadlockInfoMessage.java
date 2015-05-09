@@ -1,11 +1,11 @@
 package ch.epfl.tkvs.transactionmanager.communication;
 
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.Set;
 
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
+import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockInfo;
+import java.util.HashSet;
 
 
 public class DeadlockInfoMessage extends Message {
@@ -16,8 +16,8 @@ public class DeadlockInfoMessage extends Message {
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_DEAD_LOCK_GRAPH)
     private String encodedGraph;
 
-    public DeadlockInfoMessage(int localHash, DeadlockGraph graph, Set<Integer> activeTransactions) throws IOException {
-        encodedGraph = Base64Utils.convertToBase64(new DeadlockInfo(localHash, graph, activeTransactions));
+    public DeadlockInfoMessage(DeadlockInfo di) throws IOException {
+        encodedGraph = Base64Utils.convertToBase64(di);
     }
 
     @JSONConstructor
@@ -40,29 +40,4 @@ public class DeadlockInfoMessage extends Message {
         return (DeadlockInfo) Base64Utils.convertFromBase64(encodedGraph);
     }
 
-    public class DeadlockInfo implements Serializable {
-
-        private static final long serialVersionUID = 1L;
-        private int localHash;
-        private DeadlockGraph graph;
-        private Set<Integer> activeTransactions;
-
-        public DeadlockInfo(int localHash, DeadlockGraph graph, Set<Integer> activeTransactions) {
-            this.localHash = localHash;
-            this.graph = graph;
-            this.activeTransactions = activeTransactions;
-        }
-
-        public int getLocalHash() {
-            return localHash;
-        }
-
-        public DeadlockGraph getGraph() {
-            return graph;
-        }
-
-        public Set<Integer> getActiveTransactions() {
-            return activeTransactions;
-        }
-    }
 }

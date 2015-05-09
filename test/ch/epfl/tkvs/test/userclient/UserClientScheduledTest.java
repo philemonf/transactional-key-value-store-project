@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.log4j.Logger;
 import junit.framework.TestCase;
 import org.junit.Test;
@@ -73,9 +74,9 @@ public class UserClientScheduledTest extends TestCase {
             @Override
             boolean checkSuccess() {
                 try {
-                    result.get();
+                    result.get(1, TimeUnit.MINUTES);
                     return true;
-                } catch (InterruptedException | ExecutionException ex) {
+                } catch (InterruptedException | ExecutionException | TimeoutException ex) {
                     log.error("Wait failed", ex);
                     return false;
                 }
@@ -102,7 +103,7 @@ public class UserClientScheduledTest extends TestCase {
             boolean checkSuccess() {
 
                 try {
-                    result.get();
+                    result.get(1, TimeUnit.MINUTES);
                     return expectedResult;
                 } catch (Exception ex) {
                     if (ex.getCause() instanceof AbortException && expectedResult == Boolean.FALSE) {
@@ -139,7 +140,7 @@ public class UserClientScheduledTest extends TestCase {
             boolean checkSuccess() {
 
                 try {
-                    result.get();
+                    result.get(1, TimeUnit.MINUTES);
                     return expectedResult;
                 } catch (Exception ex) {
                     if (ex.getCause() instanceof AbortException && expectedResult == Boolean.FALSE) {
@@ -178,7 +179,7 @@ public class UserClientScheduledTest extends TestCase {
             boolean checkSuccess() {
 
                 try {
-                    String r = (String) result.get();
+                    String r = (String) result.get(1, TimeUnit.MINUTES);
                     return r.equals(expectedResult);
                 } catch (Exception ex) {
                     if (ex.getCause() instanceof AbortException && expectedResult == null) {
@@ -217,7 +218,7 @@ public class UserClientScheduledTest extends TestCase {
             boolean checkSuccess() {
 
                 try {
-                    result.get();
+                    result.get(1, TimeUnit.MINUTES);
                     return expectedResult;
                 } catch (Exception ex) {
                     if (ex.getCause() instanceof AbortException && expectedResult == Boolean.FALSE) {
@@ -305,9 +306,9 @@ public class UserClientScheduledTest extends TestCase {
             ex.printStackTrace();
         } finally {
             testcount++;
-            t0.executor.shutdown();
+            t0.executor.shutdownNow();
             for (int i = 0; i < numTrans; i++) {
-                tes[i].executor.shutdown();
+                tes[i].executor.shutdownNow();
             }
         }
     }

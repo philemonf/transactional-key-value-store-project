@@ -32,6 +32,7 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 import static ch.epfl.tkvs.yarn.HDFSLogger.TKVS_LOGS_PATH;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
@@ -53,7 +54,7 @@ import org.apache.hadoop.fs.Path;
 public class AppMaster {
 
     private final static Logger log = Logger.getLogger(AppMaster.class.getName());
-
+    public static HDFSLogger log2 = new HDFSLogger(AppMaster.class);
     private static RMCallbackHandler rmHandler;
     private static AMRMClientAsync<ContainerRequest> rmClient;
     private static int nextXid = 0;
@@ -71,6 +72,7 @@ public class AppMaster {
             log.fatal("Failed", ex);
         }
         log.info("Finished");
+        log2.writeToHDFS("A");
         System.exit(0);
     }
 

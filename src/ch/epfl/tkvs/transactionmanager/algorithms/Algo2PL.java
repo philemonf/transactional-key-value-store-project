@@ -15,9 +15,11 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
+import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockInfo;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnit;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PL;
 import ch.epfl.tkvs.yarn.HDFSLogger;
+import java.util.HashSet;
 
 
 public abstract class Algo2PL extends CCAlgorithm {
@@ -111,7 +113,8 @@ public abstract class Algo2PL extends CCAlgorithm {
 
         try {
             // Create the message
-            DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(TransactionManager.getLocalityHash(), graph, transactions.keySet());
+            DeadlockInfo di = new DeadlockInfo(TransactionManager.getLocalityHash(), graph, new HashSet<Integer>(transactions.keySet()));
+            DeadlockInfoMessage deadlockMessage = new DeadlockInfoMessage(di);
             log.info("About to send deadlock info to app master: " + deadlockMessage, Algo2PL.class);
             TransactionManager.sendToAppMaster(deadlockMessage);
 
@@ -119,5 +122,4 @@ public abstract class Algo2PL extends CCAlgorithm {
             log.error("Error", e, Algo2PL.class);
         }
     }
-
 }
