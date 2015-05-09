@@ -27,7 +27,7 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 public abstract class CCAlgorithm {
 
     protected RemoteHandler remote;
-    protected HDFSLogger log;
+    public static HDFSLogger log;
 
     /**
      * Called whenever the transaction manager receives a read request

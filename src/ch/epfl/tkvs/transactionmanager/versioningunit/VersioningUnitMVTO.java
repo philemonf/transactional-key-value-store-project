@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TimestampOrderingException;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 
 
 public class VersioningUnitMVTO {
@@ -144,6 +145,7 @@ public class VersioningUnitMVTO {
         // The write is possible, create a new version
         // It can overwrite a previous version by the same xid
         Version newVersion = new Version(new PrefixedKey("Version" + xid, key), xid);
+        CCAlgorithm.log.info("Adding key to KVS" + newVersion.key, VersioningUnitMVTO.class);
         KVS.put(newVersion.key, value);
 
         writtenKeys.get(xid).add(key);
@@ -253,18 +255,22 @@ public class VersioningUnitMVTO {
         }
 
         int minAliveXid = Collections.min(uncommitted);
-
+        CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {
             boolean shouldRemoveAllFromNow = false;
             for (Iterator<Version> iterator = versions.get(key).iterator(); iterator.hasNext();) {
                 Version version = iterator.next();
+                CCAlgorithm.log.info("Garbage collection :: Iterating version " + version.WTS, VersioningUnitMVTO.class);
                 if (shouldRemoveAllFromNow) {
+                    CCAlgorithm.log.info("Garbage collection:: Removing " + version.key, VersioningUnitMVTO.class);
                     KVS.remove(version.key);
                     iterator.remove();
                 } else if (version.WTS <= minAliveXid) {
-                    if (!abortedXacts.contains(version.WTS) && !uncommitted.contains(version.WTS))
+                    if (!abortedXacts.contains(version.WTS) && !uncommitted.contains(version.WTS)) {
+                        CCAlgorithm.log.info("Garbage collection :: version triggerred remove" + version.WTS, VersioningUnitMVTO.class);
                         shouldRemoveAllFromNow = true;
+                    }
                 }
             }
         }

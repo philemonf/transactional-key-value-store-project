@@ -43,7 +43,7 @@ public class ReadRequest extends Message {
         } catch (Exception ex) {
             key = encodedKey;
         }
-        return MESSAGE_TYPE + " : t" + transactionId + "   key=" + key + "  hash=" + localityHash;
+        return MESSAGE_TYPE + " : t" + transactionId + " " + key;
     }
 
     public int getTransactionId() {

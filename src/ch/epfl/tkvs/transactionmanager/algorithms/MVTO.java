@@ -119,6 +119,7 @@ public class MVTO extends CCAlgorithm {
 
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
+        log.info("Terminating transaction with status " + success, MVTO.class);
         if (success) {
             versioningUnit.commit(transaction.transactionId);
         } else {

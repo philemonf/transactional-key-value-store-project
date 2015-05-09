@@ -58,7 +58,7 @@ public class WriteRequest extends Message {
         } catch (Exception ex) {
             value = encodedValue;
         }
-        return MESSAGE_TYPE + " : t" + transactionId + "   key=" + key + "  hash=" + localityHash + "  value=" + value;
+        return MESSAGE_TYPE + " : t" + transactionId + "  " + key + "  value=" + value;
     }
 
     public int getTransactionId() {
