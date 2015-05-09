@@ -79,7 +79,7 @@ public class HDFSLogger {
         try {
             Path logFile = new Path(TKVS_LOGS_PATH, contId);
             FileSystem fs = logFile.getFileSystem(new YarnConfiguration());
-            fs.delete(new Path(TKVS_LOGS_PATH), true); // delete old log dir.
+            // fs.delete(new Path(TKVS_LOGS_PATH), true); // delete old log dir.
             PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(logFile, true)));
             for (Object s : hdfsLog) {
                 pr.println(s.toString());

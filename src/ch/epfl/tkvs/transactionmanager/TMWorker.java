@@ -46,7 +46,7 @@ public class TMWorker extends Thread {
             Message request = null;
             String requestType = jsonRequest.getString(JSONCommunication.KEY_FOR_MESSAGE_TYPE);
 
-            log.info("Just received: " + jsonRequest.toString(), TMWorker.class);
+            // log.info("Just received: " + jsonRequest.toString(), TMWorker.class);
 
             switch (requestType) {
             case BeginRequest.MESSAGE_TYPE:

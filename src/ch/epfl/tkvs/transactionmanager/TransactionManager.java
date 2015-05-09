@@ -96,9 +96,9 @@ public class TransactionManager {
 
         while (!server.isClosed()) {
             try {
-                log.info("Waiting for message...", TransactionManager.class);
+                // log.info("Waiting for message...", TransactionManager.class);
                 sock = server.accept();
-                log.info("Processing message...", TransactionManager.class);
+                // log.info("Processing message...", TransactionManager.class);
 
                 in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
                 input = in.readLine();

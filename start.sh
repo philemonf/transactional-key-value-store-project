@@ -35,9 +35,11 @@ rm -r -f build
 
 # Puts the jar in HDFS under /projects/transaction-manager/.
 echo ${CYAN}* Putting TKVS.jar and config in HDFS...${BLUE}
-hadoop fs -rm -r -f "/projects/transaction-manager/*" || { echo ${RED}ERROR: hadoop fs -rm! Exiting.${NC} ; exit 1; }
 
-PROJECT_HOME='/projects/transaction-manager/'
+PROJECT_HOME='/projects/transaction-manager'
+LOG_DIR='/tmp/tkvs/logs'
+hadoop fs -rm -r -f "$PROJECT_HOME/*" || { echo ${RED}ERROR: hadoop fs -rm! Exiting.${NC} ; exit 1; }
+hadoop fs -rm -r -f "$LOG_DIR/*" || { echo ${RED}ERROR: hadoop fs -rm! Exiting.${NC} ; exit 1; }
 JAR_PATH="$PROJECT_HOME/TKVS.jar"
 CONFIG_PATH="$PROJECT_HOME/config"
 

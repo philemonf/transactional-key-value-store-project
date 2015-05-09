@@ -34,11 +34,14 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
     private final NMClientAsync nmClient;
     private final YarnConfiguration conf;
     private RoutingTable routing;
+    private int count;
+
     private List<Container> registeredContainers = Collections.synchronizedList(new LinkedList<Container>());
 
     public RMCallbackHandler(NMClientAsync nmClient, YarnConfiguration conf) {
         this.nmClient = nmClient;
         this.conf = conf;
+        count = 0;
     }
 
     public RoutingTable getRoutingTable() {
@@ -53,10 +56,12 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
         return registeredContainers.size();
     }
 
-    private ContainerLaunchContext initContainer(String contId) throws Exception {
+    private ContainerLaunchContext initContainer() throws Exception {
         // Create Container Context
+        String loggerId = "TM" + count;
+        count++;
         ContainerLaunchContext cCLC = Records.newRecord(ContainerLaunchContext.class);
-        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + contId + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        cCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.transactionmanager.TransactionManager " + loggerId + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set Container jar
         LocalResource jar = Records.newRecord(LocalResource.class);
@@ -80,7 +85,7 @@ public class RMCallbackHandler implements AMRMClientAsync.CallbackHandler {
             // if (!routing.contains(Utils.extractIP(container.getNodeHttpAddress()))) {
             try {
                 registeredContainers.add(container);
-                nmClient.startContainerAsync(container, initContainer(container.getId().toString()));
+                nmClient.startContainerAsync(container, initContainer());
                 log.info("Container launched " + container.getId());
             } catch (Exception ex) {
                 log.error("Container not launched " + container.getId(), ex);
