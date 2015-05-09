@@ -295,7 +295,7 @@ public class UserClientScheduledTest extends TestCase {
             for (int s = 0; s < step; s++) {
                 for (int i = 0; i < numTrans; i++) {
                     if (s < schedule[i].length && !schedule[i][s].checkSuccess()) {
-                        fail("Test failed at step " + s + " for transaction " + i);
+                        fail("Test failed at step " + s + " for transaction " + (i + 1));
                     }
                 }
 
