@@ -196,6 +196,28 @@ public class TransactionManager {
     	
     	return tms;
     }
+    
+    /**
+     * Returns the locality hash associated with the passed RemoteTransactionManager.
+     * @param a remote transaction manager object
+     * @return the locality hash or -1 in case of error
+     */
+    public static int getLocalityHash(RemoteTransactionManager tm) {
+    	
+    	if (tm == null) return -1;
+    	
+    	int hash = 0;
+    	for (RemoteTransactionManager anotherTM : routing.getTMs()) {
+    		
+    		if (anotherTM.getIp().equals(tm.getIp()) && anotherTM.getPort() == tm.getPort()) {
+                return hash;
+            }
+    		
+    		++hash;
+    	}
+    	
+    	return -1;
+    }
 
     /**
      * Returns the locality hash associated with the local node.
