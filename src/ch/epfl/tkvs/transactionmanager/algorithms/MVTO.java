@@ -3,9 +3,12 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
@@ -30,7 +33,7 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
-    private List<Integer> primaryTransactions = Collections.synchronizedList(new LinkedList<Integer>());
+    private Set<Integer> primaryTransactions = new ConcurrentSkipListSet<Integer>();
     private HDFSLogger log;
     
     public MVTO(RemoteHandler rh, HDFSLogger log) {
