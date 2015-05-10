@@ -2,12 +2,15 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import ch.epfl.tkvs.exceptions.AbortException;
@@ -34,6 +37,7 @@ public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
     private Set<Integer> primaryTransactions = new ConcurrentSkipListSet<Integer>();
+    private Queue<Integer> primaryTerminated = new ConcurrentLinkedQueue<Integer>();
     private HDFSLogger log;
     
     public MVTO(RemoteHandler rh, HDFSLogger log) {
@@ -136,7 +140,7 @@ public class MVTO extends CCAlgorithm {
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
     	if (primaryTransactions.contains(transaction.transactionId)) {
-    		sendTerminateMessage(transaction.transactionId);
+    		primaryTerminated.add(transaction.transactionId);
     	}
     	
         log.info("Terminating transaction with status " + success, MVTO.class);
@@ -194,6 +198,19 @@ public class MVTO extends CCAlgorithm {
 
     @Override
     public void checkpoint() {
+    	ArrayList<Integer> toSend = new ArrayList<Integer>();
+    	Integer tid = null;
+    	while ((tid = primaryTerminated.poll()) != null) {
+    		toSend.add(tid);
+    	}
+    	
+    	TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
+    	try {
+			TransactionManager.sendToAppMaster(tMessage, true);
+		} catch (Exception e) {
+			log.error(e, getClass());
+		}
+    	
     	versioningUnit.garbageCollector();
     }
     

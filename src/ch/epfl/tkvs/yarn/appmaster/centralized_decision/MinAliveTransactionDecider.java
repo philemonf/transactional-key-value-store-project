@@ -6,12 +6,12 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
@@ -27,7 +27,7 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransacti
 public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	private int minAlive = 0;
-	private Set<Integer> terminated = new ConcurrentSkipListSet<Integer>();
+	private Set<Integer> terminated = new HashSet<Integer>();
 	private Queue<Socket> waitQueue = new ConcurrentLinkedQueue<Socket>();
 	private final static Logger log = Logger
 			.getLogger(MinAliveTransactionDecider.class.getName());
@@ -47,14 +47,14 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 			if (messageType.equals(TransactionTerminateMessage.MESSAGE_TYPE)) {
 				
 				TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
-				int tid = tMessage.getTransactionId();
-
-				if (tid == minAlive) {
-					++minAlive;
-					updateWithTerminated();
-				} else {
-					terminated.add(tid);
-				}
+				int tids[] = tMessage.getTransactionIds();
+				updateWithTerminated(tids);
+				
+				// Acknowledge
+				PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
+				out.println("ACK");
+				out.close();
+				
 			} else {
 				waitQueue.add(sock);
 			}
@@ -87,7 +87,14 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 		}
 	}
 
-	private synchronized void updateWithTerminated() {
+	private synchronized void updateWithTerminated(int[] tids) {
+		List<Integer> toAdd = new LinkedList<Integer>();
+		for (int i = 0; i < tids.length; ++i) {
+			toAdd.add(tids[i]);
+		}
+		
+		terminated.addAll(toAdd);
+		
 		Integer iMinAlive = new Integer(minAlive);
 		while (terminated.contains(iMinAlive)) {
 			terminated.remove(iMinAlive);
