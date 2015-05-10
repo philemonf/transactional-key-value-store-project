@@ -39,7 +39,7 @@ public class AMWorker extends Thread {
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
-    
+
     public AMWorker(RoutingTable routing, JSONObject input, Socket sock) {
         this.routing = routing;
         this.jsonRequest = input;
@@ -58,17 +58,17 @@ public class AMWorker extends Thread {
                 response = getResponseForRequest(request);
                 break;
             default:
-            	for (ICentralizedDecider centralizedDecider : centralizedDeciders) {
-	                if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
-	                    centralizedDecider.handleMessage(jsonRequest, sock);
-	                    if (centralizedDecider.readyToDecide()) {
-	                        centralizedDecider.performDecision();
-	                    }
-	                    
-	                    // once a decider handled a request, we are done
-	                    break;
-	                }
-            	}
+                for (ICentralizedDecider centralizedDecider : centralizedDeciders) {
+                    if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
+                        centralizedDecider.handleMessage(jsonRequest, sock);
+                        if (centralizedDecider.readyToDecide()) {
+                            centralizedDecider.performDecision();
+                        }
+
+                        // once a decider handled a request, we are done
+                        break;
+                    }
+                }
             }
 
             // Send the response if it exists

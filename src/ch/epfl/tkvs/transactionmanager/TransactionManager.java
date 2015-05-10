@@ -162,24 +162,23 @@ public class TransactionManager {
             throw new IOException("Error while converting the message: " + e);
         }
 
-        
         out.println(json.toString());
         out.flush();
-        
+
         JSONObject res = null;
         if (shouldWait) {
-        	String input = in.readLine();
-        	try {
-				res = new JSONObject(input);
-			} catch (JSONException e) {
-				throw new IOException("Error while building response: " + e);
-			}
+            String input = in.readLine();
+            try {
+                res = new JSONObject(input);
+            } catch (JSONException e) {
+                throw new IOException("Error while building response: " + e);
+            }
         }
-        
+
         in.close();
         out.close();
         sock.close();
-        
+
         return res;
     }
 

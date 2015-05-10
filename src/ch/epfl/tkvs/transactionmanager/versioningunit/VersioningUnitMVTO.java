@@ -249,14 +249,12 @@ public class VersioningUnitMVTO {
      * Perform GC. Called by the checkpoint method of the MVTO concurrency control algorithm.
      */
     public synchronized void garbageCollector(int minAliveXid) {
-    	
-    	
 
         if (uncommitted.isEmpty()) {
             abortedXacts.clear();
             return;
         }
-        
+
         // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {

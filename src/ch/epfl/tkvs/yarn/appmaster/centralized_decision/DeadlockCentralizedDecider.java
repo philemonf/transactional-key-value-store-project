@@ -84,7 +84,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
             for (Integer tm : activeTransactions.keySet()) {
                 if (activeTransactions.get(tm).contains(transaction)) {
                     try {
-                    	AppMaster.sendMessageToTM(tm, abortRequest, true);
+                        AppMaster.sendMessageToTM(tm, abortRequest, true);
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
                         log2.error("Cant send Abort ", e, DeadlockCentralizedDecider.class);
