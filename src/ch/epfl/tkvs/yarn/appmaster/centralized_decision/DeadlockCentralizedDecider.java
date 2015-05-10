@@ -21,7 +21,6 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
     private static HashMap<Integer, DeadlockGraph> graphs = new HashMap<Integer, DeadlockGraph>();
-    private static HashMap<Integer, DeadlockGraph> secondGraphs = new HashMap<Integer, DeadlockGraph>();
     private static HashMap<Integer, Set<Integer>> activeTransactions = new HashMap<Integer, Set<Integer>>();
 
     @Override
@@ -47,21 +46,15 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
         }
         log2.info("Received messsage from " + info.getLocalHash(), DeadlockCentralizedDecider.class);
-        if (graphs.containsKey(info.getLocalHash())) {
-            secondGraphs.put(info.getLocalHash(), info.getGraph());
-        } else {
-            graphs.put(info.getLocalHash(), info.getGraph());
-        }
+        graphs.put(info.getLocalHash(), info.getGraph());
         activeTransactions.put(info.getLocalHash(), info.getActiveTransactions());
     }
 
     @Override
     public synchronized boolean readyToDecide() {
         int totalTMCount = AppMaster.numberOfRegisteredTMs();
-        log2.info("graph_size = " + graphs.size() + " - total_expected=" + totalTMCount + " - is_second_graph_empty=" + secondGraphs.isEmpty(), DeadlockCentralizedDecider.class);
+        log2.info("graph_size = " + graphs.size() + " - total_expected=" + totalTMCount, DeadlockCentralizedDecider.class);
         if (graphs.size() == totalTMCount)
-            return true;
-        if (!secondGraphs.isEmpty())
             return true;
         return false;
     }
@@ -71,15 +64,12 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
         DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
         
         Set<Integer> transactionsToBeKilled = mergedGraph.checkForCycles();
-        log2.info("perform decision:" + transactionsToBeKilled, DeadlockCentralizedDecider.class);
+        log2.info("perform decision", DeadlockCentralizedDecider.class);
         
         for (Integer tid : transactionsToBeKilled)
             log2.info("Killing transaction" + tid, DeadlockCentralizedDecider.class);
         sendKillMessages(transactionsToBeKilled);
-        graphs = secondGraphs;
-        secondGraphs = new HashMap<>();
-        
-        log2.info("now graphs="+graphs + " - second graphs="+secondGraphs, DeadlockCentralizedDecider.class);
+        graphs.clear();
     }
 
     private void sendKillMessages(Set<Integer> transactionsToBeKilled) {
