@@ -143,7 +143,7 @@ public class Client {
                 hist.add(input);
 
                 System.out.println("Running test client...\n");
-                runTestCase(S2PLSystemTest.class);
+                runTestCase(MVTOSystemTest.class);
                 UserTransaction.log.writeToHDFS("C");
                 // log.info("Running example client program...");
                 // new UserClient().run();
