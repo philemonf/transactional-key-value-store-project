@@ -34,17 +34,16 @@ import ch.epfl.tkvs.yarn.appmaster.centralized_decision.MinAliveTransactionDecid
 public class AMWorker extends Thread {
 
     private final static Logger log = Logger.getLogger(AMWorker.class.getName());
+    private static List<ICentralizedDecider> centralizedDeciders = asList(new DeadlockCentralizedDecider(), new MinAliveTransactionDecider());
 
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
-    private List<ICentralizedDecider> centralizedDeciders;
-
+    
     public AMWorker(RoutingTable routing, JSONObject input, Socket sock) {
         this.routing = routing;
         this.jsonRequest = input;
         this.sock = sock;
-        this.centralizedDeciders = asList(new DeadlockCentralizedDecider(), new MinAliveTransactionDecider());
     }
 
     public void run() {
