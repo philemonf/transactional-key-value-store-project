@@ -132,7 +132,7 @@ public class MVTO extends CCAlgorithm {
     
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
-    	if (primaryTransactions.contains(transaction) && isLocalTransaction(transaction)) {
+    	if (primaryTransactions.contains(transaction.transactionId) && isLocalTransaction(transaction)) {
     		sendTerminateMessage(transaction.transactionId);
     	}
     	
