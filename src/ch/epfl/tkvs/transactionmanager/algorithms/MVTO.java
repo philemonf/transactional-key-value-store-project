@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,6 +10,8 @@ import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
+import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -24,13 +27,15 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
-
+    private HDFSLogger log;
+    
     public MVTO(RemoteHandler rh, HDFSLogger log) {
         super(rh, log);
 
         transactions = new ConcurrentHashMap<>();
         versioningUnit = VersioningUnitMVTO.getInstance();
         versioningUnit.init();
+        this.log = log;
     }
 
     @Override
@@ -119,6 +124,10 @@ public class MVTO extends CCAlgorithm {
 
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
+    	if (isLocalTransaction(transaction)) {
+    		sendTerminateMessage(transaction.transactionId);
+    	}
+    	
         log.info("Terminating transaction with status " + success, MVTO.class);
         if (success) {
             versioningUnit.commit(transaction.transactionId);
@@ -173,6 +182,16 @@ public class MVTO extends CCAlgorithm {
     @Override
     public void checkpoint() {
     	versioningUnit.garbageCollector();
+    }
+    
+
+    
+    private void sendTerminateMessage(int tid) {
+    	try {
+    		TransactionManager.sendToAppMaster(new TransactionTerminateMessage(tid), false);
+    	} catch (IOException e) {
+    		log.info(e.getMessage(), getClass());
+    	}
     }
 
 }

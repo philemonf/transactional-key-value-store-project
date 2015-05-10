@@ -225,7 +225,6 @@ public class VersioningUnitMVTO {
         readFromXacts.remove(xid);
         writtenKeys.remove(xid);
         notifyAll();
-        sendTerminateMessage(xid);
     }
 
     public synchronized void abort(int xid) {
@@ -253,7 +252,6 @@ public class VersioningUnitMVTO {
 
         writtenKeys.remove(xid);
         notifyAll();
-        sendTerminateMessage(xid);
     }
 
     /**
@@ -314,14 +312,6 @@ public class VersioningUnitMVTO {
                 iterator.remove();
             }
         }
-    }
-    
-    private void sendTerminateMessage(int tid) {
-    	try {
-    		TransactionManager.sendToAppMaster(new TransactionTerminateMessage(tid), false);
-    	} catch (IOException e) {
-    		CCAlgorithm.log.error(e, getClass());
-    	}
     }
     
     private int getMinAlive() {

@@ -39,7 +39,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void handleMessage(JSONObject message, Socket sock) {
-		log.info("handle " + message.toString());
+		log.info("handle " + message.toString() + " from " + sock.getInetAddress());
 		try {
 			String messageType = message.getString(KEY_FOR_MESSAGE_TYPE);
 
