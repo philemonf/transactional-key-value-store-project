@@ -48,7 +48,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 				TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
 				int tid = tMessage.getTransactionId();
 
-				if (tid == minAlive + 1) {
+				if (tid == minAlive) {
 					++minAlive;
 					updateWithTerminated();
 				} else {
@@ -89,7 +89,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 		List<Integer> toRemove = new LinkedList<Integer>();
 
 		for (Integer tid : terminated) {
-			if (tid == minAlive + 1) {
+			if (tid == minAlive) {
 				++minAlive;
 				toRemove.add(tid);
 			} else {
