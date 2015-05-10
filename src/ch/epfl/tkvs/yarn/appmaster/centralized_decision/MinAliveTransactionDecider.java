@@ -70,7 +70,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void performDecision() {
-		log.info("performDecision");
+		log.info("performDecision: " + minAlive);
 		try {
 			MinAliveTransactionResponse minAliveRes = new MinAliveTransactionResponse(minAlive);
 			JSONObject json = toJSON(minAliveRes);

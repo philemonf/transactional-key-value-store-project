@@ -270,7 +270,7 @@ public class VersioningUnitMVTO {
 
         int minAliveXid = getMinAlive();
         
-        new HDFSLogger(getClass()).writeToHDFS("GC started with minAliveXid=" + minAliveXid);
+        CCAlgorithm.log.error("GC started with minAliveXid=" + minAliveXid, getClass());
         // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {
@@ -320,7 +320,7 @@ public class VersioningUnitMVTO {
     	try {
     		TransactionManager.sendToAppMaster(new TransactionTerminateMessage(tid), false);
     	} catch (IOException e) {
-    		new HDFSLogger(VersioningUnitMVTO.class).writeToHDFS(e.getMessage());
+    		CCAlgorithm.log.error(e, getClass());
     	}
     }
     
@@ -330,7 +330,7 @@ public class VersioningUnitMVTO {
 			MinAliveTransactionResponse res = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
 			return res.getTransactionId();
 		} catch (Exception e) {
-			new HDFSLogger(VersioningUnitMVTO.class).writeToHDFS(e.getMessage());
+			CCAlgorithm.log.error(e, getClass());
 			return -1;
 		}
     }
