@@ -7,7 +7,6 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -43,7 +42,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 			
 			String messageType = message.getString(KEY_FOR_MESSAGE_TYPE);
 			TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
-			int tids[] = tMessage.getTransactionIds();
+			List<Integer> tids = tMessage.getTransactionIds();
 			updateWithTerminated(tids);
 			waitQueue.add(sock);
 			
@@ -76,13 +75,8 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 		}
 	}
 
-	private synchronized void updateWithTerminated(int[] tids) {
-		List<Integer> toAdd = new LinkedList<Integer>();
-		for (int i = 0; i < tids.length; ++i) {
-			toAdd.add(tids[i]);
-		}
-		
-		terminated.addAll(toAdd);
+	private synchronized void updateWithTerminated(List<Integer> tids) {
+		terminated.addAll(tids);
 		
 		Integer iMinAlive = new Integer(minAlive);
 		while (terminated.contains(iMinAlive)) {

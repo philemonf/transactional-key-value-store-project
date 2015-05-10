@@ -1,12 +1,7 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -203,11 +198,14 @@ public class MVTO extends CCAlgorithm {
     @Override
     public void checkpoint() {
     	
-    	ArrayList<Integer> toSend = new ArrayList<Integer>();
+    	LinkedList<Integer> toSend = new LinkedList<Integer>();
+    	
     	Integer tid = null;
     	while ((tid = primaryTerminated.poll()) != null) {
     		toSend.add(tid);
     	}
+    	
+    	log.info("log primaryTerminated: " + toSend, getClass());
     	
     	TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
     	MinAliveTransactionResponse response = null;
@@ -221,16 +219,6 @@ public class MVTO extends CCAlgorithm {
     	
     	if (response != null) {
     		versioningUnit.garbageCollector(response.getTransactionId());
-    	}
-    }
-    
-
-    
-    private void sendTerminateMessage(int tid) {
-    	try {
-    		TransactionManager.sendToAppMaster(new TransactionTerminateMessage(tid), false);
-    	} catch (IOException e) {
-    		log.info(e.getMessage(), getClass());
     	}
     }
 
