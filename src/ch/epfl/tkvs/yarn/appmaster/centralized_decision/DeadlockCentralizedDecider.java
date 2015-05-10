@@ -58,7 +58,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized boolean readyToDecide() {
         int totalTMCount = AppMaster.numberOfRegisteredTMs();
-        log2.info("graph_size = " + graphs.size() + " - total_message=" + totalTMCount + " - is_second_graph_empty" + secondGraphs.isEmpty(), DeadlockCentralizedDecider.class);
+        log2.info("graph_size = " + graphs.size() + " - total_message=" + totalTMCount + " - is_second_graph_empty=" + secondGraphs.isEmpty(), DeadlockCentralizedDecider.class);
         if (graphs.size() == totalTMCount)
             return true;
         if (!secondGraphs.isEmpty())
@@ -69,13 +69,17 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized void performDecision() {
         DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
-        log2.info("perform decision", DeadlockCentralizedDecider.class);
+        
         Set<Integer> transactionsToBeKilled = mergedGraph.checkForCycles();
+        log2.info("perform decision:" + transactionsToBeKilled, DeadlockCentralizedDecider.class);
+        
         for (Integer tid : transactionsToBeKilled)
             log2.info("Killing transaction" + tid, DeadlockCentralizedDecider.class);
         sendKillMessages(transactionsToBeKilled);
         graphs = secondGraphs;
         secondGraphs = new HashMap<>();
+        
+        log2.info("now graphs="+graphs + " - second graphs="+secondGraphs, DeadlockCentralizedDecider.class);
     }
 
     private void sendKillMessages(Set<Integer> transactionsToBeKilled) {
