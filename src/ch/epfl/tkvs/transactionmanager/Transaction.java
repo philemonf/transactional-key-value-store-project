@@ -16,5 +16,4 @@ public class Transaction {
         areAllRemoteAborted = false;
         remoteIsPrepared = new HashMap<>();
     }
-
 }

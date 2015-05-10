@@ -2,6 +2,9 @@ package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import ch.epfl.tkvs.exceptions.AbortException;
@@ -27,6 +30,7 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 public class MVTO extends CCAlgorithm {
 
     private VersioningUnitMVTO versioningUnit;
+    private List<Integer> primaryTransactions = Collections.synchronizedList(new LinkedList<Integer>());
     private HDFSLogger log;
     
     public MVTO(RemoteHandler rh, HDFSLogger log) {
@@ -98,6 +102,10 @@ public class MVTO extends CCAlgorithm {
         transactions.put(xid, t);
         versioningUnit.beginTransaction(xid);
 
+        if (request.isPrimary()) {
+        	primaryTransactions.add(xid);
+        }
+        
         return new GenericSuccessResponse();
     }
 
@@ -121,10 +129,10 @@ public class MVTO extends CCAlgorithm {
     }
 
     private ConcurrentHashMap<Integer, Transaction> transactions;
-
+    
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
-    	if (isLocalTransaction(transaction)) {
+    	if (primaryTransactions.contains(transaction) && isLocalTransaction(transaction)) {
     		sendTerminateMessage(transaction.transactionId);
     	}
     	
@@ -136,7 +144,9 @@ public class MVTO extends CCAlgorithm {
         }
         if (!success && !isLocalTransaction(transaction))
             remote.abortOthers(transaction);
+        
         transactions.remove(transaction.transactionId);
+        primaryTransactions.remove(new Integer(transaction.transactionId));
     }
 
     @Override
