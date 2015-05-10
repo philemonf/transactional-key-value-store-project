@@ -17,6 +17,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
 import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 /**
  * Used by the garbage collector of MVTO to get the alive transaction with the minimum
@@ -40,13 +41,11 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 		log.info("handle " + message.toString() + " from " + sock.getInetAddress());
 		try {
 			
-			String messageType = message.getString(KEY_FOR_MESSAGE_TYPE);
 			TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
 			List<Integer> tids = tMessage.getTransactionIds();
 			updateWithTerminated(tids);
 			waitQueue.add(sock);
 			
-
 		} catch (Exception e) {
 			log.error(e);
 		}
@@ -85,6 +84,8 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 			minAlive++;
 			iMinAlive = new Integer(minAlive);
 		}
+		
+		log.info(tids + " - " + minAlive);
 	}
 
 }
