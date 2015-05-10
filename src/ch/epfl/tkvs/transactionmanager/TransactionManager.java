@@ -88,7 +88,7 @@ public class TransactionManager {
         RemoteHandler remoteHandler = new RemoteHandler();
 
         // Select which concurrency algorithm to use
-        CCAlgorithm concurrencyController = new Simple2PL(remoteHandler, log);
+        CCAlgorithm concurrencyController = new MVTO(remoteHandler, log);
 
         remoteHandler.setAlgo(concurrencyController, log);
 
