@@ -1,5 +1,7 @@
 package ch.epfl.tkvs.transactionmanager;
 
+import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,6 +20,7 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
+import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
@@ -81,13 +84,13 @@ public class TransactionManager {
         Socket sock = server.accept();
         BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
         String input = in.readLine();
-        TMInitMessage initMessage = (TMInitMessage) JSON2MessageConverter.parseJSON(new JSONObject(input), TMInitMessage.class);
+        TMInitMessage initMessage = (TMInitMessage) parseJSON(new JSONObject(input), TMInitMessage.class);
         routing = initMessage.getRoutingTable();
 
         RemoteHandler remoteHandler = new RemoteHandler();
 
         // Select which concurrency algorithm to use
-        CCAlgorithm concurrencyController = new MVTO(remoteHandler, log);
+        CCAlgorithm concurrencyController = new Simple2PL(remoteHandler, log);
 
         remoteHandler.setAlgo(concurrencyController, log);
 
