@@ -6,9 +6,12 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONCo
 
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
@@ -24,10 +27,8 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransacti
 public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	private int minAlive = 0;
-	private List<Integer> terminated = Collections
-			.synchronizedList(new LinkedList<Integer>());
-	private List<Socket> waitingList = Collections
-			.synchronizedList(new LinkedList<Socket>());
+	private Set<Integer> terminated = new ConcurrentSkipListSet<Integer>();
+	private Queue<Socket> waitQueue = new ConcurrentLinkedQueue<Socket>();
 	private final static Logger log = Logger
 			.getLogger(MinAliveTransactionDecider.class.getName());
 
@@ -55,7 +56,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 					terminated.add(tid);
 				}
 			} else {
-				waitingList.add(sock);
+				waitQueue.add(sock);
 			}
 
 		} catch (Exception e) {
@@ -65,7 +66,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public boolean readyToDecide() {
-		return !waitingList.isEmpty();
+		return !waitQueue.isEmpty();
 	}
 
 	@Override
@@ -74,7 +75,9 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 		try {
 			MinAliveTransactionResponse minAliveRes = new MinAliveTransactionResponse(minAlive);
 			JSONObject json = toJSON(minAliveRes);
-			for (Socket sock : waitingList) {
+			
+			Socket sock = null;
+			while ((sock = waitQueue.poll()) != null) {
 				PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
 				out.println(json.toString());
 				out.close(); //do not close sock, will be closed outside
@@ -85,20 +88,12 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 	}
 
 	private synchronized void updateWithTerminated() {
-		Collections.sort(terminated);
-		List<Integer> toRemove = new LinkedList<Integer>();
-
-		for (Integer tid : terminated) {
-			if (tid == minAlive) {
-				++minAlive;
-				toRemove.add(tid);
-			} else {
-				break;
-			}
-		}
-
-		for (Integer tid : toRemove) {
-			terminated.remove(tid);
+		Integer iMinAlive = new Integer(minAlive);
+		while (terminated.contains(iMinAlive)) {
+			terminated.remove(iMinAlive);
+			
+			minAlive++;
+			iMinAlive = new Integer(minAlive);
 		}
 	}
 
