@@ -38,7 +38,7 @@ public class MVTO extends CCAlgorithm {
     private Set<Integer> primaryTransactions = new ConcurrentSkipListSet<Integer>();
     private Queue<Integer> primaryTerminated = new ConcurrentLinkedQueue<Integer>();
     private HDFSLogger log;
-    
+
     public MVTO(RemoteHandler rh, HDFSLogger log) {
         super(rh, log);
 
@@ -109,9 +109,9 @@ public class MVTO extends CCAlgorithm {
         versioningUnit.beginTransaction(xid);
 
         if (request.isPrimary()) {
-        	primaryTransactions.add(xid);
+            primaryTransactions.add(xid);
         }
-        
+
         return new GenericSuccessResponse();
     }
 
@@ -135,13 +135,13 @@ public class MVTO extends CCAlgorithm {
     }
 
     private ConcurrentHashMap<Integer, Transaction> transactions;
-    
+
     // Does cleaning up after end of transaction
     private void terminate(Transaction transaction, boolean success) {
-    	if (primaryTransactions.contains(transaction.transactionId)) {
-    		primaryTerminated.add(transaction.transactionId);
-    	}
-    	
+        if (primaryTransactions.contains(transaction.transactionId)) {
+            primaryTerminated.add(transaction.transactionId);
+        }
+
         log.info("Terminating transaction with status " + success, MVTO.class);
         if (success) {
             versioningUnit.commit(transaction.transactionId);
@@ -150,7 +150,7 @@ public class MVTO extends CCAlgorithm {
         }
         if (!success && !isLocalTransaction(transaction))
             remote.abortOthers(transaction);
-        
+
         transactions.remove(transaction.transactionId);
         primaryTransactions.remove(new Integer(transaction.transactionId));
     }
@@ -197,29 +197,28 @@ public class MVTO extends CCAlgorithm {
 
     @Override
     public void checkpoint() {
-    	
-    	LinkedList<Integer> toSend = new LinkedList<Integer>();
-    	
-    	Integer tid = null;
-    	while ((tid = primaryTerminated.poll()) != null) {
-    		toSend.add(tid);
-    	}
-    	
-    	log.info("log primaryTerminated: " + toSend, getClass());
-    	
-    	
-    	MinAliveTransactionResponse response = null;
-    	try {
-    		TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
-			JSONObject json = TransactionManager.sendToAppMaster(tMessage, true);
-			response = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
-		} catch (Exception e) {
-			log.error(e, getClass());
-		}
-    	
-    	if (response != null) {
-    		versioningUnit.garbageCollector(response.getTransactionId());
-    	}
+
+        LinkedList<Integer> toSend = new LinkedList<Integer>();
+
+        Integer tid = null;
+        while ((tid = primaryTerminated.poll()) != null) {
+            toSend.add(tid);
+        }
+
+        log.info("log primaryTerminated: " + toSend, getClass());
+
+        MinAliveTransactionResponse response = null;
+        try {
+            TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
+            JSONObject json = TransactionManager.sendToAppMaster(tMessage, true);
+            response = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
+        } catch (Exception e) {
+            log.error(e, getClass());
+        }
+
+        if (response != null) {
+            versioningUnit.garbageCollector(response.getTransactionId());
+        }
     }
 
 }
