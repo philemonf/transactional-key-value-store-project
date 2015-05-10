@@ -17,6 +17,10 @@ import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage
 import ch.epfl.tkvs.transactionmanager.communication.requests.MinAliveTransactionRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
 
+/**
+ * Used by the garbage collector of MVTO to get the alive transaction with the minimum
+ * timestamp from the AppMaster.
+ */
 public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	private int minAlive = 0;
@@ -35,10 +39,12 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void handleMessage(JSONObject message, Socket sock) {
+		log.info("handle " + message.toString());
 		try {
 			String messageType = message.getString(KEY_FOR_MESSAGE_TYPE);
 
 			if (messageType.equals(TransactionTerminateMessage.MESSAGE_TYPE)) {
+				
 				TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
 				int tid = tMessage.getTransactionId();
 
@@ -64,6 +70,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void performDecision() {
+		log.info("performDecision");
 		try {
 			MinAliveTransactionResponse minAliveRes = new MinAliveTransactionResponse(minAlive);
 			JSONObject json = toJSON(minAliveRes);

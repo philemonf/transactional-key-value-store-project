@@ -260,6 +260,8 @@ public class VersioningUnitMVTO {
      * Perform GC. Called by the checkpoint method of the MVTO concurrency control algorithm.
      */
     public synchronized void garbageCollector() {
+    	
+    	new HDFSLogger(getClass()).info("perform GC", String.class);
 
         if (uncommitted.isEmpty()) {
             abortedXacts.clear();
