@@ -1,6 +1,5 @@
 package ch.epfl.tkvs.yarn.appmaster.centralized_decision;
 
-import static ch.epfl.tkvs.transactionmanager.communication.JSONCommunication.KEY_FOR_MESSAGE_TYPE;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
@@ -17,7 +16,6 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
 import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
-import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 /**
  * Used by the garbage collector of MVTO to get the alive transaction with the minimum
@@ -38,7 +36,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void handleMessage(JSONObject message, Socket sock) {
-		log.info("handle " + message.toString() + " from " + sock.getInetAddress());
+		//log.info("handle " + message.toString() + " from " + sock.getInetAddress());
 		try {
 			
 			TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
@@ -58,7 +56,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public void performDecision() {
-		log.info("performDecision: " + minAlive);
+		//log.info("performDecision: " + minAlive);
 		try {
 			MinAliveTransactionResponse minAliveRes = new MinAliveTransactionResponse(minAlive);
 			JSONObject json = toJSON(minAliveRes);
@@ -85,7 +83,7 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 			iMinAlive = new Integer(minAlive);
 		}
 		
-		log.info(tids + " - " + minAlive);
+		//log.info(tids + " - " + minAlive);
 	}
 
 }

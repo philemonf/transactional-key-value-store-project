@@ -1,11 +1,11 @@
 package ch.epfl.tkvs.yarn.appmaster.centralized_decision;
 
+import static ch.epfl.tkvs.yarn.appmaster.AppMaster.log2;
+
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Set;
-
-import static ch.epfl.tkvs.yarn.appmaster.AppMaster.log2;
 
 import org.codehaus.jettison.json.JSONObject;
 
@@ -15,7 +15,6 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockInfo;
-import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 

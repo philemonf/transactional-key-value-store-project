@@ -257,7 +257,6 @@ public class VersioningUnitMVTO {
             return;
         }
         
-        CCAlgorithm.log.error("GC started with minAliveXid=" + minAliveXid, getClass());
         // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {
