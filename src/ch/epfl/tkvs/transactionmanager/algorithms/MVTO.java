@@ -207,10 +207,10 @@ public class MVTO extends CCAlgorithm {
     	
     	log.info("log primaryTerminated: " + toSend, getClass());
     	
-    	TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
-    	MinAliveTransactionResponse response = null;
     	
+    	MinAliveTransactionResponse response = null;
     	try {
+    		TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
 			JSONObject json = TransactionManager.sendToAppMaster(tMessage, true);
 			response = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
 		} catch (Exception e) {
