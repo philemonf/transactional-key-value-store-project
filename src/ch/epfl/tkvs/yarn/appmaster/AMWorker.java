@@ -5,10 +5,12 @@ import static ch.epfl.tkvs.transactionmanager.communication.requests.Transaction
 import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.parseJSON;
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 import static ch.epfl.tkvs.yarn.appmaster.AppMaster.nextTransactionId;
+import static java.util.Arrays.asList;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONException;
@@ -19,7 +21,9 @@ import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManage
 import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
 import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.MinAliveTransactionDecider;
 
 
 /**
@@ -34,13 +38,13 @@ public class AMWorker extends Thread {
     private RoutingTable routing;
     private JSONObject jsonRequest;
     private Socket sock;
-    private ICentralizedDecider centralizedDecider;
+    private List<ICentralizedDecider> centralizedDeciders;
 
-    public AMWorker(RoutingTable routing, JSONObject input, Socket sock, ICentralizedDecider decider) {
+    public AMWorker(RoutingTable routing, JSONObject input, Socket sock) {
         this.routing = routing;
         this.jsonRequest = input;
         this.sock = sock;
-        this.centralizedDecider = decider;
+        this.centralizedDeciders = asList(new DeadlockCentralizedDecider(), new MinAliveTransactionDecider());
     }
 
     public void run() {
@@ -55,12 +59,17 @@ public class AMWorker extends Thread {
                 response = getResponseForRequest(request);
                 break;
             default:
-                if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
-                    centralizedDecider.handleMessage(jsonRequest);
-                    if (centralizedDecider.readyToDecide()) {
-                        centralizedDecider.performDecision();
-                    }
-                }
+            	for (ICentralizedDecider centralizedDecider : centralizedDeciders) {
+	                if (centralizedDecider != null && centralizedDecider.shouldHandleMessageType(messageType)) {
+	                    centralizedDecider.handleMessage(jsonRequest, sock);
+	                    if (centralizedDecider.readyToDecide()) {
+	                        centralizedDecider.performDecision();
+	                    }
+	                    
+	                    // once a decider handled a request, we are done
+	                    break;
+	                }
+            	}
             }
 
             // Send the response if it exists

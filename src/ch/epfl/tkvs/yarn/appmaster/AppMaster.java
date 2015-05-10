@@ -1,5 +1,7 @@
 package ch.epfl.tkvs.yarn.appmaster;
 
+import static ch.epfl.tkvs.yarn.HDFSLogger.TKVS_LOGS_PATH;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.yarn.api.records.FinalApplicationStatus;
 import org.apache.hadoop.yarn.api.records.Priority;
@@ -33,14 +37,9 @@ import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.TMInitMessage;
 import ch.epfl.tkvs.yarn.HDFSLogger;
-import static ch.epfl.tkvs.yarn.HDFSLogger.TKVS_LOGS_PATH;
 import ch.epfl.tkvs.yarn.RemoteTransactionManager;
 import ch.epfl.tkvs.yarn.RoutingTable;
 import ch.epfl.tkvs.yarn.Utils;
-import ch.epfl.tkvs.yarn.appmaster.centralized_decision.DeadlockCentralizedDecider;
-import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 
 
 /**
@@ -175,7 +174,6 @@ public class AppMaster {
         }
 
         // Start listening to messages.
-        ICentralizedDecider decider = new DeadlockCentralizedDecider(rmHandler.getRoutingTable());
         ExecutorService threadPool = Executors.newCachedThreadPool();
         while (!server.isClosed() && rmHandler.getContainerCount() > 0) {
             try {
@@ -210,7 +208,7 @@ public class AppMaster {
                 default:
                     try {
                         JSONObject jsonRequest = new JSONObject(input);
-                        threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), jsonRequest, sock, decider));
+                        threadPool.execute(new AMWorker(rmHandler.getRoutingTable(), jsonRequest, sock));
                     } catch (JSONException e) {
                         log.warn("Non JSON message will not be parsed: " + input);
                     }

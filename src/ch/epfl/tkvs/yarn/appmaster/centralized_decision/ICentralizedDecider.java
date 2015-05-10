@@ -1,5 +1,7 @@
 package ch.epfl.tkvs.yarn.appmaster.centralized_decision;
 
+import java.net.Socket;
+
 import org.codehaus.jettison.json.JSONObject;
 
 
@@ -18,8 +20,9 @@ public interface ICentralizedDecider {
     /**
      * Handle an incoming message.
      * @param message a message to be handled
+     * @param sock the socket to answer
      */
-    void handleMessage(JSONObject message);
+    void handleMessage(JSONObject message, Socket sock);
 
     /**
      * @return true if the module is ready to make a decision

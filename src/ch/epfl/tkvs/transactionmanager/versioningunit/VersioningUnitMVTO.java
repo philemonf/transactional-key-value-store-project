@@ -1,5 +1,6 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,10 +11,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.codehaus.jettison.json.JSONObject;
+
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TimestampOrderingException;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
+import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
+import ch.epfl.tkvs.transactionmanager.communication.requests.MinAliveTransactionRequest;
+import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
+import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public class VersioningUnitMVTO {
@@ -216,7 +225,7 @@ public class VersioningUnitMVTO {
         readFromXacts.remove(xid);
         writtenKeys.remove(xid);
         notifyAll();
-        garbageCollector();
+        sendTerminateMessage(xid);
     }
 
     public synchronized void abort(int xid) {
@@ -244,9 +253,12 @@ public class VersioningUnitMVTO {
 
         writtenKeys.remove(xid);
         notifyAll();
-        garbageCollector();
+        sendTerminateMessage(xid);
     }
 
+    /**
+     * Perform GC. Called by the checkpoint method of the MVTO concurrency control algorithm.
+     */
     public synchronized void garbageCollector() {
 
         if (uncommitted.isEmpty()) {
@@ -254,7 +266,7 @@ public class VersioningUnitMVTO {
             return;
         }
 
-        int minAliveXid = Collections.min(uncommitted);
+        int minAliveXid = getMinAlive();
         // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
         // Removes useless versions stored in KVStore
         for (Serializable key : versions.keySet()) {
@@ -298,5 +310,24 @@ public class VersioningUnitMVTO {
                 iterator.remove();
             }
         }
+    }
+    
+    private void sendTerminateMessage(int tid) {
+    	try {
+    		TransactionManager.sendToAppMaster(new TransactionTerminateMessage(tid), false);
+    	} catch (IOException e) {
+    		new HDFSLogger(VersioningUnitMVTO.class).error(e, e.getClass());
+    	}
+    }
+    
+    private int getMinAlive() {
+    	try {
+			JSONObject json = TransactionManager.sendToAppMaster(new MinAliveTransactionRequest(), true);
+			MinAliveTransactionResponse res = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
+			return res.getTransactionId();
+		} catch (Exception e) {
+			new HDFSLogger(VersioningUnitMVTO.class).error(e, e.getClass());
+			return -1;
+		}
     }
 }

@@ -1,9 +1,12 @@
 package ch.epfl.tkvs.yarn.appmaster.centralized_decision;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Set;
+
 import static ch.epfl.tkvs.yarn.appmaster.AppMaster.log2;
+
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.DeadlockInfoMessage;
@@ -21,14 +24,9 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     private static HashMap<Integer, DeadlockGraph> graphs = new HashMap<Integer, DeadlockGraph>();
     private static HashMap<Integer, DeadlockGraph> secondGraphs = new HashMap<Integer, DeadlockGraph>();
     private static HashMap<Integer, Set<Integer>> activeTransactions = new HashMap<Integer, Set<Integer>>();
-    private RoutingTable routing;
-
-    public DeadlockCentralizedDecider(RoutingTable routingTable) {
-        this.routing = routingTable;
-    }
 
     @Override
-    public synchronized void handleMessage(JSONObject message) {
+    public synchronized void handleMessage(JSONObject message, Socket sock) {
         DeadlockInfoMessage dm = null;
         try {
             dm = (DeadlockInfoMessage) JSON2MessageConverter.parseJSON(message, DeadlockInfoMessage.class);
@@ -87,7 +85,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
             for (Integer tm : activeTransactions.keySet()) {
                 if (activeTransactions.get(tm).contains(transaction)) {
                     try {
-                        routing.findTM(tm).sendMessage(abortRequest, true);
+                    	AppMaster.sendMessageToTM(tm, abortRequest, true);
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
                         log2.error("Cant send Abort ", e, DeadlockCentralizedDecider.class);

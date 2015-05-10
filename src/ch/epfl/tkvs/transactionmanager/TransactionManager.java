@@ -129,9 +129,11 @@ public class TransactionManager {
     /**
      * Helper method to send a message to the app master. Might be blocking if the app master is not ready on start up.
      * @param message the message to send
+     * @param shouldWait whether or not one want to get an answer
+     * @return the answer if it shouldWait or null
      * @throws IOException in case of network error or invalid message format
      */
-    public static void sendToAppMaster(Message message) throws IOException {
+    public static JSONObject sendToAppMaster(Message message, boolean shouldWait) throws IOException {
 
         Socket sock = new Socket(routing.getAMIp(), routing.getAMPort());
         BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
@@ -158,15 +160,28 @@ public class TransactionManager {
             json = Message2JSONConverter.toJSON(message);
         } catch (JSONException e) {
             log.error("Error", e, TransactionManager.class);
-            throw new IOException("An exception occurred while converting the message to json: " + e);
+            throw new IOException("Error while converting the message: " + e);
         }
 
+        
         out.println(json.toString());
         out.flush();
-
+        
+        JSONObject res = null;
+        if (shouldWait) {
+        	String input = in.readLine();
+        	try {
+				res = new JSONObject(input);
+			} catch (JSONException e) {
+				throw new IOException("Error while building response: " + e);
+			}
+        }
+        
         in.close();
         out.close();
         sock.close();
+        
+        return res;
     }
 
     /**

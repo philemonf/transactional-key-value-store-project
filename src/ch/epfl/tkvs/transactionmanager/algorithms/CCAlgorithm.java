@@ -18,6 +18,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.yarn.HDFSLogger;
+import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
 /**
