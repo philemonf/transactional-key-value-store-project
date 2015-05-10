@@ -58,7 +58,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized boolean readyToDecide() {
         int totalTMCount = AppMaster.numberOfRegisteredTMs();
-        log2.info("Ready to decide " + graphs.size() + "   " + totalTMCount + "   " + secondGraphs.isEmpty(), DeadlockCentralizedDecider.class);
+        log2.info("graph_size = " + graphs.size() + " - total_message=" + totalTMCount + " - is_second_graph_empty" + secondGraphs.isEmpty(), DeadlockCentralizedDecider.class);
         if (graphs.size() == totalTMCount)
             return true;
         if (!secondGraphs.isEmpty())
