@@ -1,6 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.versioningunit;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,18 +10,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.codehaus.jettison.json.JSONObject;
-
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.TimestampOrderingException;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
-import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
-import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
-import ch.epfl.tkvs.transactionmanager.communication.requests.MinAliveTransactionRequest;
-import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
-import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 public class VersioningUnitMVTO {
@@ -257,7 +248,7 @@ public class VersioningUnitMVTO {
     /**
      * Perform GC. Called by the checkpoint method of the MVTO concurrency control algorithm.
      */
-    public synchronized void garbageCollector() {
+    public synchronized void garbageCollector(int minAliveXid) {
     	
     	
 
@@ -265,8 +256,6 @@ public class VersioningUnitMVTO {
             abortedXacts.clear();
             return;
         }
-
-        int minAliveXid = getMinAlive();
         
         CCAlgorithm.log.error("GC started with minAliveXid=" + minAliveXid, getClass());
         // CCAlgorithm.log.info("Garbage collection :: minAlive  =" + minAliveXid, VersioningUnitMVTO.class);
@@ -312,16 +301,5 @@ public class VersioningUnitMVTO {
                 iterator.remove();
             }
         }
-    }
-    
-    private int getMinAlive() {
-    	try {
-			JSONObject json = TransactionManager.sendToAppMaster(new MinAliveTransactionRequest(), true);
-			MinAliveTransactionResponse res = (MinAliveTransactionResponse) JSON2MessageConverter.parseJSON(json, MinAliveTransactionResponse.class);
-			return res.getTransactionId();
-		} catch (Exception e) {
-			CCAlgorithm.log.error(e, getClass());
-			return -1;
-		}
     }
 }

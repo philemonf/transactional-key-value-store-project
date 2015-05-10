@@ -18,7 +18,6 @@ import org.codehaus.jettison.json.JSONObject;
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
-import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;

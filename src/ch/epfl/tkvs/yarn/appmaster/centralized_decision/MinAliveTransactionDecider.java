@@ -17,7 +17,6 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
-import ch.epfl.tkvs.transactionmanager.communication.requests.MinAliveTransactionRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
 
 /**
@@ -34,30 +33,20 @@ public class MinAliveTransactionDecider implements ICentralizedDecider {
 
 	@Override
 	public boolean shouldHandleMessageType(String messageType) {
-		return TransactionTerminateMessage.MESSAGE_TYPE.equals(messageType)
-				|| MinAliveTransactionRequest.MESSAGE_TYPE.equals(messageType);
+		return TransactionTerminateMessage.MESSAGE_TYPE.equals(messageType);
 	}
 
 	@Override
 	public void handleMessage(JSONObject message, Socket sock) {
 		log.info("handle " + message.toString() + " from " + sock.getInetAddress());
 		try {
+			
 			String messageType = message.getString(KEY_FOR_MESSAGE_TYPE);
-
-			if (messageType.equals(TransactionTerminateMessage.MESSAGE_TYPE)) {
-				
-				TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
-				int tids[] = tMessage.getTransactionIds();
-				updateWithTerminated(tids);
-				
-				// Acknowledge
-				PrintWriter out = new PrintWriter(sock.getOutputStream(), true);
-				out.println("ACK");
-				out.close();
-				
-			} else {
-				waitQueue.add(sock);
-			}
+			TransactionTerminateMessage tMessage = (TransactionTerminateMessage) parseJSON(message, TransactionTerminateMessage.class);
+			int tids[] = tMessage.getTransactionIds();
+			updateWithTerminated(tids);
+			waitQueue.add(sock);
+			
 
 		} catch (Exception e) {
 			log.error(e);
