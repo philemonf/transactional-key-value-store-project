@@ -75,6 +75,8 @@ public class AppMaster {
             	algoConfig = args[0];
             }
             
+            log2.info(algoConfig, AppMaster.class);
+            
             new AppMaster(algoConfig).run();
         } catch (Exception ex) {
             log.fatal("Failed", ex);
