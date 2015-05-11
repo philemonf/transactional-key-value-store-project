@@ -8,7 +8,9 @@ If you are running the , `./configure.sh local` to configure the slaves file. Ot
 
 1. HDFS and YARN must be running
 2. Start the YARN Application with `./start.sh`. The Client REPL will start.
-3. Try `:benchmark`, it's gonna be fun.
+3. Try `:benchmark`, it's gonna be fun. Please be nice to our immature system 
+
+  Example benchmark test: `:benchmark t 100 r 10 k 500 ratio 20`
 4. Stop the YARN Application with `:exit`.
 5. View all logs with `./printlogs.sh`.
 
