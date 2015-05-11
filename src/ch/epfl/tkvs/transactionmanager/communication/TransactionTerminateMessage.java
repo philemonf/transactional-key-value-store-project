@@ -20,6 +20,7 @@ public class TransactionTerminateMessage extends Message {
 
     @JSONConstructor
     public TransactionTerminateMessage(LinkedList<Integer> tids) throws IOException {
+    	
         encodedTids = Base64Utils.convertToBase64(tids);
     }
 
