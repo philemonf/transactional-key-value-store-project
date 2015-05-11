@@ -16,6 +16,6 @@ You can look at the example client source code in `test/ch/epfl/tkvs/userclient/
 Note: For the first run, `./start.sh local` to configure the slaves file.
 
 ## Selecting the concurrency control
-At the moment, the key-value store support 3 concurrency algorithm: 2PL, MVCC2PL and MVTO.
+At the moment, the key-value store support 3 concurrency algorithms: 2PL, MVCC2PL and MVTO.
 To select one of them, write `simple_2pl`, `mvcc2pl` or `mvto` in `./config/algorithm`.
 By default (in absence of the file for instance), MVTO will be used.
