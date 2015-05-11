@@ -8,9 +8,15 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 
 
+/**
+ * Response for a {@link ReadRequest}. If the read was successful, {@link #success} stores the true and
+ * {@link #encodedValue} stores the value. If the read was unsuccessful, {@link #success} stores false, and
+ * {@link #exceptionMessage} stores the reason.
+ */
 public class ReadResponse extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

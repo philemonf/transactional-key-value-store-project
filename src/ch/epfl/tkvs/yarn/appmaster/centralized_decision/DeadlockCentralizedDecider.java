@@ -62,10 +62,10 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized void performDecision() {
         DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
-        
+
         Set<Integer> transactionsToBeKilled = mergedGraph.checkForCycles();
         log2.info("perform decision", DeadlockCentralizedDecider.class);
-        
+
         for (Integer tid : transactionsToBeKilled)
             log2.info("Killing transaction" + tid, DeadlockCentralizedDecider.class);
         sendKillMessages(transactionsToBeKilled);

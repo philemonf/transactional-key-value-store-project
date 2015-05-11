@@ -9,16 +9,16 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class VersioningUnitMVCC2PL {
 
-    final static int PRIMARY_CACHE = 0;
+    /** Unique instance of the VersioningUnitMVTO class */
+    private static VersioningUnitMVCC2PL instance = null;
+
+    private final static int PRIMARY_CACHE = 0;
 
     private Map<Integer, Cache> caches;
     private Cache primary;
-    public Deque<Cache> tmpPrimary;
+    private Deque<Cache> tmpPrimary;
     private BackgroundCommitThread backgroundCommitThread = null;
     private Object guard = new Object();
-
-    /** Unique instance of the VersioningUnitMVTO class */
-    private static VersioningUnitMVCC2PL instance = null;
 
     /**
      * Private constructor of the Singleton
@@ -29,6 +29,7 @@ public class VersioningUnitMVCC2PL {
 
     /**
      * Double-checked locking method to return the unique object
+     * 
      * @return singleton VersioningUnit
      */
     public static VersioningUnitMVCC2PL getInstance() {

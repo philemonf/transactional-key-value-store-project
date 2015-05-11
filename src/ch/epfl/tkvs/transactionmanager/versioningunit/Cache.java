@@ -7,12 +7,18 @@ import java.util.Set;
 import ch.epfl.tkvs.keyvaluestore.KeyValueStore;
 
 
+/**
+ * A cache is a set of keys written by a particular transaction.
+ */
 public class Cache {
 
     private int xid;
     private String prefix;
     private Set<Serializable> writtenKeys;
 
+    /**
+     * Key for the key-value store that is prefixed in order to be unique for a particular transaction and version
+     */
     class PrefixedKey implements Serializable {
 
         private static final long serialVersionUID = 7099912040047138926L;
@@ -64,6 +70,11 @@ public class Cache {
 
     }
 
+    /**
+     * Create a cache for the given transaction ID
+     * 
+     * @param xid the ID of the transaction
+     */
     public Cache(int xid) {
         this.xid = xid;
         this.prefix = "Cache" + xid + "_";
@@ -74,10 +85,22 @@ public class Cache {
         return xid;
     }
 
+    /**
+     * Retrieve the version of the given key in this cache
+     * 
+     * @param key the object to retrieve
+     * @return the value of the given key in this cache
+     */
     public Serializable get(Serializable key) {
         return KeyValueStore.instance.get(prefixKey(key));
     }
 
+    /**
+     * Write a key in this cache
+     * 
+     * @param key the key to write
+     * @param value the value to write for the key
+     */
     public void put(Serializable key, Serializable value) {
         KeyValueStore.instance.put(prefixKey(key), value);
         writtenKeys.add(key);
@@ -87,6 +110,9 @@ public class Cache {
         return new PrefixedKey(prefix, key);
     }
 
+    /**
+     * @return all keys written in this cache
+     */
     public HashSet<Serializable> getWrittenKeys() {
         return new HashSet<Serializable>(writtenKeys);
     }

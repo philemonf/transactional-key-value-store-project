@@ -121,26 +121,26 @@ public class Utils {
     }
 
     /**
-     * Read the concurrency control configuration in ./config/algorithm.
-     * Possible config are: simple_2pl, mvcc2pl or mvto.
+     * Read the concurrency control configuration in ./config/algorithm. Possible config are: simple_2pl, mvcc2pl or
+     * mvto.
      * @return a String holding that config (the config of MVTO in case of failure)
      */
     public static String readAlgorithmConfig() {
-		try {
-			FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
-			Path algoConfigPath = new Path(Utils.TKVS_CONFIG_PATH, "algorithm");
-			BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(algoConfigPath)));
-	        String info = reader.readLine();
-	        reader.close();
-	        
-	        return info;
-	        
-		} catch (Exception e) {
-			return "mvto"; // default
-		}
-        
+        try {
+            FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
+            Path algoConfigPath = new Path(Utils.TKVS_CONFIG_PATH, "algorithm");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(algoConfigPath)));
+            String info = reader.readLine();
+            reader.close();
+
+            return info;
+
+        } catch (Exception e) {
+            return "mvto"; // default
+        }
+
     }
-    
+
     /**
      * Used by the AppMaster to write its address on HDFS.
      * @param address - the address of the AppMaster
@@ -171,6 +171,7 @@ public class Utils {
      * Enable or disable the log. See ENABLE_LOG above.
      */
     public static void initLogLevel() {
+        @SuppressWarnings("unchecked")
         List<Logger> loggers = Collections.<Logger> list(LogManager.getCurrentLoggers());
         loggers.add(LogManager.getRootLogger());
         for (Logger logger : loggers) {
@@ -184,6 +185,7 @@ public class Utils {
         oos.close();
     }
 
+    @SuppressWarnings("unchecked")
     public static ArrayList<String> loadREPLHist() {
         ArrayList<String> res = new ArrayList<>();
         try {

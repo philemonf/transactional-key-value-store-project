@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.test.userclient;
 
-import ch.epfl.tkvs.exceptions.AbortException;
-import ch.epfl.tkvs.user.UserTransaction;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -9,9 +7,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.log4j.Logger;
+
 import junit.framework.TestCase;
+
+import org.apache.log4j.Logger;
 import org.junit.Test;
+
+import ch.epfl.tkvs.exceptions.AbortException;
+import ch.epfl.tkvs.user.UserTransaction;
 
 
 public class UserClientScheduledTest extends TestCase {
@@ -26,7 +29,7 @@ public class UserClientScheduledTest extends TestCase {
      */
     public static abstract class TransactionExecutionCommand {
 
-        protected Future result;
+        protected Future<?> result;
 
         abstract void executeBy(TransactionExecutorService t, TransactionExecutionCommand[][] schedule);
 
@@ -67,7 +70,7 @@ public class UserClientScheduledTest extends TestCase {
 
             @Override
             void executeBy(TransactionExecutorService t, TransactionExecutionCommand[][] schedule) {
-                Future past = schedule[tid][step].result;
+                Future<?> past = schedule[tid][step].result;
                 result = t.waitFor(past);
             }
 
@@ -324,8 +327,8 @@ public class UserClientScheduledTest extends TestCase {
 
         }
 
-        public Future begin(final MyKey k) {
-            return executor.submit(new Callable() {
+        public Future<?> begin(final MyKey k) {
+            return executor.submit(new Callable<Object>() {
 
                 @Override
                 public Object call() throws Exception {
@@ -346,8 +349,8 @@ public class UserClientScheduledTest extends TestCase {
             });
         }
 
-        public Future write(final MyKey k, final String value) {
-            return executor.submit(new Callable() {
+        public Future<?> write(final MyKey k, final String value) {
+            return executor.submit(new Callable<Object>() {
 
                 @Override
                 public Object call() throws Exception {
@@ -357,8 +360,8 @@ public class UserClientScheduledTest extends TestCase {
             });
         }
 
-        public Future commit() {
-            return executor.submit(new Callable() {
+        public Future<?> commit() {
+            return executor.submit(new Callable<Object>() {
 
                 @Override
                 public Object call() throws Exception {
@@ -368,8 +371,8 @@ public class UserClientScheduledTest extends TestCase {
             });
         }
 
-        public Future waitFor(final Future past) {
-            return executor.submit(new Callable() {
+        public Future<?> waitFor(final Future<?> past) {
+            return executor.submit(new Callable<Object>() {
 
                 @Override
                 public Object call() throws Exception {

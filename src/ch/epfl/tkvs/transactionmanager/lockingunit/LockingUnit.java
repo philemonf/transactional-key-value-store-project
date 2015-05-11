@@ -31,8 +31,7 @@ public enum LockingUnit {
     private DeadlockGraph graph = new DeadlockGraph();
 
     /**
-     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
-     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify 2PL lock compatibility table.
      * 
      * For simplicity, please call this method before running the threads.
      */
@@ -46,8 +45,7 @@ public enum LockingUnit {
     }
 
     /**
-     * MUST be called before use to specify the default 2PL lock compatibility table. To check whether lockTypeA is
-     * compatible with lockTypeB, the unit will do table.areCompatible(lockTypeA, lockTypeB).
+     * MUST be called before use to specify one exclusive lock per key.
      * 
      * For simplicity, please call this method before running the threads.
      */
@@ -83,12 +81,14 @@ public enum LockingUnit {
     }
 
     /**
-     * Locks an object. Remember to init the module with the right lock compatibility table.
+     * Gets the specified type of lock for the given key. Waits until it gets the lock. Remember to initialize the
+     * module with the right lock compatibility table.
      * 
-     * @param transactionID ID of the transaction that requests the locks
-     * @param key the key of the object to lock
+     * @param transactionID ID of the transaction that requests the lock
+     * @param key the key of the object to be locked
      * @param lockType the lock type
-     * @throws Exception
+     * @throws AbortException thrown if interruptWaitingLocks method is called for the given transaction ID or if the
+     * lock request causes a deadlock
      */
     public void lock(int transactionID, Serializable key, LockType lockType) throws AbortException {
         try {
@@ -114,13 +114,16 @@ public enum LockingUnit {
     }
 
     /**
-     * Promotes a lock on an object atomically.
+     * Releases the held locks on the given key by the given transaction, and gets the new lock type on the same key for
+     * the same transaction. In case of an exception, the old lock held by the transaction are not released. Contrary to
+     * what the name suggests, this method does not require any ordering in terms of strength in the lock types. This
+     * method does not verify that the locks specified in oldTypes are actually held by the given transaction.
      * 
      * @param transactionID ID of the transaction that promotes its lock(s)
      * @param key the key of the object associated with the lock
      * @param oldTypes the lock types to promote
      * @param newType the new lock type
-     * @throws Exception
+     * @throws AbortException
      */
     public <T extends LockType> void promote(int transactionID, Serializable key, List<T> oldTypes, LockType newType) throws AbortException {
         try {
@@ -159,6 +162,14 @@ public enum LockingUnit {
         }
     }
 
+    /**
+     * Creates a DeadlockGraph with the OutgoingEdges of the DeadlockGraph held by this LockingUnit. Since this method
+     * is intended to be used when the graph is being sent to the centralizedDecider, it returns an optimized copy of
+     * the DeadlockGraph instead of an exact copy.
+     * 
+     * @return a copy of the DeadlockGraph held by this LockingUnit created by copyOutgoingEdges method of the
+     * DeadlockGraph. Check that class for more information
+     */
     public DeadlockGraph getDeadlockGraph() {
         internalLock.lock();
         try {
@@ -168,9 +179,20 @@ public enum LockingUnit {
         } finally {
             internalLock.unlock();
         }
-
     }
 
+    /**
+     * Returns the lock types held on the given key except for the "locksToExclude" which are held by the given
+     * transaction. Intended to be used in the promote method to compute the locks held on a key except for the given
+     * locks.
+     * 
+     * @param transactionID ID of the transaction that the locksToExclude belong to.
+     * @param key key of the object that the locksToExclude are held on.
+     * @param locksToExclude lock types -that are held on the given key by the given transaction- to be excluded in the
+     * return data.
+     * @return the lock types held on the given key except for the "locksToExclude" which are held by the given
+     * transaction.
+     */
     private <T extends LockType> HashMap<LockType, List<Integer>> allLocksExcept(int transactionID, Serializable key, List<T> locksToExclude) {
 
         HashMap<LockType, List<Integer>> theLocks = new HashMap<LockType, List<Integer>>();
@@ -193,11 +215,10 @@ public enum LockingUnit {
     }
 
     /**
-     * Releases all locks held by a transaction and removes the transaction from Deadlock graph.
+     * Releases the given locks held by the transaction and removes the transaction from the Deadlock graph.
      * 
      * @param transactionID ID of the transaction whose locks are to be released
-     * @param heldLocks the map of key to list of lock types, be careful to init the module with the right lock
-     * compatibility table.
+     * @param heldLocks the map of key to list of lock types to be released.
      */
     public void releaseAll(int transactionID, HashMap<Serializable, List<LockType>> heldLocks) {
         internalLock.lock();
@@ -215,9 +236,10 @@ public enum LockingUnit {
     }
 
     /**
-     * Interrupts all waiting threads from a particular transaction. Interrupted threads must throw AbortException
+     * Interrupts the waiting thread from a particular transaction. Interrupted thread must throw AbortException
      * 
-     * @param transactionID the id of the transaction
+     * @param transactionID the id of the transaction whose thread is waiting on "lock" or "promote" methods to throw an
+     * AbortException
      * @return true if there is any thread waiting, false otherwise
      */
     public boolean interruptWaitingLocks(int transactionID) {
@@ -296,7 +318,7 @@ public enum LockingUnit {
     }
 
     /**
-     * Checks if requesting for a new lock causes deadlock
+     * Checks if requesting a new lock causes deadlock
      * 
      * @param transactionID ID of the transaction requesting new lock
      * @param key key on which the lock is requested
@@ -313,7 +335,7 @@ public enum LockingUnit {
     }
 
     /**
-     * Gets transactions holding locks that are incompatible with new lock requested by another transaction
+     * Gets IDs of the transactions holding locks that are incompatible with new lock requested by another transaction
      * 
      * @param transactionID the id of the new transaction requesting lock
      * @param key the key on which lock is requested

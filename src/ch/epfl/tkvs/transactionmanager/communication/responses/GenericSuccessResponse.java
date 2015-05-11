@@ -7,6 +7,11 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
+/**
+ * The response message for most requests. {@link #success} stores true if the request was successfully handled. In case
+ * it was not successful, {@link #success} stores false and {@link #exceptionMessage} stores the reason why it was
+ * unsuccessful.
+ */
 public class GenericSuccessResponse extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

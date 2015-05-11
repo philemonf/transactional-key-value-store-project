@@ -3,6 +3,7 @@ package ch.epfl.tkvs.transactionmanager.communication.requests;
 import java.io.IOException;
 import java.io.Serializable;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
@@ -10,6 +11,10 @@ import ch.epfl.tkvs.transactionmanager.communication.Message;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 
 
+/**
+ * This message is sent to {@link TransactionManager} to get the value of a key.
+ *
+ */
 public class ReadRequest extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

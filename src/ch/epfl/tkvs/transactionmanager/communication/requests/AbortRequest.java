@@ -1,10 +1,15 @@
 package ch.epfl.tkvs.transactionmanager.communication.requests;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
+/**
+ * This message is sent to {@link TransactionManager} to abort a transaction
+ * 
+ */
 public class AbortRequest extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

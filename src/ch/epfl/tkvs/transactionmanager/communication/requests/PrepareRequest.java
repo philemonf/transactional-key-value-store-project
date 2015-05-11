@@ -1,11 +1,17 @@
 package ch.epfl.tkvs.transactionmanager.communication.requests;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
+/**
+ * This message is sent to another {@link TransactionManager} from a primary {@link TransactionManager} during the
+ * prepare phase of 2-Phase Commit.
+ * 
+ */
 public class PrepareRequest extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

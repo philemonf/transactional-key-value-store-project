@@ -14,6 +14,10 @@ import java.util.Set;
  * A lock compatibility table that one should provide the LockingUnit with.
  * 
  */
+/**
+ * @author egeyar
+ * 
+ */
 public class LockCompatibilityTable {
 
     Map<LockType, List<LockType>> table;
@@ -41,6 +45,13 @@ public class LockCompatibilityTable {
         return new ArrayList<LockType>(Arrays.asList(lt));
     }
 
+    /**
+     * Given a lock type, this method returns the lock types which are incompatible with that lock type according to
+     * this LockCompatibilityTable
+     * 
+     * @param l1 the lock type
+     * @return all the lock types which are incompatible with that lock type according to this LockCompatibilityTable
+     */
     public Set<LockType> getIncompatibleLocks(LockType l1) {
         List<LockType> compatibleLocks = table.get(l1);
         Set<LockType> incompatibleLocks = new HashSet<LockType>();
@@ -52,6 +63,11 @@ public class LockCompatibilityTable {
         return incompatibleLocks;
     }
 
+    /**
+     * Returns all lock types
+     * 
+     * @return all lock types specified in this compatibility table
+     */
     public Set<LockType> getLockTypes() {
         return table.keySet();
     }

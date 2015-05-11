@@ -1,10 +1,17 @@
 package ch.epfl.tkvs.transactionmanager.communication.requests;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
+
+/**
+ * This message is sent to {@link TransactionManager} to begin a transaction. The {@link #primary} is true if the
+ * request is to create a primary {@link Transaction}, otherwise it is false
+ * 
+ */
 
 public class BeginRequest extends Message {
 

@@ -53,11 +53,11 @@ import ch.epfl.tkvs.yarn.Utils;
 public class AppMaster {
 
     private final static Logger log = Logger.getLogger(AppMaster.class.getName());
-    
+
     public static HDFSLogger log2 = new HDFSLogger(AppMaster.class);
-    
+
     private final String ALGO_CONFIG;
-    
+
     private static RMCallbackHandler rmHandler;
     private static AMRMClientAsync<ContainerRequest> rmClient;
     private static int nextXid = 0;
@@ -72,11 +72,11 @@ public class AppMaster {
 
             String algoConfig = "mvto";
             if (args.length > 0) {
-            	algoConfig = args[0];
+                algoConfig = args[0];
             }
-            
+
             log2.info(algoConfig, AppMaster.class);
-            
+
             new AppMaster(algoConfig).run();
         } catch (Exception ex) {
             log.fatal("Failed", ex);
@@ -85,9 +85,9 @@ public class AppMaster {
         log2.writeToHDFS("A");
         System.exit(0);
     }
-    
+
     public AppMaster(String algoConfig) {
-    	ALGO_CONFIG = algoConfig;
+        ALGO_CONFIG = algoConfig;
     }
 
     public void run() throws Exception {
@@ -167,7 +167,7 @@ public class AppMaster {
             log.warn("Did not get reply from all TMs");
             for (String tmIp : tmRequests) {
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
-                    
+
                     log.warn("TM at " + tmIp + " did not reply");
                     for (ContainerRequest req : contRequests.get(tmIp)) {
                         rmClient.removeContainerRequest(req);

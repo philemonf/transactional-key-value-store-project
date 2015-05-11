@@ -35,10 +35,21 @@ import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
 /**
- * The TransactionManager is the deamon started by the {@link AppMaster} on many nodes of the cluster.
+ * The TransactionManager (TM) is the deamon spawned by the {@link AppMaster} on many nodes of the cluster. It is
+ * responsible for executing transactions. More precisely, a TM executes and schedule transactions having a locality
+ * hash that maps to it. All TMs are running the same instance of a concurrency control algorithm selected by the user
+ * (./config/algorithm) before launching the system on the server. By default, they all will run MVTO.
  * 
- * It is mainly a server which answers the client requests.
- *
+ * A TM is basically a server waiting for user request and feeding a concurrency controller with those requests.
+ * Cooperation between TransactionManager is handled by another entity, the {@link RemoteHandler}.
+ * 
+ * Terminology: given a transaction that is handled by a TransactionManager T1, i.e. its locality hash maps to it, but
+ * that performs operation that force cooperation between T1 and another TransactionManager T2, T1 is referred to as the
+ * primary TransactionManager for that transaction while T2 is referred to as the secondary TransactionManager for that
+ * transaction.
+ * 
+ * @see RemoteHandler
+ * @see CCAlgorithm
  */
 public class TransactionManager {
 
@@ -93,13 +104,13 @@ public class TransactionManager {
         String ccConfig = initMessage.getConcurrencyControlConfig();
         CCAlgorithm concurrencyController = null;
         if (ccConfig.equals("simple_2pl")) {
-        	concurrencyController = new Simple2PL(remoteHandler, log);
+            concurrencyController = new Simple2PL(remoteHandler, log);
         } else if (ccConfig.equals("mvcc2pl")) {
-        	concurrencyController = new MVCC2PL(remoteHandler, log);
+            concurrencyController = new MVCC2PL(remoteHandler, log);
         } else {
-        	concurrencyController = new MVTO(remoteHandler, log);
+            concurrencyController = new MVTO(remoteHandler, log);
         }
-        
+
         log.info("Algorithm selected: " + concurrencyController.getClass(), TransactionManager.class);
 
         remoteHandler.setAlgo(concurrencyController, log);
@@ -162,6 +173,7 @@ public class TransactionManager {
                 try {
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
+                    sock.close();
                     throw new IOException(e);
                 }
             }
@@ -172,6 +184,7 @@ public class TransactionManager {
             json = Message2JSONConverter.toJSON(message);
         } catch (JSONException e) {
             log.error("Error", e, TransactionManager.class);
+            sock.close();
             throw new IOException("Error while converting the message: " + e);
         }
 
@@ -184,6 +197,7 @@ public class TransactionManager {
             try {
                 res = new JSONObject(input);
             } catch (JSONException e) {
+                sock.close();
                 throw new IOException("Error while building response: " + e);
             }
         }

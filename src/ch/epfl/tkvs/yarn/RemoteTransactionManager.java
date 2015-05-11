@@ -21,6 +21,8 @@ import ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter
  */
 public class RemoteTransactionManager implements Serializable {
 
+    private static final long serialVersionUID = 5097035266927261298L;
+
     private String ip;
     private int port;
 
@@ -55,6 +57,7 @@ public class RemoteTransactionManager implements Serializable {
         try {
             out.println(Message2JSONConverter.toJSON(message).toString());
         } catch (JSONException e) {
+            sock.close();
             throw new IOException(e);
         }
 

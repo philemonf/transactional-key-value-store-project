@@ -1,7 +1,5 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
-import static ch.epfl.tkvs.transactionmanager.lockingunit.LockType.Default;
-
 import java.io.Serializable;
 import java.util.Arrays;
 
@@ -15,6 +13,7 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockType;
+import ch.epfl.tkvs.transactionmanager.lockingunit.LockType.Default;
 import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
@@ -36,10 +35,13 @@ public class Simple2PL extends Algo2PL {
         if (transaction == null) {
             return new ReadResponse(new TransactionNotLiveException());
         }
+        // if the key is stored locally, process it locally or use remote handler to forward the request to the correct
+        // Tranasction manager.
 
         if (isLocalKey(request.getLocalityHash())) {
             LockType lock = Default.READ_LOCK;
             try {
+                // if read or write lock is already held , do not request again
                 if (!transaction.checkLock(key, lock) && !transaction.checkLock(key, Default.WRITE_LOCK)) {
                     lockingUnit.lock(xid, key, lock);
                     transaction.addLock(key, lock);
@@ -73,6 +75,7 @@ public class Simple2PL extends Algo2PL {
         if (isLocalKey(request.getLocalityHash())) {
             LockType lock = Default.WRITE_LOCK;
             try {
+                // if lock is already held, do not request again
                 if (!transaction.checkLock(key, lock)) {
                     lockingUnit.promote(xid, key, transaction.getLocksForKey(key), lock);
                     transaction.setLock(key, Arrays.asList(lock));

@@ -3,6 +3,10 @@ package ch.epfl.tkvs.transactionmanager.versioningunit;
 import java.io.Serializable;
 
 
+/**
+ * Key for the key-value store that is prefixed in order to be unique and possible to retrieve for a particular
+ * transaction and version
+ */
 public class PrefixedKey implements Serializable {
 
     private static final long serialVersionUID = 7509507724452506202L;

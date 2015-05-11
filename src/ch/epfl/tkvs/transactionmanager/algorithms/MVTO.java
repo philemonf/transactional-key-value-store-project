@@ -34,10 +34,10 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 
 public class MVTO extends CCAlgorithm {
 
-    private VersioningUnitMVTO versioningUnit;
-    private Set<Integer> primaryTransactions = new ConcurrentSkipListSet<Integer>();
-    private Queue<Integer> primaryTerminated = new ConcurrentLinkedQueue<Integer>();
-    private HDFSLogger log;
+    private final VersioningUnitMVTO versioningUnit;
+    private final Set<Integer> primaryTransactions = new ConcurrentSkipListSet<>();
+    private final Queue<Integer> primaryTerminated = new ConcurrentLinkedQueue<>();
+    private final HDFSLogger log;
 
     public MVTO(RemoteHandler rh, HDFSLogger log) {
         super(rh, log);
@@ -207,7 +207,6 @@ public class MVTO extends CCAlgorithm {
 
         log.info("log primaryTerminated: " + toSend, getClass());
 
-        
         MinAliveTransactionResponse response = null;
         try {
             TransactionTerminateMessage tMessage = new TransactionTerminateMessage(toSend);
@@ -216,12 +215,11 @@ public class MVTO extends CCAlgorithm {
         } catch (Exception e) {
             log.error(e.getMessage(), getClass());
         }
-    
 
         if (response != null) {
             versioningUnit.garbageCollector(response.getTransactionId());
         }
-        
+
     }
 
 }

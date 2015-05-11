@@ -18,7 +18,6 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.yarn.HDFSLogger;
-import ch.epfl.tkvs.yarn.appmaster.centralized_decision.ICentralizedDecider;
 
 
 /**
@@ -31,49 +30,49 @@ public abstract class CCAlgorithm {
     public static HDFSLogger log;
 
     /**
-     * Called whenever the transaction manager receives a read request
+     * Called whenever the {@link TransactionManager} receives a read request
      * @param request the incoming read request
      * @return the response to be sent to the sender
      */
     public abstract ReadResponse read(ReadRequest request);
 
     /**
-     * Called whenever the transaction manager receives a write request.
+     * Called whenever the {@link TransactionManager} receives a write request.
      * @param request the incoming write request
      * @return the response to be sent to the sender
      */
     public abstract GenericSuccessResponse write(WriteRequest request);
 
     /**
-     * Called whenever the transaction manager receives a request to begin a transaction
+     * Called whenever the {@link TransactionManager} receives a request to begin a transaction
      * @param request the incoming begin request
      * @return the response to be sent to the sender
      */
     public abstract GenericSuccessResponse begin(BeginRequest request);
 
     /**
-     * Called whenever the transaction manager receives a commit request.
+     * Called whenever the {@link TransactionManager} receives a commit request.
      * @param request the incoming commit request
      * @return the response to be sent to the sender
      */
     public abstract GenericSuccessResponse commit(CommitRequest request);
 
     /**
-     * Called whenever the transaction manager receives an abort request.
+     * Called whenever the {@link TransactionManager} receives an abort request.
      * @param request the incoming abort request
      * @return the response to be sent to the sender
      */
     public abstract GenericSuccessResponse abort(AbortRequest request);
 
     /**
-     * Called whenever the transaction manager receives a prepare request (first phase of 2PC).
+     * Called whenever the {@link TransactionManager} receives a prepare request (first phase of 2PC).
      * @param request the incoming prepare request
      * @return the response to be sent to the sender
      */
     public abstract GenericSuccessResponse prepare(PrepareRequest request);
 
     /**
-     * Returns a transaction object given its id.
+     * Returns a {@link Transaction} object given its id.
      * @param xid the id of the transaction
      * @return the corresponding transaction
      */
@@ -103,20 +102,20 @@ public abstract class CCAlgorithm {
     }
 
     /**
-     * This method is called periodically by the transaction manager. It can be used for a lot of purpose including:
-     * <ul> <li>Fault tolerance</li> <li>Sending report to some node</li> <li>Internal state audit</li> </ul> This is up
-     * to the actual implementation of the concurrency control algorithm to decide. If such a function is not needed,
-     * please leave it empty.
+     * This method is called periodically by the {@link TransactionManager}. It can be used for a lot of purpose
+     * including: <ul> <li>Fault tolerance</li> <li>Sending report to some node</li> <li>Internal state audit</li> </ul>
+     * This is up to the actual implementation of the concurrency control algorithm to decide. If such a function is not
+     * needed, please leave it empty.
      */
     abstract public void checkpoint();
 
     public CCAlgorithm(RemoteHandler remote, HDFSLogger log) {
         this.remote = remote;
-        this.log = log;
+        CCAlgorithm.log = log;
     }
 
     /**
-     * Checks if the key is managed locally or by another Transaction Manager
+     * Checks if the key is managed locally or by another {@link TransactionManager}
      * @param localityHash hash of the key
      * @return true if either remote handling is disabled or if the locality hash of key matches that handled by local
      * Transaction Manager
@@ -126,10 +125,11 @@ public abstract class CCAlgorithm {
     }
 
     /**
-     * Checks if transaction is either a secondary transaction or primary local transaction. All secondary transactions
-     * are local, they are not aware of distributed nature of the transaction. Only the primary
-     * @param t
-     * @return
+     * Checks if a given {@link Transaction} is either a secondary transaction or a primary transaction with no
+     * secondary transctions.
+     * @param t The transaction object
+     * @return false if this transaction object represents a primary transaction which has at least one secondary
+     * transaction running on a different {@link TransactionManager}, true otherwise
      */
     protected boolean isLocalTransaction(Transaction t) {
         return (remote == null) || (t.remoteIsPrepared.isEmpty());

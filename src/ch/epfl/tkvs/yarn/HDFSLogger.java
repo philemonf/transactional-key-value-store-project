@@ -19,61 +19,61 @@ public class HDFSLogger {
     private Logger log;
     private ArrayList<Object> hdfsLog;
 
-    public HDFSLogger(Class c) {
+    public HDFSLogger(Class<?> c) {
         ALSO_USE_LOG4J = false;
         hdfsLog = new ArrayList<>();
     }
 
-    public HDFSLogger(Class c, boolean alsoLog) {
+    public HDFSLogger(Class<?> c, boolean alsoLog) {
         ALSO_USE_LOG4J = alsoLog;
         if (ALSO_USE_LOG4J)
             log = Logger.getLogger(c);
         hdfsLog = new ArrayList<>();
     }
 
-    public void info(Object m, Class c) {
+    public void info(Object m, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.info(m);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " INFO " + c.getSimpleName() + "]: " + m);
     }
 
-    public void warn(Object m, Class c) {
+    public void warn(Object m, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.warn(m);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " WARN " + c.getSimpleName() + "]: " + m);
     }
 
-    public void error(Object m, Class c) {
+    public void error(Object m, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.error(m);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " ERROR " + c.getSimpleName() + "]: " + m);
     }
 
-    public void fatal(Object m, Class c) {
+    public void fatal(Object m, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.fatal(m);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " FATAL " + c.getSimpleName() + "]: " + m);
     }
 
-    public void info(Object m, Throwable t, Class c) {
+    public void info(Object m, Throwable t, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.info(m, t);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " INFO " + c.getSimpleName() + "]: " + m + "\n" + t);
     }
 
-    public void warn(Object m, Throwable t, Class c) {
+    public void warn(Object m, Throwable t, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.warn(m, t);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " WARN " + c.getSimpleName() + "]: " + m + "\n" + t);
     }
 
-    public void error(Object m, Throwable t, Class c) {
+    public void error(Object m, Throwable t, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.error(m, t);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " ERROR " + c.getSimpleName() + "]: " + m + "\n" + t);
     }
 
-    public void fatal(Object m, Throwable t, Class c) {
+    public void fatal(Object m, Throwable t, Class<?> c) {
         if (ALSO_USE_LOG4J)
             log.fatal(m, t);
         hdfsLog.add("[" + TimeStamp.getCurrentTime().toDateString() + " FATAL " + c.getSimpleName() + "]: " + m + "\n" + t);

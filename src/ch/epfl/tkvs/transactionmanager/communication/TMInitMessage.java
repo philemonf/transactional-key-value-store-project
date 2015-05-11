@@ -2,10 +2,15 @@ package ch.epfl.tkvs.transactionmanager.communication;
 
 import java.io.IOException;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
 import ch.epfl.tkvs.yarn.RoutingTable;
 
 
+/**
+ * Sent to each {@link TransactionManager} before it starts. Contains the routing table of the distributed system and
+ * the concurrency control algorithm that the {@link TransactionManager} must select.
+ */
 public class TMInitMessage extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)
@@ -13,7 +18,7 @@ public class TMInitMessage extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_ALGO_CONFIG)
     private String algoConfig;
-    
+
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_ROUTING_TABLE)
     private String encodedRoutingTable;
 
@@ -36,12 +41,12 @@ public class TMInitMessage extends Message {
             return null;
         }
     }
-    
+
     /**
      * Can return "mvto", "simple_2pl" or "mvcc2pl".
      * @return The concurrency control algorithm selected by the user.
      */
     public String getConcurrencyControlConfig() {
-    	return algoConfig;
+        return algoConfig;
     }
 }

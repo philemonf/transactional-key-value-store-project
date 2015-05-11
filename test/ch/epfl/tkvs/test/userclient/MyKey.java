@@ -5,6 +5,8 @@ import ch.epfl.tkvs.user.Key;
 
 public class MyKey extends Key {
 
+    private static final long serialVersionUID = -1420790611895983705L;
+
     String key;
     int localityHash;
 

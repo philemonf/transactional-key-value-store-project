@@ -37,10 +37,15 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
 import ch.epfl.tkvs.test.userclient.Benchmark;
+import ch.epfl.tkvs.test.userclient.MV2PLSystemTest;
+import ch.epfl.tkvs.test.userclient.MVTOSystemTest;
+import ch.epfl.tkvs.test.userclient.S2PLSystemTest;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PLTest;
+import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PLTest;
+import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraphTest;
 import ch.epfl.tkvs.transactionmanager.lockingunit.LockingUnitTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVCC2PLTest;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTOTest;
-import ch.epfl.tkvs.test.userclient.*;
 import ch.epfl.tkvs.user.UserTransaction;
 
 
@@ -53,11 +58,15 @@ import ch.epfl.tkvs.user.UserTransaction;
 public class Client {
 
     private final static Logger log = Logger.getLogger(Client.class.getName());
-
+    private static String algoConfig;
     public static void main(String[] args) {
         Utils.initLogLevel();
         try {
             log.info("Initializing...");
+            
+            // Read the concurrency control algorithm that one want to use
+            algoConfig = Utils.readAlgorithmConfig();
+            
             new Client().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn client", ex);
@@ -143,13 +152,17 @@ public class Client {
                 hist.add(input);
 
                 System.out.println("Running test client...\n");
-                // runTestCase(S2PLSystemTest.class);
-                runTestCase(MV2PLSystemTest.class);
-                // runTestCase(MVTOSystemTest.class);
+                
+                // Run the appropriate system test given the selected algorithm
+                if (algoConfig.equals("simple_2pl")) {
+                	runTestCase(S2PLSystemTest.class);
+                } else if (algoConfig.equals("mvcc2pl")) {
+                	runTestCase(MV2PLSystemTest.class);
+                } else {
+                	runTestCase(MVTOSystemTest.class);
+                }
+                
                 UserTransaction.log.writeToHDFS("C");
-                // log.info("Running example client program...");
-                // new UserClient().run();
-                // runTestCases();
 
                 System.out.println();
                 break;
@@ -180,6 +193,13 @@ public class Client {
                 new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition).run();
                 break;
 
+            case ":help":
+            	System.out.println(":benchmark - run some benchmark");
+            	System.out.println(":testall - run unit tests");
+            	System.out.println(":test - run system test");
+            	System.out.println(":exit - exit the system properly");
+            	break;
+                
             case "":
                 break;
             default:
@@ -213,8 +233,14 @@ public class Client {
         log.info("Running VersioningUnitMVTOTest...");
         runTestCase(VersioningUnitMVTOTest.class);
 
-        // log.info("Running MVCC2PLTest...");
-        // runTestCase(MVCC2PLTest.class);
+        log.info("Running MVCC2PLTest...");
+        runTestCase(MVCC2PLTest.class);
+        
+        log.info("Running Simple2PLTest...");
+        runTestCase(Simple2PLTest.class);
+        
+        log.info("Running DeadlockGraphTest...");
+        runTestCase(DeadlockGraphTest.class);
     }
 
     private static void runTestCase(Class<?> testCase) {
@@ -257,9 +283,7 @@ public class Client {
 
     private ApplicationSubmissionContext createAppMaster(YarnClientApplication app, YarnConfiguration conf) throws Exception {
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
-        
-        String algoConfig = Utils.readAlgorithmConfig();
-        
+
         // TODO: Fix the logging method from ApplicationConstants.LOG_DIR_EXPANSION_VAR.
         amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster " + algoConfig + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 

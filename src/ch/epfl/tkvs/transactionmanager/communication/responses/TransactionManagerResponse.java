@@ -2,12 +2,19 @@ package ch.epfl.tkvs.transactionmanager.communication.responses;
 
 import java.io.IOException;
 
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
 
 
+/**
+ * 
+ * Response to a {@link TransactionManagerRequest}. Contains transaction id and IP address and port number for the
+ * primary {@link TransactionManager} for this transaction
+ */
 public class TransactionManagerResponse extends Message {
 
     @JSONAnnotation(key = JSONCommunication.KEY_FOR_MESSAGE_TYPE)

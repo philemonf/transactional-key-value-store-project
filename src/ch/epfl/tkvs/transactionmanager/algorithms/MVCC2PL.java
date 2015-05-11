@@ -26,7 +26,7 @@ public class MVCC2PL extends Algo2PL {
     public MVCC2PL(RemoteHandler rh, HDFSLogger log) {
         super(rh, log);
 
-        Map<LockType, List<LockType>> lockCompatibility = new HashMap<LockType, List<LockType>>();
+        Map<LockType, List<LockType>> lockCompatibility = new HashMap<>();
         lockCompatibility.put(Lock.READ_LOCK, newCompatibilityList(Lock.READ_LOCK, Lock.WRITE_LOCK));
         lockCompatibility.put(Lock.WRITE_LOCK, newCompatibilityList(Lock.READ_LOCK));
         lockCompatibility.put(Lock.COMMIT_LOCK, newCompatibilityList());
@@ -45,13 +45,18 @@ public class MVCC2PL extends Algo2PL {
         if (transaction == null) {
             return new ReadResponse(new TransactionNotLiveException());
         }
+
+        // if the key is stored locally, process it locally or use remote handler to forward the request to the correct
+        // Tranasction manager.
         if (isLocalKey(request.getLocalityHash())) {
             Lock lock = MVCC2PL.Lock.READ_LOCK;
             try {
+                // if lock is already held, do not request again
                 if (!transaction.checkLock(key, lock)) {
                     lockingUnit.lock(xid, key, lock);
                     transaction.addLock(key, lock);
                 }
+
                 Serializable value = versioningUnit.get(xid, key);
                 if (value == null)
                     throw new ValueDoesNotExistException();
@@ -77,9 +82,12 @@ public class MVCC2PL extends Algo2PL {
         if (transaction == null) {
             return new GenericSuccessResponse(new TransactionNotLiveException());
         }
+        // if the key is stored locally, process it locally or use remote handler to forward the request to the correct
+        // Tranasction manager.
         if (isLocalKey(request.getLocalityHash())) {
             Lock lock = Lock.WRITE_LOCK;
             try {
+                // if lock is already held, do not request again
                 if (!transaction.checkLock(key, lock)) {
                     lockingUnit.lock(xid, key, lock);
                     transaction.addLock(key, lock);

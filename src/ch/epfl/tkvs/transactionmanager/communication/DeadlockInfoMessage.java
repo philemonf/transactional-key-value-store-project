@@ -3,9 +3,7 @@ package ch.epfl.tkvs.transactionmanager.communication;
 import java.io.IOException;
 
 import ch.epfl.tkvs.transactionmanager.communication.utils.Base64Utils;
-import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockGraph;
 import ch.epfl.tkvs.transactionmanager.lockingunit.DeadlockInfo;
-import java.util.HashSet;
 
 
 public class DeadlockInfoMessage extends Message {

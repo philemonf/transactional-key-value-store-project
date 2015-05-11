@@ -9,6 +9,9 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONAnnotation;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
+/**
+ * A converter from {@link Message} to a JSON object.
+ */
 public class Message2JSONConverter {
 
     public static JSONObject toJSON(Message message) throws JSONException {

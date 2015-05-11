@@ -3,17 +3,18 @@ Development of a YARN application for transactional key-value operations.
 
 ## How to use it
 
-For now it only run properly in local HDFS/YARN.
+If you are running the , `./configure.sh local` to configure the slaves file. Otherwise, if you are running it on the cluster of the course, please run `./configure.sh N`  to run the system on `N` nodes.
+
 
 1. HDFS and YARN must be running
 2. Start the YARN Application with `./start.sh`. The Client REPL will start.
-3. Run example client application with `:test`.
+3. Try `:benchmark`, it's gonna be fun.
 4. Stop the YARN Application with `:exit`.
 5. View all logs with `./printlogs.sh`.
 
 You can look at the example client source code in `test/ch/epfl/tkvs/userclient/UserClient.java`
 
-Note: For the first run, `./start.sh local` to configure the slaves file.
+
 
 ## Selecting the concurrency control
 At the moment, the key-value store support 3 concurrency algorithms: 2PL, MVCC2PL and MVTO.

@@ -4,22 +4,21 @@ import static ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageCo
 import static ch.epfl.tkvs.transactionmanager.communication.utils.Message2JSONConverter.toJSON;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
-import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.AbortToUserException;
 import ch.epfl.tkvs.exceptions.RemoteTMException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
+import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.TransactionManagerRequest;
@@ -28,11 +27,9 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.TransactionManagerResponse;
-import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter.InvalidMessageException;
 import ch.epfl.tkvs.yarn.HDFSLogger;
 import ch.epfl.tkvs.yarn.Utils;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import ch.epfl.tkvs.yarn.appmaster.AppMaster;
 
 
 public class UserTransaction<K extends Key> {
@@ -41,14 +38,20 @@ public class UserTransaction<K extends Key> {
         uninitialized, live, aborted, commited
     }
 
-    private String tmIp;
-    private int tmPort;
+    private String tmIp; // IP address of primary transaction manager
+    private int tmPort; // port number of primary transaction manager
     private int transactionID;
     private TransactionStatus status;
 
     private static InetSocketAddress amAddress = null;
     public static HDFSLogger log = new HDFSLogger(UserTransaction.class);
 
+    /**
+     * method to initialize a transaction at the user client side.
+     * @param key The key which hints the {@link AppMaster} to decide which {@link TransactionManager} should be
+     * designated as primary for this transaction
+     * @throws AbortException if operation was unsuccessful
+     */
     public void begin(K key) throws AbortException {
         try {
             if (amAddress == null) {
@@ -98,6 +101,12 @@ public class UserTransaction<K extends Key> {
 
     }
 
+    /**
+     * Method to read the value of a key
+     * @param key The key whose value is to be read
+     * @return The value returned
+     * @throws AbortException if the operation was unsuccessful
+     */
     public Serializable read(K key) throws AbortException {
 
         if (status != TransactionStatus.live) {
@@ -124,6 +133,12 @@ public class UserTransaction<K extends Key> {
 
     }
 
+    /**
+     * Method to write value to a key.
+     * @param key
+     * @param value
+     * @throws AbortException if the operation was unsuccessful
+     */
     public void write(K key, Serializable value) throws AbortException {
 
         if (status != TransactionStatus.live) {
@@ -145,6 +160,10 @@ public class UserTransaction<K extends Key> {
 
     }
 
+    /**
+     * Method to commit the transaction
+     * @throws AbortException if the operation was unsuccessful
+     */
     public void commit() throws AbortException {
 
         if (status != TransactionStatus.live) {
@@ -168,5 +187,26 @@ public class UserTransaction<K extends Key> {
 
     public int getTransactionID() {
         return transactionID;
+    }
+
+    /**
+     * Method to abort transaction
+     * @throws AbortException if the operation was unsuccessful
+     */
+    public void abort() throws AbortException {
+        if (status != TransactionStatus.live) {
+            throw new TransactionNotLiveException();
+
+        }
+        AbortRequest ar = new AbortRequest(transactionID);
+        try {
+            sendRequest(tmIp, tmPort, ar, GenericSuccessResponse.class);
+            // TODO process response?
+
+        } catch (Exception ex) {
+            log.error("Remote error", ex, UserTransaction.class);
+            throw new RemoteTMException(ex);
+        }
+
     }
 }

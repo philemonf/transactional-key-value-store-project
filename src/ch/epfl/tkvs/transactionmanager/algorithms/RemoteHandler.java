@@ -25,8 +25,7 @@ import ch.epfl.tkvs.yarn.HDFSLogger;
 
 
 /**
- ** This class acts as a proxy for user client for distributed transactions running on secondary Transaction Managers.
- * Also responsible for 2 Phase Commit protocol
+ * Handles cooperation between {@link TransactionManager}. It is responsible for 2 Phase Commit.
  */
 public class RemoteHandler {
 
@@ -56,11 +55,12 @@ public class RemoteHandler {
     }
 
     /**
-     * Initiates a transaction on secondary Transaction Manager for distributed transaction
+     * Initiates a transaction on secondary {@link TransactionManager} for distributed transaction
      *
-     * @param t The transaction running on primary Transaction Manager
+     * @param t The transaction running on primary {@link TransactionManager}
      * @param hash The hash code of key for identifying the remote Transaction Manager
-     * @return the response from the secondary Transaction Manager
+     * @throws ch.epfl.tkvs.exceptions.AbortException in case the operation was not successful
+     * 
      */
     public void begin(Transaction t, int hash) throws AbortException {
         hash = hash % TransactionManager.getNumberOfTMs();
@@ -81,16 +81,14 @@ public class RemoteHandler {
     }
 
     /**
-     * Performs a remote read on secondary Transaction Manager for distributed transaction Invokes distributed abort in
-     * case of error
+     * Performs a remote read on secondary {@link TransactionManager} for distributed transaction Invokes distributed
+     * abort in case of error
      *
-     * @param t The transaction running on primary Transaction Manager
-     * @param request the original request received by primary Transaction Manager
-     * @return the response from the secondary Transaction Manager
+     * @param t The transaction running on primary {@link TransactionManager}
+     * @param request the original request received by primary {@link TransactionManager}
+     * @return the response from the secondary {@link TransactionManager}
      */
     public ReadResponse read(Transaction t, ReadRequest request) {
-
-        int id = request.getTransactionId();
         int tmHash = request.getLocalityHash();
         try {
             begin(t, tmHash);
@@ -111,15 +109,14 @@ public class RemoteHandler {
     }
 
     /**
-     * Performs a remote write on secondary Transaction Manager for distributed transaction Invokes distributed abort in
-     * case of error
+     * Performs a remote write on secondary {@link TransactionManager} for distributed transaction Invokes distributed
+     * abort in case of error
      *
-     * @param t The transaction running on primary Transaction Manager
-     * @param request the original request received by primary Transaction Manager
-     * @return the response from the secondary Transaction Manager
+     * @param t The transaction running on primary {@link TransactionManager}
+     * @param request the original request received by primary {@link TransactionManager}
+     * @return the response from the secondary {@link TransactionManager}
      */
     public GenericSuccessResponse write(Transaction t, WriteRequest request) {
-        int id = request.getTransactionId();
         int tmHash = request.getLocalityHash();
         try {
             begin(t, tmHash);
@@ -140,8 +137,8 @@ public class RemoteHandler {
     }
 
     /**
-     * Performs 2-Phase commit protocol to try to commit a distributed transaction Invokes distributed abort in case of
-     * error
+     * Performs 2-Phase commit protocol to try to commit a distributed transaction. Invokes distributed abort in case of
+     * error.
      *
      * @param t The transaction running on primary Transaction Manager
      * @return the response from the secondary Transaction Manager
@@ -179,7 +176,7 @@ public class RemoteHandler {
     }
 
     /**
-     * Sends commit message to secondary Transaction Managers. TODO: ensure that all commits are successful
+     * Sends commit message to secondary {@link TransactionManager}s. TODO: ensure that all commits are successful
      * @param t Transaction to be committed
      */
     private void commitOthers(Transaction t) throws IOException {
@@ -198,7 +195,7 @@ public class RemoteHandler {
 
     // TODO: return true or false?
     /**
-     * Sends abort message to secondary Transaction Managers
+     * Sends abort message to secondary {@link TransactionManager}s
      *
      * @param t Transaction to be committed
      * 

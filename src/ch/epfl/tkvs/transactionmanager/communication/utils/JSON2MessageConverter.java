@@ -16,6 +16,9 @@ import ch.epfl.tkvs.transactionmanager.communication.JSONConstructor;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
 
 
+/**
+ * A converter from JSON to {@link Message}.
+ */
 public class JSON2MessageConverter {
 
     public static class InvalidMessageException extends Exception {
@@ -31,6 +34,7 @@ public class JSON2MessageConverter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static Message parseJSON(JSONObject json, Class<? extends Message> messageClass) throws InvalidMessageException {
         if (json == null) {
             throw new InvalidMessageException("json is null.");
@@ -66,7 +70,7 @@ public class JSON2MessageConverter {
 
             List<Object> dummyParams = new LinkedList<Object>();
 
-            for (Class parameterType : constructor.getParameterTypes()) {
+            for (Class<?> parameterType : constructor.getParameterTypes()) {
                 if (parameterType.isPrimitive()) {
                     dummyParams.add(parameterType == boolean.class ? false : 0);
                 } else {

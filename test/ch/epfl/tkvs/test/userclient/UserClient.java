@@ -14,7 +14,7 @@ public class UserClient implements Runnable {
             final MyKey k0 = new MyKey("k0", 0);
             final MyKey k1 = new MyKey("k1", 1);
 
-            UserTransaction t0 = new UserTransaction<MyKey>();
+            UserTransaction<MyKey> t0 = new UserTransaction<MyKey>();
             t0.begin(k0);
             t0.write(k0, "k0_main");
             t0.commit();
