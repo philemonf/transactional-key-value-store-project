@@ -257,8 +257,11 @@ public class Client {
 
     private ApplicationSubmissionContext createAppMaster(YarnClientApplication app, YarnConfiguration conf) throws Exception {
         ContainerLaunchContext amCLC = Records.newRecord(ContainerLaunchContext.class);
+        
+        String algoConfig = Utils.readAlgorithmConfig();
+        
         // TODO: Fix the logging method from ApplicationConstants.LOG_DIR_EXPANSION_VAR.
-        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster" + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
+        amCLC.setCommands(Collections.singletonList("$HADOOP_HOME/bin/hadoop jar TKVS.jar ch.epfl.tkvs.yarn.appmaster.AppMaster " + algoConfig + " 1>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stdout" + " 2>" + ApplicationConstants.LOG_DIR_EXPANSION_VAR + "/stderr"));
 
         // Set AM jar
         LocalResource jar = Records.newRecord(LocalResource.class);

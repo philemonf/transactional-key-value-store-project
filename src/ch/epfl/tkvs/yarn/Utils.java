@@ -82,6 +82,11 @@ public class Utils {
         res.setVisibility(LocalResourceVisibility.PUBLIC);
     }
 
+    /**
+     * Reads the host names of the transaction master specified by the user in ./config/slaves.
+     * @return an array list of those host names
+     * @throws Exception in case of failure
+     */
     public static ArrayList<String> readTMHostnames() throws Exception {
         ArrayList<String> tmHosts = new ArrayList<>();
         Path slavesPath = new Path(Utils.TKVS_CONFIG_PATH, "slaves");
@@ -98,6 +103,11 @@ public class Utils {
         return tmHosts;
     }
 
+    /**
+     * Extract the IP from the host name format given by Hadoop.
+     * @param addr - the raw host name
+     * @return a cured host name
+     */
     public static String extractIP(String addr) {
         int slashIndex = addr.lastIndexOf('/') + 1;
         if (slashIndex != -1) {
@@ -110,6 +120,32 @@ public class Utils {
         return addr;
     }
 
+    /**
+     * Read the concurrency control configuration in ./config/algorithm.
+     * Possible config are: simple_2pl, mvcc2pl or mvto.
+     * @return a String holding that config (the config of MVTO in case of failure)
+     */
+    public static String readAlgorithmConfig() {
+		try {
+			FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
+			Path algoConfigPath = new Path(Utils.TKVS_CONFIG_PATH, "algorithm");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(algoConfigPath)));
+	        String info = reader.readLine();
+	        reader.close();
+	        
+	        return info;
+	        
+		} catch (Exception e) {
+			return "mvto"; // default
+		}
+        
+    }
+    
+    /**
+     * Used by the AppMaster to write its address on HDFS.
+     * @param address - the address of the AppMaster
+     * @throws Exception - in case of failure
+     */
     public static void writeAMAddress(String address) throws Exception {
         FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         PrintWriter pr = new PrintWriter(new OutputStreamWriter(fs.create(AM_ADDRESS_PATH, true)));
@@ -118,6 +154,11 @@ public class Utils {
         fs.close();
     }
 
+    /**
+     * Used to read the AppMaster's address from HDFS.
+     * @return the socket address of the AppMaster
+     * @throws Exception - in case of failure
+     */
     public static InetSocketAddress readAMAddress() throws Exception {
         FileSystem fs = AM_ADDRESS_PATH.getFileSystem(new YarnConfiguration());
         BufferedReader reader = new BufferedReader(new InputStreamReader(fs.open(AM_ADDRESS_PATH)));
@@ -126,6 +167,9 @@ public class Utils {
         return new InetSocketAddress(info[0], Integer.parseInt(info[1]));
     }
 
+    /**
+     * Enable or disable the log. See ENABLE_LOG above.
+     */
     public static void initLogLevel() {
         List<Logger> loggers = Collections.<Logger> list(LogManager.getCurrentLoggers());
         loggers.add(LogManager.getRootLogger());

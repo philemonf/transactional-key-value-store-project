@@ -13,6 +13,6 @@ public class JSONCommunication {
     public static final String KEY_FOR_DEAD_LOCK_GRAPH = "deadlock_graph";
     public static final String KEY_FOR_ROUTING_TABLE = "routing_table";
     public static final String KEY_FOR_EXCEPTION = "exception";
-
+    public static final String KEY_FOR_ALGO_CONFIG = "algorithm";
     public static final String KEY_FOR_PRIMARY_MSG = "primary";
 }

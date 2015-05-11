@@ -19,7 +19,9 @@ import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.algorithms.CCAlgorithm;
 import ch.epfl.tkvs.transactionmanager.algorithms.MVCC2PL;
+import ch.epfl.tkvs.transactionmanager.algorithms.MVTO;
 import ch.epfl.tkvs.transactionmanager.algorithms.RemoteHandler;
+import ch.epfl.tkvs.transactionmanager.algorithms.Simple2PL;
 import ch.epfl.tkvs.transactionmanager.communication.ExitMessage;
 import ch.epfl.tkvs.transactionmanager.communication.JSONCommunication;
 import ch.epfl.tkvs.transactionmanager.communication.Message;
@@ -88,9 +90,17 @@ public class TransactionManager {
         RemoteHandler remoteHandler = new RemoteHandler();
 
         // Select which concurrency algorithm to use
-        // CCAlgorithm concurrencyController = new Simple2PL(remoteHandler, log);
-        CCAlgorithm concurrencyController = new MVCC2PL(remoteHandler, log);
-        // CCAlgorithm concurrencyController = new MVTO(remoteHandler, log);
+        String ccConfig = initMessage.getConcurrencyControlConfig();
+        CCAlgorithm concurrencyController = null;
+        if (ccConfig.equals("simple_2pl")) {
+        	concurrencyController = new Simple2PL(remoteHandler, log);
+        } else if (ccConfig.equals("mvcc2pl")) {
+        	concurrencyController = new MVCC2PL(remoteHandler, log);
+        } else {
+        	concurrencyController = new MVTO(remoteHandler, log);
+        }
+        
+        log.info("Algorithm selected: " + concurrencyController.getClass(), TransactionManager.class);
 
         remoteHandler.setAlgo(concurrencyController, log);
 

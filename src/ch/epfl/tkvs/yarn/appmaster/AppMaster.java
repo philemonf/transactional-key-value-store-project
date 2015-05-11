@@ -53,7 +53,11 @@ import ch.epfl.tkvs.yarn.Utils;
 public class AppMaster {
 
     private final static Logger log = Logger.getLogger(AppMaster.class.getName());
+    
     public static HDFSLogger log2 = new HDFSLogger(AppMaster.class);
+    
+    private final String ALGO_CONFIG;
+    
     private static RMCallbackHandler rmHandler;
     private static AMRMClientAsync<ContainerRequest> rmClient;
     private static int nextXid = 0;
@@ -66,13 +70,22 @@ public class AppMaster {
             FileSystem fs = logDir.getFileSystem(new YarnConfiguration());
             fs.delete(logDir, true); // delete old log dir.
 
-            new AppMaster().run();
+            String algoConfig = "mvto";
+            if (args.length > 0) {
+            	algoConfig = args[0];
+            }
+            
+            new AppMaster(algoConfig).run();
         } catch (Exception ex) {
             log.fatal("Failed", ex);
         }
         log.info("Finished");
         log2.writeToHDFS("A");
         System.exit(0);
+    }
+    
+    public AppMaster(String algoConfig) {
+    	ALGO_CONFIG = algoConfig;
     }
 
     public void run() throws Exception {
@@ -152,11 +165,7 @@ public class AppMaster {
             log.warn("Did not get reply from all TMs");
             for (String tmIp : tmRequests) {
                 if (!rmHandler.getRoutingTable().contains(tmIp)) {
-                    // FIXME This might have unexpected behavior in case of local
-                    // testing where more than one TM has the same ip
-                    // since TM that have responded may be removed
-                    // but this only concerns testing since the system
-                    // is not supposed to support multiple TM on a node at the moment
+                    
                     log.warn("TM at " + tmIp + " did not reply");
                     for (ContainerRequest req : contRequests.get(tmIp)) {
                         rmClient.removeContainerRequest(req);
@@ -168,7 +177,7 @@ public class AppMaster {
 
         // Send the routing information to all TMs.
         log.info("Sending routing information to TMs");
-        TMInitMessage initMessage = new TMInitMessage(rmHandler.getRoutingTable());
+        TMInitMessage initMessage = new TMInitMessage(rmHandler.getRoutingTable(), ALGO_CONFIG);
         for (RemoteTransactionManager tm : rmHandler.getRoutingTable().getTMs()) {
             tm.sendMessage(initMessage, false);
         }
