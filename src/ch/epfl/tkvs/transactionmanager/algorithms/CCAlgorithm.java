@@ -126,7 +126,8 @@ public abstract class CCAlgorithm {
     }
 
     /**
-     * Checks if transaction is either a secondary transaction or primary local transaction
+     * Checks if transaction is either a secondary transaction or primary local transaction. All secondary transactions
+     * are local, they are not aware of distributed nature of the transaction. Only the primary
      * @param t
      * @return
      */

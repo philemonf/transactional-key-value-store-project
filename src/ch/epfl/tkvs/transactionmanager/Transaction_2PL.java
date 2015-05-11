@@ -49,14 +49,29 @@ public class Transaction_2PL extends Transaction {
         }
     }
 
+    /**
+     * Checks if a particular lock is held for a key by this transaction
+     * @param key The key for which lock is to be checked
+     * @param lockType The type of the lock to be checked for the key
+     * @return
+     */
     public boolean checkLock(Serializable key, LockType lockType) {
         return currentLocks.get(key) != null && currentLocks.get(key).contains(lockType);
     }
 
+    /**
+     * 
+     * @return The set of keys that are locked by this transaction
+     */
     public Set<Serializable> getLockedKeys() {
         return currentLocks.keySet();
     }
 
+    /**
+     * 
+     * @param key
+     * @return Returns a list of locks held for a key
+     */
     public List<LockType> getLocksForKey(Serializable key) {
         return currentLocks.get(key);
     }

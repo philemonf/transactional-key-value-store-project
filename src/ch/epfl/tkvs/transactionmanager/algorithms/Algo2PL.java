@@ -27,6 +27,7 @@ public abstract class Algo2PL extends CCAlgorithm {
     protected LockingUnit lockingUnit;
     protected VersioningUnitMVCC2PL versioningUnit;
 
+    // Datastructure which maps transaction id to a Transaction_2PL object
     protected ConcurrentHashMap<Integer, Transaction_2PL> transactions;
     private final HDFSLogger log;
 
@@ -69,6 +70,8 @@ public abstract class Algo2PL extends CCAlgorithm {
         if (transaction == null) {
             return new GenericSuccessResponse(new TransactionNotLiveException());
         }
+
+        // if there was any thread waiting, that thread would throw abort, no need to terminate in this thread.
         if (!lockingUnit.interruptWaitingLocks(xid))
             terminate(transaction, false);
         return new GenericSuccessResponse();
