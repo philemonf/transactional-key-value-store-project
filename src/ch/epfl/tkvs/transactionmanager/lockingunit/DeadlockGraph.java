@@ -206,8 +206,6 @@ public class DeadlockGraph implements Serializable {
                     removeTransaction(transactionInCycle);
                 }
             }
-            if (visited.size() == originalKeySet.size())
-                break;
         }
         return transactionsToBeKilled;
     }
