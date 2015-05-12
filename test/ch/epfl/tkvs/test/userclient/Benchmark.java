@@ -197,12 +197,16 @@ public class Benchmark {
                             // Get all the localityHash entries
                             ArrayList<Integer> tmpLocalities = new ArrayList<Integer>(localityKeys.keySet());
                             // Remove the initial one
-                            tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
-                            // From the localityHash left, pick a random one
-                            int randomLocalityHash = r.nextInt(tmpLocalities.size());
-                            // Key all the keys associated to it
-                            ArrayList<MyKey> tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHash));
+                            int removedLocalityHash = tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
 
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(removedLocalityHash);
+                            // From the localityHash left, pick a random one
+                            if (tmpLocalities.size() > 0) {
+
+                                int randomLocalityHashIndex = r.nextInt(tmpLocalities.size());
+                                // Key all the keys associated to it
+                                tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHashIndex));
+                            }
                             // Pick one key
                             keyIndex = r.nextInt(tmpKeys.size());
                             userActions[i][j] = new Action(ActionType.READ, tmpKeys.get(keyIndex));
@@ -224,12 +228,16 @@ public class Benchmark {
                             // Get all the localityHash entries
                             ArrayList<Integer> tmpLocalities = new ArrayList<Integer>(localityKeys.keySet());
                             // Remove the initial one
-                            tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
-                            // From the localityHash left, pick a random one
-                            int randomLocalityHash = r.nextInt(tmpLocalities.size());
-                            // Key all the keys associated to it
-                            ArrayList<MyKey> tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHash));
+                            int removedLocalityHash = tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
 
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(removedLocalityHash);
+                            // From the localityHash left, pick a random one
+                            if (tmpLocalities.size() > 0) {
+
+                                int randomLocalityHashIndex = r.nextInt(tmpLocalities.size());
+                                // Key all the keys associated to it
+                                tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHashIndex));
+                            }
                             // Pick one key
                             keyIndex = r.nextInt(tmpKeys.size());
                             userActions[i][j] = new Action(ActionType.READ, tmpKeys.get(keyIndex));
@@ -342,6 +350,7 @@ public class Benchmark {
         double throughput = users.length / runningTime * 1000;
         int nbAbortTotal = nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
         double abortRate = nbAbortTotal / runningTime * 1000;
+
         System.out.println("Results:");
         System.out.println("\tNumber of Reads: " + nbReadTotal);
         System.out.println("\tNumber of Writes: " + nbWriteTotal);

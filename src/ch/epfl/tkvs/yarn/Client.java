@@ -59,14 +59,15 @@ public class Client {
 
     private final static Logger log = Logger.getLogger(Client.class.getName());
     private static String algoConfig;
+
     public static void main(String[] args) {
         Utils.initLogLevel();
         try {
             log.info("Initializing...");
-            
+
             // Read the concurrency control algorithm that one want to use
             algoConfig = Utils.readAlgorithmConfig();
-            
+
             new Client().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn client", ex);
@@ -116,17 +117,18 @@ public class Client {
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(amIp, amPort)) {
             Thread.sleep(3000);
-            System.out.print(".");
+            log.info(".");
         }
 
         ArrayList<String> hist = Utils.loadREPLHist();
-        System.out.println("\nClient REPL: ");
+        log.info("\nClient REPL: ");
+        System.out.format("BM- users keys ratio nbReadTotal nbReadAbortsTotal nbWriteTotal nbWriteAbortsTotal nbCommitTotal nbAbortTotal latency throughput abortRate localityPercentage");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit"; // Default REPL command is :exit.
             Thread.sleep(500); // Useful for batch commands.
 
-            System.out.print("> ");
+            log.info("> ");
             if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
             }
@@ -145,29 +147,29 @@ public class Client {
             switch (input.split(" ")[0]) {
             case ":hist":
                 for (int i = 0; i < hist.size(); ++i) {
-                    System.out.println(i + ": " + hist.get(i));
+                    log.info(i + ": " + hist.get(i));
                 }
                 break;
             case ":test":
                 hist.add(input);
 
-                System.out.println("Running test client...\n");
-                
+                log.info("Running test client...\n");
+
                 // Run the appropriate system test given the selected algorithm
                 if (algoConfig.equals("simple_2pl")) {
-                	runTestCase(S2PLSystemTest.class);
+                    runTestCase(S2PLSystemTest.class);
                 } else if (algoConfig.equals("mvcc2pl")) {
-                	runTestCase(MV2PLSystemTest.class);
+                    runTestCase(MV2PLSystemTest.class);
                 } else {
-                	runTestCase(MVTOSystemTest.class);
+                    runTestCase(MVTOSystemTest.class);
                 }
-                
+
                 UserTransaction.log.writeToHDFS("C");
 
-                System.out.println();
+                log.info("");
                 break;
             case ":testall":
-                System.out.println("Running unit tests...\n");
+                log.info("Running unit tests...\n");
                 runTestCases();
                 break;
             case ":benchmark":
@@ -175,8 +177,8 @@ public class Client {
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+) l (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
-                    System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> l <#localityPercentage> <#repetitions>");
-                    System.out.println("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
+                    log.info("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> l <#localityPercentage> <#repetitions>");
+                    log.info("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
                     break;
                 }
 
@@ -194,17 +196,17 @@ public class Client {
                 break;
 
             case ":help":
-            	System.out.println(":benchmark - run some benchmark");
-            	System.out.println(":testall - run unit tests");
-            	System.out.println(":test - run system test");
-            	System.out.println(":exit - exit the system properly");
-            	break;
-                
+                log.info(":benchmark - run some benchmark");
+                log.info(":testall - run unit tests");
+                log.info(":test - run system test");
+                log.info(":exit - exit the system properly");
+                break;
+
             case "":
                 break;
             default:
                 hist.add(input);
-                System.out.println("Command Not Found!");
+                log.info("Command Not Found!");
             }
 
             appReport = client.getApplicationReport(id);
@@ -235,10 +237,10 @@ public class Client {
 
         log.info("Running MVCC2PLTest...");
         runTestCase(MVCC2PLTest.class);
-        
+
         log.info("Running Simple2PLTest...");
         runTestCase(Simple2PLTest.class);
-        
+
         log.info("Running DeadlockGraphTest...");
         runTestCase(DeadlockGraphTest.class);
     }
