@@ -7,17 +7,28 @@ fname = system("read filename; echo $filename")
 #	users 	keys 	ratio 	nbReadTotal 	nbReadAbortsTotal 	nbWriteTotal 	nbWriteAbortsTotal 	nbCommitTotal 	nbAbortTotal 	latency	throughput 	abortRate localityPercentage
 #	1	2	3	4		5			6		7			8		9		10	11		12		13
 
-set output "thoughputLatencyAbortrate.png"
-set title "Throughput, Latency and Abort Rate"
-set xlabel "#Transaction"
-#set ylabel ""
-plot for[col=10:12] fname using 1:col title columnheader(col) with lines
+
+set output "Latency.png"
+set title "Latency"
+set xlabel "#Transactions"
+#set ylabel "seconds/transaction"
+plot col=10 fname using 1:col title columnheader(col) with lines
 
 ########################################################################
 
-set output "test1.png"
-set title ""
-set xlabel ""
-#set ylabel ""
-plot col=6 fname using 1:col title columnheader(col) with lines, col2=7 fname using 1:col2 title columnheader(col2) with lines
 
+set output "Thoughput.png"
+set title "Throughput"
+set xlabel "#Transactions"
+#set ylabel "transactions/second"
+plot col=11 fname using 1:col title columnheader(col) with lines
+
+#, col2=7 fname using 1:col2 title columnheader(col2) with lines
+
+########################################################################
+
+set output "AbortRate.png"
+set title "Abort Rate"
+set xlabel "#Transactions"
+#set ylabel "aborts/second"
+plot col=12 fname using 1:col title columnheader(col) with lines
