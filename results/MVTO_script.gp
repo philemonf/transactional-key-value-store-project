@@ -40,27 +40,27 @@ set style line 4 lt rgb "#F25900" lw 2 pt 9
 
 
 
-set output "Latency.pdf"
-set title "Latency"
+set output "MVTO_Latency.pdf"
+set title "MVTO Latency"
 set xlabel "#Transactions"
-#set ylabel "seconds/transaction"
+set ylabel "ms/transaction"
 plot col=10 fname using 1:col title columnheader(col) with lines
 
 ########################################################################
 
 
-set output "Thoughput.pdf"
-set title "Throughput"
+set output "MVTO_Thoughput.pdf"
+set title "MVTO Throughput"
 set xlabel "#Transactions"
-#set ylabel "transactions/second"
+set ylabel "transactions/s"
 plot col=11 fname using 1:col title columnheader(col) with lines
 
 #, col2=7 fname using 1:col2 title columnheader(col2) with lines
 
 ########################################################################
 
-set output "AbortRate.pdf"
-set title "Abort Rate"
+set output "MVTO_AbortRate.pdf"
+set title "MVTO Abort Rate"
 set xlabel "#Transactions"
-#set ylabel "aborts/second"
+set ylabel "aborts/s"
 plot col=12 fname using 1:col title columnheader(col) with lines

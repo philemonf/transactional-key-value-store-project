@@ -2,4 +2,4 @@
 
 cat ./results.bm | grep -i "#BM-" | sed -e 's/#BM- //' > parsed.bm
 
-echo "parsed.bm" | gnuplot script.gp
+echo "parsed.bm" | gnuplot $1
