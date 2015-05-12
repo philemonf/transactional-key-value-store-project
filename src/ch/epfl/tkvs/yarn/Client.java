@@ -117,18 +117,16 @@ public class Client {
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(amIp, amPort)) {
             Thread.sleep(3000);
-            log.info(".");
+            log.info("Wait 3000ms");
         }
 
         ArrayList<String> hist = Utils.loadREPLHist();
-        log.info("\nClient REPL: ");
-        System.out.format("BM- users keys ratio nbReadTotal nbReadAbortsTotal nbWriteTotal nbWriteAbortsTotal nbCommitTotal nbAbortTotal latency throughput abortRate localityPercentage");
+        System.out.println("#BM- \tusers \tkeys \tratio \tnbReadTotal \tnbReadAbortsTotal \tnbWriteTotal \tnbWriteAbortsTotal \tnbCommitTotal \tnbAbortTotal latency throughput abortRate localityPercentage");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit"; // Default REPL command is :exit.
             Thread.sleep(500); // Useful for batch commands.
 
-            log.info("> ");
             if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
             }
@@ -192,7 +190,8 @@ public class Client {
                     repetition = Integer.parseInt(matcher.group(6));
                 }
 
-                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition, locality).run();
+                int nodes = nbKeys;
+                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition, locality, nodes).run();
                 break;
 
             case ":help":
