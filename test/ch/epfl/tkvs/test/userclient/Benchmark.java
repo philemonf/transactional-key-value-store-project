@@ -326,7 +326,7 @@ public class Benchmark {
 
         latency += sumLatency / users.length;
         throughput += users.length / runningTime * 1000;
-        nbAbortTotal += nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
+        nbAbortTotal = nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
         abortRate += nbAbortTotal / runningTime * 1000;
 
     }
