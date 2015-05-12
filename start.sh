@@ -48,7 +48,7 @@ hadoop fs -chmod -R 777 "$JAR_PATH" || { echo ${RED}ERROR: hadoop -chmod! Exitin
 hadoop fs -copyFromLocal config "$PROJECT_HOME" || { echo ${RED}ERROR: hadoop -copyFromLocal! Exiting.${NC} ; exit 1; }
 hadoop fs -chmod -R 777 "$CONFIG_PATH" || { echo ${RED}ERROR: hadoop -chmod! Exiting.${NC} ; exit 1; }
 
-RESULT_DIR="./results"
+RESULT_DIR="./benchmarks/results"
 if [ ! -d "$RESULT_DIR" ]; then
 	mkdir $RESULT_DIR
 fi
@@ -60,7 +60,7 @@ echo ${CYAN}* Executing YARN Client...${NC}
 if [ $# -gt 1 ];
 then
 	hadoop fs -copyFromLocal $2 /projects/transaction-manager/
-	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < "$2" > "$RESULT_DIR"/results.bm || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < "$2" > "$RESULT_DIR"/results.csv || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
 else
-	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client > ./results/results.bm || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client > ./benchmarks/results/results.csv || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
 fi
