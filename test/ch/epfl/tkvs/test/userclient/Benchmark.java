@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
-import org.mortbay.log.Log;
 
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.user.Key;
@@ -27,7 +26,6 @@ public class Benchmark {
         private ActionType type;
 
         /**
-         * 
          * @param type of the Action (WRITE or READ)
          * @param key id
          */
@@ -36,7 +34,6 @@ public class Benchmark {
             this.type = type;
             this.key = key;
         }
-
     }
 
     private enum BenchmarkStatus {
@@ -56,18 +53,37 @@ public class Benchmark {
     private int ratio;
     // Repeat the same number of action multiple time
     private int repetitions;
+
     // Percentage of keys in a transaction which are on the same node of the key used to create the transaction
     private int localityPercentage;
     // Indicate if the locality is used for the benchmark
     private boolean locality;
     // Associate a localityHash to a list of keys with that locality
     private HashMap<Integer, ArrayList<MyKey>> localityKeys;
+    //
+    private double averageLocalityPercentage = 0;
 
     // Number of nodes
     private int nodes;
 
+    /* Results */
     // Time for one execution of the benchmark
     private double runningTime;
+    private int nbReadTotal = 0;
+    private int nbWriteTotal = 0;
+    private int nbBeginAbortsTotal = 0;
+    private int nbReadAbortsTotal = 0;
+    private int nbWriteAbortsTotal = 0;
+    private int nbCommitAbortsTotal = 0;
+    private int nbCommitTotal = 0;
+    private double sumLatency = 0;
+    private double latency = 0;
+    private double throughput = 0;
+    private int nbAbortTotal = 0;
+    private double abortRate = 0;
+    private int nbReadActions = 0;
+    private int nbWriteActions = 0;
+    private int nbAborts = 0;
 
     /**
      * @param repetition: Number of time the benchmark will be repeated with the same parameters
@@ -118,8 +134,6 @@ public class Benchmark {
     public void run() throws FileNotFoundException {
 
         System.out.println("Benchmarking start");
-        // Append the results to the same file
-        printBenchmarkParameters();
 
         try {
             initializeKeys();
@@ -134,7 +148,9 @@ public class Benchmark {
             extractResults();
         }
 
-        printKeysLocality();
+        // printBenchmarkParameters();
+        // printKeysLocality();
+        // printResults();
 
         System.out.format("#BM- \t%d \t%d \t%d \t%d \t%d \t%d \t%d \t%d \t%d \t%f \t%f \t%f \t%d\n", users.length, keys.length, ratio / repetitions, nbReadTotal / repetitions, nbReadAbortsTotal / repetitions, nbWriteTotal / repetitions, nbWriteAbortsTotal / repetitions, nbCommitTotal / repetitions, nbAbortTotal / repetitions, latency / repetitions, throughput / repetitions, abortRate / repetitions, localityPercentage / repetitions);
         System.out.flush();
@@ -143,21 +159,8 @@ public class Benchmark {
     }
 
     /**
-     * Print the different parameters entered
-     */
-    private void printBenchmarkParameters() {
-
-        System.out.println("\tParameters:");
-        System.out.println("\t\tNumber of transactions: " + users.length);
-        System.out.println("\t\tMaximum number of requests: " + maxNbActions);
-        System.out.println("\t\tNumber of keys: " + keys.length);
-        System.out.println("\t\tread:write ratio: " + ratio + ":1");
-    }
-
-    /**
      * Create a transaction to write into the Key Value store in order to initialize the keys used for the benchmark
      * @throws AbortException
-     * 
      */
     private void initializeKeys() throws AbortException {
 
@@ -179,7 +182,6 @@ public class Benchmark {
 
     /**
      * Initialize the list of action the users will execute in the benchmark
-     *
      */
     private void initializeUsersActions() {
 
@@ -292,48 +294,6 @@ public class Benchmark {
         runningTime = System.currentTimeMillis() - runningTime;
     }
 
-    private double average = 0;
-
-    /**
-     * 
-     *
-     */
-    private void printKeysLocality() {
-
-        for (int i = 0; i < userActions.length; i++) {
-            System.out.println("User " + i + " Initial location: " + userActions[i][0].key.getLocalityHash());
-            System.out.print("\t Location ");
-            int identical = 0;
-            for (int j = 0; j < userActions[i].length; j++) {
-                // System.out.print(userActions[i][j].key.getLocalityHash() + " ; ");
-                if (userActions[i][j].key.getLocalityHash() == userActions[i][0].key.getLocalityHash()) {
-                    identical++;
-                }
-            }
-            System.out.println();
-            System.out.println("\t Identical: " + (double) identical / (double) userActions[i].length);
-            average += (double) identical / (double) userActions[i].length;
-        }
-
-        System.out.println("Total identical: " + (average / userActions.length / (repetitions)) * 100);
-    }
-
-    private int nbReadTotal = 0;
-    private int nbWriteTotal = 0;
-    private int nbBeginAbortsTotal = 0;
-    private int nbReadAbortsTotal = 0;
-    private int nbWriteAbortsTotal = 0;
-    private int nbCommitAbortsTotal = 0;
-    private int nbCommitTotal = 0;
-    private double sumLatency = 0;
-    private double latency = 0;
-    private double throughput = 0;
-    private int nbAbortTotal = 0;
-    private double abortRate = 0;
-    private int nbReadActions = 0;
-    private int nbWriteActions = 0;
-    private int nbAborts = 0;
-
     /**
      * Extract all the information needed from the User threads
      */
@@ -368,17 +328,62 @@ public class Benchmark {
         throughput += users.length / runningTime * 1000;
         nbAbortTotal += nbBeginAbortsTotal + nbReadAbortsTotal + nbWriteAbortsTotal + nbCommitAbortsTotal;
         abortRate += nbAbortTotal / runningTime * 1000;
-        /*
-         * System.out.println("Results:"); System.out.println("\tNumber of Reads: " + nbReadTotal);
-         * System.out.println("\tNumber of Writes: " + nbWriteTotal); System.out.println("\tNumber of Aborts on Begin: "
-         * + nbBeginAbortsTotal); System.out.println("\tNumber of Aborts on Read: " + nbReadAbortsTotal);
-         * System.out.println("\tNumber of Aborts on Write: " + nbWriteAbortsTotal);
-         * System.out.println("\tNumber of Aborts on Commit: " + nbCommitAbortsTotal);
-         * System.out.println("\tTotal Commit: " + nbCommitTotal); System.out.println("\tTotal Aborts: " +
-         * nbAbortTotal); System.out.println("\tTotal Latency: " + latency + " ms/transaction");
-         * System.out.println("\tThroughput: " + throughput + " transactions/s"); System.out.println("\tAbort Rate: " +
-         * abortRate + " aborts/s"); System.out.println("\tLocality Rate: " + localityPercentage + " %");
-         */
+
+    }
+
+    /**
+     * Print the different parameters entered
+     */
+    private void printBenchmarkParameters() {
+        System.out.println("\tParameters:");
+        System.out.println("\t\tNumber of transactions: " + users.length);
+        System.out.println("\t\tMaximum number of requests: " + maxNbActions);
+        System.out.println("\t\tNumber of keys: " + keys.length);
+        System.out.println("\t\tread:write ratio: " + ratio + ":1");
+        System.out.println("\t\tNumber of repetitions: " + repetitions);
+        System.out.println("\t\tNumber of nodes: " + nodes);
+    }
+
+    /**
+     * Print the results of the benchmark
+     */
+    private void printResults() {
+        System.out.println("Results:");
+        System.out.println("\tNumber of Reads: " + nbReadTotal);
+        System.out.println("\tNumber of Writes: " + nbWriteTotal);
+        System.out.println("\tNumber of Aborts on Begin: " + nbBeginAbortsTotal);
+        System.out.println("\tNumber of Aborts on Read: " + nbReadAbortsTotal);
+        System.out.println("\tNumber of Aborts on Write: " + nbWriteAbortsTotal);
+        System.out.println("\tNumber of Aborts on Commit: " + nbCommitAbortsTotal);
+        System.out.println("\tTotal Commit: " + nbCommitTotal);
+        System.out.println("\tTotal Aborts: " + nbAbortTotal);
+        System.out.println("\tTotal Latency: " + latency + " ms/transaction");
+        System.out.println("\tThroughput: " + throughput + " transactions/s");
+        System.out.println("\tAbort Rate: " + abortRate + " aborts/s");
+        System.out.println("\tLocality Rate: " + localityPercentage + " %");
+    }
+
+    /**
+     * Print the real locality percentage
+     */
+    private void printKeysLocality() {
+
+        for (int i = 0; i < userActions.length; i++) {
+            System.out.println("User " + i + " Initial location: " + userActions[i][0].key.getLocalityHash());
+            System.out.print("\t Location ");
+            int identical = 0;
+            for (int j = 0; j < userActions[i].length; j++) {
+                // System.out.print(userActions[i][j].key.getLocalityHash() + " ; ");
+                if (userActions[i][j].key.getLocalityHash() == userActions[i][0].key.getLocalityHash()) {
+                    identical++;
+                }
+            }
+            System.out.println();
+            System.out.println("\t Identical: " + (double) identical / (double) userActions[i].length);
+            averageLocalityPercentage += (double) identical / (double) userActions[i].length;
+        }
+
+        System.out.println("Total identical: " + (averageLocalityPercentage / userActions.length / (repetitions)) * 100);
     }
 
     private class User extends Thread {
@@ -405,7 +410,6 @@ public class Benchmark {
         private Action actions[];
 
         /**
-         * 
          * @param userID
          * @param actions
          */
@@ -432,8 +436,6 @@ public class Benchmark {
             boolean isDone = false;
             latency = System.currentTimeMillis();
 
-            // Log.warn("T" + userID + ", is now running.");
-
             while (!isDone) {
                 MyKey key = actions[0].key;
                 UserTransaction<MyKey> t = null;
@@ -444,13 +446,12 @@ public class Benchmark {
                     t = new UserTransaction<MyKey>();
                     t.begin(key);
 
-                    // Log.warn("T" + userID + ", (re)starts with transactionID = " + t.getTransactionID());
-
                     int alive = 0;
                     for (User u : users) {
                         if (u.isAlive())
                             alive++;
                     }
+
                     log.warn("Remaining alive transactions: " + alive + "/" + users.length);
 
                     for (int i = 0; i < actions.length; i++) {
@@ -474,11 +475,7 @@ public class Benchmark {
                     nbCommit = nbCommit + 1;
                     isDone = true;
 
-                    // Log.warn("I, T" + userID + ", am proud to announce I have been able to commit.");
-
                 } catch (AbortException e) {
-
-                    // Log.warn("Oh no! I, T" + userID + ", have been aborted. I have to restart");
 
                     switch (benchmarkStatus) {
                     case BEGIN:
@@ -496,7 +493,9 @@ public class Benchmark {
                 }
 
             }
+
             latency = System.currentTimeMillis() - latency;
+
         }
     }
 }
