@@ -27,7 +27,7 @@ for (( t=$start; t<=$end; t+=$step )) ; do
 #	for (( r=$start; r<=$end; r+=$step )) ; do 
 #		for (( k=$start; k<=$end; k+=$step )) ; do 
 #	echo ":benchmark t" $t "r" $r "k" $k "ratio" $ratio "l 0" >> $fileName;	
-	echo ":benchmark t" $t "r 20 k 20 ratio 15 l 0 4" >> $fileName;	
+	echo ":benchmark t" $t "r 20 k 20 ratio 15 l 0 1" >> $fileName;	
 #		done
 #	done
 done
