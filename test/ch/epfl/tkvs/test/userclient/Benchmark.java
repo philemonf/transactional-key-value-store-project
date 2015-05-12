@@ -299,7 +299,7 @@ public class Benchmark {
      */
     private void extractResults() {
 
-        System.out.println("Benchmark results on " + keys.length + " keys");
+        // System.out.println("Benchmark results on " + keys.length + " keys");
 
         for (int i = 0; i < users.length; i++) {
 
@@ -312,7 +312,8 @@ public class Benchmark {
 
             nbAborts += users[i].nbBeginAborts + users[i].nbReadAborts + users[i].nbWriteAborts + users[i].nbCommitAborts;
 
-            System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " + nbWriteActions + "\t#aborts = " + (nbAborts));
+            // System.out.println("T" + users[i].userID + ":\t#readActions = " + nbReadActions + "\t#writeActions = " +
+            // nbWriteActions + "\t#aborts = " + (nbAborts));
 
             sumLatency += users[i].latency;
             nbReadTotal += users[i].nbRead;
