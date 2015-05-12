@@ -1,6 +1,8 @@
 package ch.epfl.tkvs.test.userclient;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
@@ -54,23 +56,41 @@ public class Benchmark {
     private int ratio;
     // Repeat the same number of action multiple time
     private int repetitions;
+    // Percentage of keys in a transaction which are on the same node of the key used to create the transaction
+    private int localityPercentage;
+    // Indicate if the locality is used for the benchmark
+    private boolean locality;
+    // Associate a localityHash to a list of keys with that locality
+    private HashMap<Integer, ArrayList<MyKey>> localityKeys;
 
     // Time for one execution of the benchmark
     private double runningTime;
 
     /**
-     * 
      * @param repetition: Number of time the benchmark will be repeated with the same parameters
      * @param nbKeys: Number of keys that will be accessed by the users
      * @param nbUsers: Number of users for the benchmark
      * @param maxNbActions: Max number of actions that will be done by the user
      * @param ratio: Number of read for one write
+     * @param localityPercentage: Percentage of keys in a transaction which are on the same node of the key used to
+     * create the transaction
      */
-    public Benchmark(int nbKeys, int nbUsers, int maxNbActions, int ratio, int repetitions) {
+    public Benchmark(int nbKeys, int nbUsers, int maxNbActions, int ratio, int repetitions, int localityPercentage) {
+
+        this.localityKeys = new HashMap<Integer, ArrayList<MyKey>>();
 
         this.keys = new MyKey[nbKeys];
         for (int i = 0; i < nbKeys; i++) {
             keys[i] = new MyKey("Key" + i, new Random().nextInt(300)); // TODO: think about the key locality hashes
+
+            if (localityKeys.get(keys[i].getLocalityHash()) == null) {
+                localityKeys.put(keys[i].getLocalityHash(), new ArrayList<MyKey>());
+            }
+
+            ArrayList<MyKey> listKeys = localityKeys.get(keys[i].localityHash);
+            listKeys.add(keys[i]);
+
+            localityKeys.put(keys[i].getLocalityHash(), listKeys);
         }
 
         this.users = new User[nbUsers];
@@ -79,6 +99,15 @@ public class Benchmark {
         this.maxNbActions = maxNbActions;
         this.ratio = ratio;
         this.repetitions = repetitions;
+
+        if (0 <= localityPercentage && localityPercentage <= 100) {
+            this.localityPercentage = localityPercentage;
+            locality = true;
+        } else {
+            this.localityPercentage = 0;
+            locality = false;
+        }
+
     }
 
     public void run() throws FileNotFoundException {
@@ -151,15 +180,66 @@ public class Benchmark {
 
             for (int j = 0; j < userActions[i].length; j++) {
                 int keyIndex = 0;
-                keyIndex = r.nextInt(keys.length);
 
                 // Determine if we want to read or write a key
                 int write = r.nextInt(ratio);
                 if (write != 0) {
-                    userActions[i][j] = new Action(ActionType.READ, keys[keyIndex]);
+                    if (j != 0 && locality) {
+                        int randomLocality = r.nextInt(100);
+                        MyKey initialKey = userActions[i][0].key;
+                        if (randomLocality <= localityPercentage) {
+                            // Get all the keys with the same locality hash of the first key
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(initialKey.localityHash);
+                            keyIndex = r.nextInt(tmpKeys.size());
+
+                            userActions[i][j] = new Action(ActionType.READ, tmpKeys.get(keyIndex));
+                        } else {
+                            // Get all the localityHash entries
+                            ArrayList<Integer> tmpLocalities = new ArrayList<Integer>(localityKeys.keySet());
+                            // Remove the initial one
+                            tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
+                            // From the localityHash left, pick a random one
+                            int randomLocalityHash = r.nextInt(tmpLocalities.size());
+                            // Key all the keys associated to it
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHash));
+
+                            // Pick one key
+                            keyIndex = r.nextInt(tmpKeys.size());
+                            userActions[i][j] = new Action(ActionType.READ, tmpKeys.get(keyIndex));
+                        }
+                    } else {
+                        keyIndex = r.nextInt(keys.length);
+                        userActions[i][j] = new Action(ActionType.READ, keys[keyIndex]);
+                    }
                 } else {
-                    userActions[i][j] = new Action(ActionType.WRITE, keys[keyIndex]);
+                    if (j != 0 && locality) {
+                        int randomLocality = r.nextInt(100);
+                        MyKey initialKey = userActions[i][0].key;
+                        // The user will write into a key of the same locality of its first key
+                        if (randomLocality <= localityPercentage) {
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(initialKey.localityHash);
+                            keyIndex = r.nextInt(tmpKeys.size());
+                            userActions[i][j] = new Action(ActionType.WRITE, tmpKeys.get(keyIndex));
+                        } else {
+                            // Get all the localityHash entries
+                            ArrayList<Integer> tmpLocalities = new ArrayList<Integer>(localityKeys.keySet());
+                            // Remove the initial one
+                            tmpLocalities.remove(tmpLocalities.indexOf(initialKey.getLocalityHash()));
+                            // From the localityHash left, pick a random one
+                            int randomLocalityHash = r.nextInt(tmpLocalities.size());
+                            // Key all the keys associated to it
+                            ArrayList<MyKey> tmpKeys = localityKeys.get(tmpLocalities.get(randomLocalityHash));
+
+                            // Pick one key
+                            keyIndex = r.nextInt(tmpKeys.size());
+                            userActions[i][j] = new Action(ActionType.READ, tmpKeys.get(keyIndex));
+                        }
+                    } else {
+                        keyIndex = r.nextInt(keys.length);
+                        userActions[i][j] = new Action(ActionType.WRITE, keys[keyIndex]);
+                    }
                 }
+
             }
         }
     }
@@ -191,6 +271,32 @@ public class Benchmark {
         }
 
         runningTime = System.currentTimeMillis() - runningTime;
+    }
+
+    /**
+     * 
+     *
+     */
+    private void printKeysLocality() {
+
+        double average = 0;
+
+        for (int i = 0; i < userActions.length; i++) {
+            System.out.println("User " + i + " Initial location: " + userActions[i][0].key.getLocalityHash());
+            System.out.print("\t Location ");
+            int identical = 0;
+            for (int j = 0; j < userActions[i].length; j++) {
+                // System.out.print(userActions[i][j].key.getLocalityHash() + " ; ");
+                if (userActions[i][j].key.getLocalityHash() == userActions[i][0].key.getLocalityHash()) {
+                    identical++;
+                }
+            }
+            System.out.println();
+            System.out.println("\t Identical: " + (double) identical / (double) userActions[i].length);
+            average += (double) identical / (double) userActions[i].length;
+        }
+
+        System.out.println("Total identival: " + (average / userActions.length) * 100);
     }
 
     /**
@@ -248,8 +354,11 @@ public class Benchmark {
         System.out.println("\tTotal Latency: " + latency + " ms/transaction");
         System.out.println("\tThroughput: " + throughput + " transactions/s");
         System.out.println("\tAbort Rate: " + abortRate + " aborts/s");
+        System.out.println("\tLocality Rate: " + localityPercentage + " %");
 
-        System.out.format("#BM- %d %d %d %d %d %d %d %d %d %f %f %f\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput, abortRate);
+        printKeysLocality();
+
+        System.out.format("#BM- %d %d %d %d %d %d %d %d %d %f %f %f %d\n", users.length, keys.length, ratio, nbReadTotal, nbReadAbortsTotal, nbWriteTotal, nbWriteAbortsTotal, nbCommitTotal, nbAbortTotal, latency, throughput, abortRate, localityPercentage);
         System.out.flush();
     }
 
