@@ -172,7 +172,7 @@ public class Client {
                 break;
             case ":benchmark":
                 hist.add(input);
-                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+) l (\\d+)(?: )?(\\d+)?");
+                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+) l (\\d+) N (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
                     log.info("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> l <#localityPercentage> <#repetitions>");
@@ -185,12 +185,12 @@ public class Client {
                 int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
                 int ratio = Math.max(2, Integer.parseInt(matcher.group(4)));
                 int locality = Math.max(0, Integer.parseInt(matcher.group(5)));
+                int nodes = Math.max(1, Integer.parseInt(matcher.group(6)));
                 int repetition = 1;
-                if (matcher.group(6) != null) {
-                    repetition = Integer.parseInt(matcher.group(6));
+                if (matcher.group(7) != null) {
+                    repetition = Integer.parseInt(matcher.group(7));
                 }
 
-                int nodes = nbKeys;
                 new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition, locality, nodes).run();
                 break;
 
