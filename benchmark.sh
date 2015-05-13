@@ -22,6 +22,6 @@ do
 	echo "Benchmark: Processing $i"
 	echo "$i" > "$configFile"
 	./configure.sh $N
-	./start.sh local "$benchmarkFile"
+	./start.sh cluster "$benchmarkFile"
 done
 
