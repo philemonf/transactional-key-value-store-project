@@ -5,7 +5,7 @@ then
 	echo "Specify the script"
 	exit 1
 else
-
+	merge="0"
 	graphDirectory="../results/graphs/"
 	if [ ! -d "$DIRECTORY" ]; then
 		  mkdir -p $graphDirectory
@@ -17,7 +17,8 @@ else
 		MVTO*) 	prefix="MVTO" ;;
 		2PL*) 	prefix="2PL" ;;
 		MVCC2PL*) prefix="MVCC2PL";;	
-		*)	prefix="MVTO 2PL MVCC2PL";;
+		*)	prefix="MVTO 2PL MVCC2PL"
+			merge="1";;
 	esac
 
 	if [ $# -eq 2 ];
@@ -39,6 +40,10 @@ else
 		fi
 	done
 
-    	gnuplot MERGE_script.gp
+	if [ $merge -eq "1" ];
+	then
+    		gnuplot MERGE_script.gp
+	fi
+
 	rm -f *.bm
 fi
