@@ -65,7 +65,7 @@ else
 	algorithmName="MVTO"
 fi
 
-RESULT_FILE="$RESULT_DIR/$algorithmName_results.csv"
+RESULT_FILE="$RESULT_DIR/"$algorithmName"_results.csv"
 
 # Executes the Client.
 echo ${CYAN}* Executing YARN Client...${NC}
