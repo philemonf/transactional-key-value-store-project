@@ -28,9 +28,10 @@ else
 		then
 			cat "$benchmarkResults" | grep -i "#BM-" | sed -e 's/#BM- //' > $parsedFile
 			echo $parsedFile | gnuplot "$p"_script.gp
-			rm -f $parsedFile
 		else
 			echo "Could not find $benchmarkResults"	
 		fi
 	done
+
+    gnuplot MERGE_script.gp
 fi

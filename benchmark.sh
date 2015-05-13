@@ -10,7 +10,7 @@ fi
 N=$1
 
 cd ./benchmarks/
-./generateBenchmark.sh
+./generateBenchmark.sh $1
 cd ..
 
 configFile="./config/algorithm"
