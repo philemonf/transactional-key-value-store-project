@@ -15,7 +15,7 @@ cd ..
 
 configFile="./config/algorithm"
 benchmarkFile="./benchmarks/results/benchmark.bm"
-algorithmNames="simple2pl mvcc2pl mvto"
+algorithmNames="simple_2pl mvcc2pl mvto"
 
 for i in $algorithmNames
 do
@@ -24,4 +24,3 @@ do
 	./configure.sh $N
 	./start.sh cluster "$benchmarkFile"
 done
-

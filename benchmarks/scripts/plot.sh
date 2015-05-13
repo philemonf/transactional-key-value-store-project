@@ -12,9 +12,15 @@ else
 	  *)		prefix="MVCC2PL" ;;
 	esac
 
+
+	if [ $# -eq 2 ];
+	then
+		scp "$2"@icdataportal2:~/transactional-key-value-store-project/benchmarks/results/* ../results
+	fi
+
 	parsedFile="parsed.bm"
 	benchmarkResults=../results/"$prefix"_results.csv
-	
+
 	if [ -f "$benchmarkResults" ];
 	then
 		cat "$benchmarkResults" | grep -i "#BM-" | sed -e 's/#BM- //' > $parsedFile
@@ -23,7 +29,5 @@ else
 	else
 		echo "Could not find $benchmarkResults"	
 	fi
-
-
 fi
 
