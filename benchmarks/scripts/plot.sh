@@ -23,7 +23,8 @@ else
 	for p in $prefix
 	do
 		benchmarkResults=../results/"$p"_results.csv
-
+		parsedFile="$p""_parsed.bm"
+		
 		if [ -f "$benchmarkResults" ];
 		then
 			cat "$benchmarkResults" | grep -i "#BM-" | sed -e 's/#BM- //' > $parsedFile
