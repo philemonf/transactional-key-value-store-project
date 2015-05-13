@@ -53,14 +53,26 @@ if [ ! -d "$RESULT_DIR" ]; then
 	mkdir $RESULT_DIR
 fi
 
+algorithmName=`head -1 ./config/algorithm`
+echo $algorithmName
+if [ "$algorithmName" = "simple_2pl" ];
+then
+	algorithmName="2PL"
+elif [ "$algorithmName" = "mvcc2pl" ];
+then
+	algorithmName="MVCC2PL"
+else
+	algorithmName="MVTO"
+fi
 
+RESULT_FILE="$RESULT_DIR/$algorithmName_results.csv"
 
 # Executes the Client.
 echo ${CYAN}* Executing YARN Client...${NC}
 if [ $# -gt 1 ];
 then
 	hadoop fs -copyFromLocal $2 /projects/transaction-manager/
-	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < "$2" > "$RESULT_DIR"/results.csv || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client < "$2" > "$RESULT_FILE" || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
 else
-	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client > ./benchmarks/results/results.csv || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
+	hadoop jar TKVS.jar ch.epfl.tkvs.yarn.Client || { echo ${RED}ERROR: hadoop jar! Exiting.${NC} ; exit 1; }
 fi

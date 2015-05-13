@@ -1,5 +1,3 @@
-set terminal png
-
 # read shell input
 # the echo prints the variable, which is then piped to gnuplot
 fname = system("read filename; echo $filename")
@@ -40,7 +38,7 @@ set style line 4 lt rgb "#F25900" lw 2 pt 9
 
 
 
-set output "MVCC2PL_Latency.pdf"
+set output "../results/graphs/MVCC2PL_Latency.pdf"
 set title "MVCC2PL Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
@@ -49,7 +47,7 @@ plot col=10 fname using 1:col title columnheader(col) with lines
 ########################################################################
 
 
-set output "MVCC2PL_Thoughput.pdf"
+set output "../results/graphs/MVCC2PL_Thoughput.pdf"
 set title "MVCC2PL Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
@@ -59,7 +57,7 @@ plot col=11 fname using 1:col title columnheader(col) with lines
 
 ########################################################################
 
-set output "MVCC2PL_AbortRate.pdf"
+set output "../results/graphs/MVCC2PL_AbortRate.pdf"
 set title "MVCC2PL Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"

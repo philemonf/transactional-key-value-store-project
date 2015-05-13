@@ -1,15 +1,5 @@
-set terminal png
-
-# read shell input
-# the echo prints the variable, which is then piped to gnuplot
-fname = "./MVTO/parsed.bm"
-fname2 = "./2PL/parsed.bm"
-fname3 = "./MVCC2PL/parsed.bm"
 #	users 	keys 	ratio 	nbReadTotal 	nbReadAbortsTotal 	nbWriteTotal 	nbWriteAbortsTotal 	nbCommitTotal 	nbAbortTotal 	latency	throughput 	abortRate localityPercentage
 #	1	2	3	4		5			6		7			8		9		10	11		12		13
-
-
-
 set terminal pdfcairo font "Gill Sans,9" linewidth 4 rounded fontscale 1.0
 
 # Line style for axes
@@ -41,7 +31,7 @@ set style line 4 lt rgb "#F25900" lw 2 pt 9
 
 
 
-set output "Merge_Latency.pdf"
+set output "../results/graphs/Merge_Latency.pdf"
 set title "Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
@@ -50,7 +40,7 @@ plot col=10 "MVTO_parsed.bm" using 1:col title "MVTO" with lines, col=10 "MVCC2P
 ########################################################################
 
 
-set output "Merge_Thoughput.pdf"
+set output "../results/graphs/Merge_Thoughput.pdf"
 set title "Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
@@ -59,7 +49,7 @@ plot col=11 "MVTO_parsed.bm" using 1:col title "MVTO" with lines, col=11 "MVCC2P
 
 ########################################################################
 
-set output "Merge_AbortRate.pdf"
+set output "../results/graphs/Merge_AbortRate.pdf"
 set title "Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"

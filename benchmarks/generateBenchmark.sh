@@ -6,11 +6,15 @@
 
 # Cluster's #nodes
 nbnodes=20
+if [ $# -lt 1 ];
+then
+	nbnodes=$1
+fi
 
 # Starting #xact
 nbxact_start=100
 # Ending #xact
-nbxact_end=100
+nbxact_end=700
 # Step when increasing #xact
 nbxact_step=100
 
@@ -24,7 +28,7 @@ rw_ratio=30
 locality_percentage=30
 
 # single test's #repetitions (to get average values)
-repetitions=1
+repetitions=10
 
 # Output benchmark.bm file name
 filename="benchmark.bm"
@@ -32,13 +36,16 @@ filename="benchmark.bm"
 #################################################
 #################################################
 
-if [ -f results/$filename ]; then
-	rm -f results/$filename
+if [ -f "results/$filename" ]; then
+	rm -f "results/$filename"
 fi
 
 mkdir -p results
 
 for (( t=$nbxact_start; t<=$nbxact_end; t+=$nbxact_step )) do
 	keys=$(( $t * $nb$key_multiplier ))
-	echo ":benchmark t" $t "r" $nbrequests "k" $keys "ratio" $rw_ratio "l" $locality_percentage "N" $nbnodes $repetitions >> results/$filename
+	echo ":benchmark t" $t "r" $nbrequests "k" $keys "ratio" $rw_ratio "l" $locality_percentage "N" $nbnodes $repetitions >> "results/$filename"
 done
+
+
+
