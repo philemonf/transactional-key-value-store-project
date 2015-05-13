@@ -7,11 +7,11 @@ then
 else
 	
 	case "$1" in
-	  MVTO*) 	prefix="MVTO" ;;
-	  2PL*) 	prefix="2PL" ;;
-	  *)		prefix="MVCC2PL" ;;
+		MVTO*) 	prefix="MVTO" ;;
+		2PL*) 	prefix="2PL" ;;
+		MVCC2PL*) prefix="MVCC2PL";;	
+		*)	prefix="MVTO 2PL MVCC2PL";;
 	esac
-
 
 	if [ $# -eq 2 ];
 	then
@@ -19,15 +19,18 @@ else
 	fi
 
 	parsedFile="parsed.bm"
-	benchmarkResults=../results/"$prefix"_results.csv
 
-	if [ -f "$benchmarkResults" ];
-	then
-		cat "$benchmarkResults" | grep -i "#BM-" | sed -e 's/#BM- //' > $parsedFile
-		echo $parsedFile | gnuplot $1
-		rm -f $parsedFile
-	else
-		echo "Could not find $benchmarkResults"	
-	fi
+	for p in $prefix
+	do
+		benchmarkResults=../results/"$p"_results.csv
+
+		if [ -f "$benchmarkResults" ];
+		then
+			cat "$benchmarkResults" | grep -i "#BM-" | sed -e 's/#BM- //' > $parsedFile
+			echo $parsedFile | gnuplot "$p"_script.gp
+			rm -f $parsedFile
+		else
+			echo "Could not find $benchmarkResults"	
+		fi
+	done
 fi
-
