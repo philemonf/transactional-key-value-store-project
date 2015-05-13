@@ -5,6 +5,13 @@ then
 	echo "Specify the script"
 	exit 1
 else
+
+	graphDirectory="../results/graphs/"
+	if [ ! -d "$DIRECTORY" ]; then
+		  mkdir -p $graphDirectory
+	else
+		rm -f $graphDirectory/*
+	fi
 	
 	case "$1" in
 		MVTO*) 	prefix="MVTO" ;;
@@ -17,8 +24,6 @@ else
 	then
 		scp "$2"@icdataportal2:~/transactional-key-value-store-project/benchmarks/results/* ../results
 	fi
-
-	parsedFile="parsed.bm"
 
 	for p in $prefix
 	do
@@ -34,5 +39,6 @@ else
 		fi
 	done
 
-    gnuplot MERGE_script.gp
+    	gnuplot MERGE_script.gp
+	rm -f *.bm
 fi
