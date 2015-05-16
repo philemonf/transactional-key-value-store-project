@@ -3,6 +3,8 @@ package ch.epfl.tkvs.test.userclient;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.log4j.Logger;
 
@@ -22,7 +24,7 @@ import ch.epfl.tkvs.user.UserTransaction;
  * The benchmarks assume that locality hashes 0..(N-1) are mapped to nodes 1..N when there are at least N nodes.
  */
 public class Benchmark {
-    
+
     private static Logger log = Logger.getLogger(Benchmark.class.getName());
 
     /** Keys the users will access (are written once at the beginning) */
@@ -125,11 +127,13 @@ public class Benchmark {
             initializeUsersWithRandomActions();
             long runningTime = startBenchmark();
             extractAndAddResults(runningTime);
-            log.info("Repetition " + (i+1) + " done");
+            log.info("Repetition " + (i + 1) + " done");
         }
 
-        System.out.format("#BM-\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%f\t%f\t%f\n", Benchmark.nbNodes, users.length, maxNbActions, nbKeys, Benchmark.localityPercentage, ratio, repetitions, results.throughput / repetitions, results.latency / repetitions, results.abortRate / repetitions);
-        System.out.flush();
+        // System.out.format("#BM-\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%f\t%f\t%f\n", Benchmark.nbNodes, users.length,
+        // maxNbActions, nbKeys, Benchmark.localityPercentage, ratio, repetitions, results.throughput / repetitions,
+        // results.latency / repetitions, results.abortRate / repetitions);
+        // System.out.flush();
     }
 
     /** Choose nbKeys keys from allKeys and initialize the locality-based list of keys */
@@ -199,6 +203,35 @@ public class Benchmark {
         }
     }
 
+    double period = 500.0;
+    
+    public class TimerVideo extends TimerTask {
+
+        int nbAliveXactBefore = users.length;
+        int nbAbortsBefore = 0;
+
+        @Override
+        public void run() {
+
+            int nbAliveXact = 0;
+            int nbAborts = 0;
+            for (User u : users) {
+                if (!u.isDone) {
+                    nbAliveXact++;
+                }
+
+                nbAborts += u.nbBeginAborts + u.nbReadAborts + u.nbWriteAborts + u.nbCommitAborts;
+            }
+
+            double throughput = (nbAliveXactBefore - nbAliveXact) / period * 1000.0;
+            double abortRate = (nbAborts - nbAbortsBefore) / period * 1000.0;
+            System.out.println(throughput + "\t" + abortRate);
+            
+            nbAliveXactBefore = nbAliveXact;
+            nbAbortsBefore = nbAborts;
+        }
+    }
+
     /**
      * Initialize the Users threads by specifying their actions Start the threads to run concurrently Wait for all the
      * threads to stop
@@ -207,7 +240,10 @@ public class Benchmark {
     private long startBenchmark() {
 
         long runningTime = System.currentTimeMillis();
-
+        
+        Timer t = new Timer();
+        t.schedule(new TimerVideo(), 0, (long) period);
+        
         // Launch the threads
         for (int i = 0; i < users.length; i++) {
             users[i].start();
@@ -221,6 +257,8 @@ public class Benchmark {
                 e.printStackTrace();
             }
         }
+        
+        t.cancel();
 
         runningTime = System.currentTimeMillis() - runningTime;
         return runningTime;
@@ -316,6 +354,8 @@ public class Benchmark {
         // Number of commits
         private int nbCommit = 0;
 
+        boolean isDone = false;
+
         /**
          * @param userID
          * @param actions
@@ -330,7 +370,7 @@ public class Benchmark {
         public void run() {
 
             BenchmarkStatus benchmarkStatus = BenchmarkStatus.BEGIN;
-            boolean isDone = false;
+            isDone = false;
             long latency = System.currentTimeMillis();
 
             while (!isDone) {
