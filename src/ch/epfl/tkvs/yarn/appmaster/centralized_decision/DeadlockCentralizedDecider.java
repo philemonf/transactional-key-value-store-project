@@ -7,6 +7,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.transactionmanager.communication.DeadlockInfoMessage;
@@ -22,6 +23,8 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
     private static HashMap<Integer, DeadlockGraph> graphs = new HashMap<Integer, DeadlockGraph>();
     private static HashMap<Integer, Set<Integer>> activeTransactions = new HashMap<Integer, Set<Integer>>();
+    
+    private static Logger log = Logger.getLogger(DeadlockCentralizedDecider.class);
 
     @Override
     public synchronized void handleMessage(JSONObject message, Socket sock) {
@@ -30,7 +33,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
             dm = (DeadlockInfoMessage) JSON2MessageConverter.parseJSON(message, DeadlockInfoMessage.class);
         } catch (InvalidMessageException e) {
             // TODO Handle the error
-            log2.error(e, DeadlockCentralizedDecider.class);
+            log.error(e);
             return;
         }
 
@@ -45,7 +48,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
             return;
 
         }
-        log2.info("Received messsage from " + info.getLocalHash(), DeadlockCentralizedDecider.class);
+        log.info("Received messsage from " + info.getLocalHash());
         graphs.put(info.getLocalHash(), info.getGraph());
         activeTransactions.put(info.getLocalHash(), info.getActiveTransactions());
     }
@@ -53,7 +56,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized boolean readyToDecide() {
         int totalTMCount = AppMaster.numberOfRegisteredTMs();
-        log2.info("graph_size = " + graphs.size() + " - total_expected=" + totalTMCount, DeadlockCentralizedDecider.class);
+        log.info("graph_size = " + graphs.size() + " - total_expected=" + totalTMCount);
         if (graphs.size() == totalTMCount)
             return true;
         return false;
@@ -64,10 +67,10 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
         DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
 
         Set<Integer> transactionsToBeKilled = mergedGraph.checkForCycles();
-        log2.info("perform decision", DeadlockCentralizedDecider.class);
+        log.info("perform decision");
 
         for (Integer tid : transactionsToBeKilled)
-            log2.info("Killing transaction" + tid, DeadlockCentralizedDecider.class);
+            log.info("Killing transaction" + tid);
         sendKillMessages(transactionsToBeKilled);
         graphs.clear();
     }
@@ -81,7 +84,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
                         AppMaster.sendMessageToTM(tm, abortRequest, true);
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
-                        log2.error("Cant send Abort ", e, DeadlockCentralizedDecider.class);
+                        log.error("Cant send Abort "+ e);
                     }
                 }
             }
