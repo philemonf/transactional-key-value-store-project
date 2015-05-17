@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.yarn;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -120,8 +122,41 @@ public class Client {
             log.info("Wait 3000ms");
         }
 
+        log.info("Writing all benchmarking keys. Please wait...");
+
+        Properties properties = new Properties();
+        int nodes = 20;
+        int maxKey = 2000;
+        int locality = 80;
+
+        try {
+            properties.load(new FileInputStream("config/benchmark"));
+
+            for (String key : properties.stringPropertyNames()) {
+                String value = properties.getProperty(key);
+                log.info("Fetching parameters from config/benchmark " + key + " => " + value);
+                if (key.equalsIgnoreCase("nodes")) {
+                    nodes = Integer.valueOf(value);
+                } else if (key.equalsIgnoreCase("maxKey")) {
+                    maxKey = Integer.valueOf(value);
+                } else {
+                    locality = Integer.valueOf(value);
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Unable to read config/benchmark properly. Using default values.");
+            nodes = 20;
+            maxKey = 2000;
+            locality = 80;
+        }
+
+        // Benchmark config: #nodes, #keys, locality
+        Benchmark.initializeKeys(nodes, maxKey, locality);
+        log.info("Done writing all benchmarking keys");
+
         ArrayList<String> hist = Utils.loadREPLHist();
-        System.out.println("#BM- \tusers \tkeys \tratio \tnbReadTotal \tnbReadAbortsTotal \tnbWriteTotal \tnbWriteAbortsTotal \tnbCommitTotal \tnbAbortTotal latency throughput abortRate localityPercentage");
+        System.out.println("#BM-\t#Nodes\t#Users\t#requests_Per_User\t#Keys\tLocality\tR:W_Ratio\tRepetitions\tTroughput\tLatency\tAbort_Rate");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit"; // Default REPL command is :exit.
@@ -172,10 +207,10 @@ public class Client {
                 break;
             case ":benchmark":
                 hist.add(input);
-                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+) l (\\d+) N (\\d+)(?: )?(\\d+)?");
+                Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
-                    log.info("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> l <#localityPercentage> <#repetitions>");
+                    log.info("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> <#repetitions>");
                     log.info("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
                     break;
                 }
@@ -184,14 +219,12 @@ public class Client {
                 int maxNbActions = Math.max(1, Integer.parseInt(matcher.group(2)));
                 int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
                 int ratio = Math.max(2, Integer.parseInt(matcher.group(4)));
-                int locality = Math.max(0, Integer.parseInt(matcher.group(5)));
-                int nodes = Math.max(1, Integer.parseInt(matcher.group(6)));
                 int repetition = 1;
-                if (matcher.group(7) != null) {
-                    repetition = Integer.parseInt(matcher.group(7));
+                if (matcher.group(5) != null) {
+                    repetition = Integer.parseInt(matcher.group(5));
                 }
 
-                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition, locality, nodes).run();
+                new Benchmark(nbKeys, nbUsers, maxNbActions, ratio, repetition).run();
                 break;
 
             case ":help":

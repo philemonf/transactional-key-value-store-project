@@ -22,9 +22,6 @@ set border 3 back linestyle 80 # Remove border on top and right.  These
 set xtics nomirror
 set ytics nomirror
 
-#set log x
-#set mxtics 10    # Makes logscale look good.
-
 # Line styles: try to pick pleasing colors, rather
 # than strictly primary colors or hard-to-see colors
 # like gnuplot's default yellow.  Make the lines thick
@@ -34,24 +31,19 @@ set style line 2 lt rgb "#00A000" lw 2 pt 6
 set style line 3 lt rgb "#5060D0" lw 2 pt 2
 set style line 4 lt rgb "#F25900" lw 2 pt 9
 
-
-
 set output "../results/graphs/MVTO_Latency.pdf"
 set title "MVTO Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
-plot col=10 fname using 1:col title columnheader(col) with lines
+plot col=9 fname using 4:col title columnheader(col) with lines
 
 ########################################################################
-
 
 set output "../results/graphs/MVTO_Thoughput.pdf"
 set title "MVTO Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
-plot col=11 fname using 1:col title columnheader(col) with lines
-
-#, col2=7 fname using 1:col2 title columnheader(col2) with lines
+plot col=8 fname using 4:col title columnheader(col) with lines
 
 ########################################################################
 
@@ -59,4 +51,4 @@ set output "../results/graphs/MVTO_AbortRate.pdf"
 set title "MVTO Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"
-plot col=12 fname using 1:col title columnheader(col) with lines
+plot col=10 fname using 4:col title columnheader(col) with lines
