@@ -1,11 +1,14 @@
 package ch.epfl.tkvs.transactionmanager.algorithms;
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListSet;
+
+import org.codehaus.jettison.json.JSONObject;
 
 import ch.epfl.tkvs.exceptions.AbortException;
 import ch.epfl.tkvs.exceptions.CommitWithoutPrepareException;
@@ -13,6 +16,8 @@ import ch.epfl.tkvs.exceptions.TransactionAlreadyExistsException;
 import ch.epfl.tkvs.exceptions.TransactionNotLiveException;
 import ch.epfl.tkvs.exceptions.ValueDoesNotExistException;
 import ch.epfl.tkvs.transactionmanager.Transaction;
+import ch.epfl.tkvs.transactionmanager.TransactionManager;
+import ch.epfl.tkvs.transactionmanager.communication.TransactionTerminateMessage;
 import ch.epfl.tkvs.transactionmanager.communication.requests.AbortRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.BeginRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.CommitRequest;
@@ -20,7 +25,9 @@ import ch.epfl.tkvs.transactionmanager.communication.requests.PrepareRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.ReadRequest;
 import ch.epfl.tkvs.transactionmanager.communication.requests.WriteRequest;
 import ch.epfl.tkvs.transactionmanager.communication.responses.GenericSuccessResponse;
+import ch.epfl.tkvs.transactionmanager.communication.responses.MinAliveTransactionResponse;
 import ch.epfl.tkvs.transactionmanager.communication.responses.ReadResponse;
+import ch.epfl.tkvs.transactionmanager.communication.utils.JSON2MessageConverter;
 import ch.epfl.tkvs.transactionmanager.versioningunit.VersioningUnitMVTO;
 import ch.epfl.tkvs.yarn.HDFSLogger;
 
@@ -191,7 +198,7 @@ public class MVTO extends CCAlgorithm {
     @Override
     public void checkpoint() {
 
-       /* LinkedList<Integer> toSend = new LinkedList<Integer>();
+        LinkedList<Integer> toSend = new LinkedList<Integer>();
 
         Integer tid = null;
         while ((tid = primaryTerminated.poll()) != null) {
@@ -211,7 +218,7 @@ public class MVTO extends CCAlgorithm {
 
         if (response != null) {
             versioningUnit.garbageCollector(response.getTransactionId());
-        }*/
+        }
 
     }
 
