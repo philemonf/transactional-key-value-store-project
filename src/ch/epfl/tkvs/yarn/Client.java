@@ -156,7 +156,7 @@ public class Client {
         log.info("Done writing all benchmarking keys");
 
         ArrayList<String> hist = Utils.loadREPLHist();
-        System.out.println("#BM-\t#Nodes\t#Users\t#requests_Per_User\t#Keys\tLocality\tR:W_Ratio\tRepetitions\tTroughput\tLatency\tAbort_Rate");
+        System.out.println("> #BM-\t#Nodes\t#Users\t#requests_Per_User\t#Keys\tLocality\tR:W_Ratio\tRepetitions\tTroughput\tLatency\tAbort_Rate");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit"; // Default REPL command is :exit.
