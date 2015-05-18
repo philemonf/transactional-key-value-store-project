@@ -36,7 +36,7 @@ else
 		
 		if [ -f "$benchmarkResults" ];
 		then
-			cat "$benchmarkResults" | grep -i "> #BM-" | sed -e 's/> #BM-\t//' > $parsedFile
+			cat "$benchmarkResults" | grep -i "> #BM-" | sed -e 's/> #BM-\t//' | tr "#" "nb_" > $parsedFile
 			echo $parsedFile | gnuplot "$p"_script.gp
 		else
 			echo "Could not find $benchmarkResults"	

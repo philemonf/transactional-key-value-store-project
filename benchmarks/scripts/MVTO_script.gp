@@ -35,7 +35,7 @@ set output "../results/graphs/MVTO_Latency.pdf"
 set title "MVTO Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
-plot col=9 fname using 4:col title columnheader(col) with lines
+plot col=9 fname using 3:col title columnheader(col) with lines
 
 ########################################################################
 
@@ -43,7 +43,7 @@ set output "../results/graphs/MVTO_Thoughput.pdf"
 set title "MVTO Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
-plot col=8 fname using 4:col title columnheader(col) with lines
+plot col=8 fname using 3:col title columnheader(col) with lines
 
 ########################################################################
 
@@ -51,4 +51,4 @@ set output "../results/graphs/MVTO_AbortRate.pdf"
 set title "MVTO Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"
-plot col=10 fname using 4:col title columnheader(col) with lines
+plot col=10 fname using 3:col title columnheader(col) with lines
