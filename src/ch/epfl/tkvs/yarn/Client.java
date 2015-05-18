@@ -1,6 +1,7 @@
 package ch.epfl.tkvs.yarn;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -59,14 +61,15 @@ public class Client {
 
     private final static Logger log = Logger.getLogger(Client.class.getName());
     private static String algoConfig;
+
     public static void main(String[] args) {
         Utils.initLogLevel();
         try {
             log.info("Initializing...");
-            
+
             // Read the concurrency control algorithm that one want to use
             algoConfig = Utils.readAlgorithmConfig();
-            
+
             new Client().run();
         } catch (Exception ex) {
             log.fatal("Could not run yarn client", ex);
@@ -116,11 +119,44 @@ public class Client {
         log.info("Start pinging the AppMaster until it is ready.");
         while (!pingAppMaster(amIp, amPort)) {
             Thread.sleep(3000);
-            System.out.print(".");
+            log.info("Wait 3000ms");
         }
 
+        log.info("Writing all benchmarking keys. Please wait...");
+
+        Properties properties = new Properties();
+        int nodes = 20;
+        int maxKey = 2000;
+        int locality = 80;
+
+        try {
+            properties.load(new FileInputStream("config/benchmark"));
+
+            for (String key : properties.stringPropertyNames()) {
+                String value = properties.getProperty(key);
+                log.info("Fetching parameters from config/benchmark " + key + " => " + value);
+                if (key.equalsIgnoreCase("nodes")) {
+                    nodes = Integer.valueOf(value);
+                } else if (key.equalsIgnoreCase("maxKey")) {
+                    maxKey = Integer.valueOf(value);
+                } else {
+                    locality = Integer.valueOf(value);
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Unable to read config/benchmark properly. Using default values.");
+            nodes = 20;
+            maxKey = 2000;
+            locality = 80;
+        }
+
+        // Benchmark config: #nodes, #keys, locality
+        Benchmark.initializeKeys(nodes, maxKey, locality);
+        log.info("Done writing all benchmarking keys");
+
         ArrayList<String> hist = Utils.loadREPLHist();
-        System.out.println("\nClient REPL: ");
+        System.out.println("> #BM-\t#Nodes\t#Users\t#requests_Per_User\t#Keys\tLocality\tR:W_Ratio\tRepetitions\tTroughput\tLatency\tAbort_Rate");
         Scanner scanner = new Scanner(System.in);
         while (appState != YarnApplicationState.FINISHED && appState != YarnApplicationState.KILLED && appState != YarnApplicationState.FAILED) {
             String input = ":exit"; // Default REPL command is :exit.
@@ -145,29 +181,29 @@ public class Client {
             switch (input.split(" ")[0]) {
             case ":hist":
                 for (int i = 0; i < hist.size(); ++i) {
-                    System.out.println(i + ": " + hist.get(i));
+                    log.info(i + ": " + hist.get(i));
                 }
                 break;
             case ":test":
                 hist.add(input);
 
-                System.out.println("Running test client...\n");
-                
+                log.info("Running test client...\n");
+
                 // Run the appropriate system test given the selected algorithm
                 if (algoConfig.equals("simple_2pl")) {
-                	runTestCase(S2PLSystemTest.class);
+                    runTestCase(S2PLSystemTest.class);
                 } else if (algoConfig.equals("mvcc2pl")) {
-                	runTestCase(MV2PLSystemTest.class);
+                    runTestCase(MV2PLSystemTest.class);
                 } else {
-                	runTestCase(MVTOSystemTest.class);
+                    runTestCase(MVTOSystemTest.class);
                 }
-                
+
                 UserTransaction.log.writeToHDFS("C");
 
-                System.out.println();
+                log.info("");
                 break;
             case ":testall":
-                System.out.println("Running unit tests...\n");
+                log.info("Running unit tests...\n");
                 runTestCases();
                 break;
             case ":benchmark":
@@ -175,8 +211,8 @@ public class Client {
                 Pattern pattern = Pattern.compile(":benchmark t (\\d+) r (\\d+) k (\\d+) ratio (\\d+)(?: )?(\\d+)?");
                 Matcher matcher = pattern.matcher(input);
                 if (!matcher.matches()) {
-                    System.out.println("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> <#repetitions>");
-                    System.out.println("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
+                    log.info("Usage ``:benchmark t <#transactions> r <#requestsPerTransaction> k <#keys> ratio <readWriteRatio> <#repetitions>");
+                    log.info("Run t transactions, doing each at most r random actions, using a set of k keys with ratio:1 read:write ratio");
                     break;
                 }
 
@@ -184,7 +220,6 @@ public class Client {
                 int maxNbActions = Math.max(1, Integer.parseInt(matcher.group(2)));
                 int nbKeys = Math.max(1, Integer.parseInt(matcher.group(3)));
                 int ratio = Math.max(2, Integer.parseInt(matcher.group(4)));
-
                 int repetition = 1;
                 if (matcher.group(5) != null) {
                     repetition = Integer.parseInt(matcher.group(5));
@@ -194,17 +229,17 @@ public class Client {
                 break;
 
             case ":help":
-            	System.out.println(":benchmark - run some benchmark");
-            	System.out.println(":testall - run unit tests");
-            	System.out.println(":test - run system test");
-            	System.out.println(":exit - exit the system properly");
-            	break;
-                
+                log.info(":benchmark - run some benchmark");
+                log.info(":testall - run unit tests");
+                log.info(":test - run system test");
+                log.info(":exit - exit the system properly");
+                break;
+
             case "":
                 break;
             default:
                 hist.add(input);
-                System.out.println("Command Not Found!");
+                log.info("Command Not Found!");
             }
 
             appReport = client.getApplicationReport(id);
@@ -235,10 +270,10 @@ public class Client {
 
         log.info("Running MVCC2PLTest...");
         runTestCase(MVCC2PLTest.class);
-        
+
         log.info("Running Simple2PLTest...");
         runTestCase(Simple2PLTest.class);
-        
+
         log.info("Running DeadlockGraphTest...");
         runTestCase(DeadlockGraphTest.class);
     }

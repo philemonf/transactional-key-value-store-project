@@ -95,11 +95,13 @@ public enum LockingUnit {
             internalLock.lock();
             while (!canLock(key, lockType)) {
                 if (checkforDeadlock(transactionID, key, lockType)) {
+                    releaseAll(transactionID, null);
                     throw new DeadlockException();
                 }
                 waitOn(transactionID, key, lockType);
                 if (transactionsToBeKilled.contains(transactionID)) {
                     transactionsToBeKilled.remove(transactionID);
+                    releaseAll(transactionID, null);
                     throw new DeadlockException();
                 }
             }
@@ -134,12 +136,14 @@ public enum LockingUnit {
                 if (!theLocks.isEmpty()) {
                     while (!lct.areCompatible(newType, theLocks.keySet())) {
                         if (checkforDeadlock(transactionID, key, newType)) {
+                            releaseAll(transactionID, null);
                             throw new DeadlockException();
                         }
 
                         waitOn(transactionID, key, newType);
                         if (transactionsToBeKilled.contains(transactionID)) {
                             transactionsToBeKilled.remove(transactionID);
+                            releaseAll(transactionID, null);
                             throw new DeadlockException();
                         }
                         // Recompute the copy of the locks to avoid bug
@@ -223,10 +227,22 @@ public enum LockingUnit {
     public void releaseAll(int transactionID, HashMap<Serializable, List<LockType>> heldLocks) {
         internalLock.lock();
         try {
-            for (Serializable key : heldLocks.keySet()) {
-                for (LockType lockType : heldLocks.get(key)) {
-                    removeLock(transactionID, key, lockType);
-                    signalOn(key, lockType);
+            if (heldLocks != null) {
+                for (Serializable key : heldLocks.keySet()) {
+                    for (LockType lockType : heldLocks.get(key)) {
+                        removeLock(transactionID, key, lockType);
+                        signalOn(key, lockType);
+                    }
+                }
+            }
+            for (Serializable key : new HashSet<Serializable>(locks.keySet())) {
+                for (LockType lockType : lct.getLockTypes()) {
+                    if (locks.get(key) != null && locks.get(key).containsKey(lockType)) {
+                        if (locks.get(key).get(lockType).contains(transactionID)) {
+                            removeLock(transactionID, key, lockType);
+                            signalOn(key, lockType);
+                        }
+                    }
                 }
             }
             graph.removeTransaction(transactionID);
@@ -249,6 +265,7 @@ public enum LockingUnit {
                 return false;
             transactionsToBeKilled.add(transactionID);
             waitingTransactions.get(transactionID).signalAll();
+            releaseAll(transactionID, null);
         } finally {
             internalLock.unlock();
         }
@@ -282,14 +299,14 @@ public enum LockingUnit {
     private void removeLock(int transactionID, Serializable key, LockType lockType) {
         if (locks.containsKey(key)) {
             locks.get(key).get(lockType).remove(new Integer(transactionID));
-        }
-        // remove the key from locks if there is not a lock on it.
-        for (LockType lt : locks.get(key).keySet()) {
-            if (!locks.get(key).get(lt).isEmpty()) {
-                return;
+            // remove the key from locks if there is not a lock on it.
+            for (LockType lt : locks.get(key).keySet()) {
+                if (!locks.get(key).get(lt).isEmpty()) {
+                    return;
+                }
             }
+            locks.remove(key);
         }
-        locks.remove(key);
     }
 
     private void waitOn(Integer transactionID, Serializable key, LockType lockType) throws InterruptedException {

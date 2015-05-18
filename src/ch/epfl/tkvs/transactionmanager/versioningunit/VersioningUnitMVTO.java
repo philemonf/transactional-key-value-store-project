@@ -158,7 +158,7 @@ public class VersioningUnitMVTO {
         // The write is possible, create a new version
         // It can overwrite a previous version by the same xid
         Version newVersion = new Version(new PrefixedKey("Version" + xid, key), xid);
-        //CCAlgorithm.log.info("Adding key to KVS" + newVersion.key, VersioningUnitMVTO.class);
+        // CCAlgorithm.log.info("Adding key to KVS" + newVersion.key, VersioningUnitMVTO.class);
         KVS.put(newVersion.key, value);
 
         writtenKeys.get(xid).add(key);
@@ -285,7 +285,7 @@ public class VersioningUnitMVTO {
                 // + version.WTS,
                 // VersioningUnitMVTO.class);
                 if (shouldRemoveAllFromNow) {
-                    //CCAlgorithm.log.info("Garbage collection:: Removing " + version.WTS, VersioningUnitMVTO.class);
+                    // CCAlgorithm.log.info("Garbage collection:: Removing " + version.WTS, VersioningUnitMVTO.class);
                     KVS.remove(version.key);
                     iterator.remove();
                 } else if (version.WTS <= minAliveXid) {
