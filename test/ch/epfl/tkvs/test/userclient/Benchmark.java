@@ -22,7 +22,7 @@ import ch.epfl.tkvs.user.UserTransaction;
  * The benchmarks assume that locality hashes 0..(N-1) are mapped to nodes 1..N when there are at least N nodes.
  */
 public class Benchmark {
-    
+
     private static Logger log = Logger.getLogger(Benchmark.class.getName());
 
     /** Keys the users will access (are written once at the beginning) */
@@ -125,7 +125,7 @@ public class Benchmark {
             initializeUsersWithRandomActions();
             long runningTime = startBenchmark();
             extractAndAddResults(runningTime);
-            log.info("Repetition " + (i+1) + " done");
+            log.info("Repetition " + (i + 1) + " done");
         }
 
         System.out.format("#BM-\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%f\t%f\t%f\n", Benchmark.nbNodes, users.length, maxNbActions, nbKeys, Benchmark.localityPercentage, ratio, repetitions, results.throughput / repetitions, results.latency / repetitions, results.abortRate / repetitions);

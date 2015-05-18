@@ -23,12 +23,12 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
     private static HashMap<Integer, DeadlockGraph> graphs = new HashMap<Integer, DeadlockGraph>();
     private static HashMap<Integer, Set<Integer>> activeTransactions = new HashMap<Integer, Set<Integer>>();
-    
+
     private static Logger log = Logger.getLogger(DeadlockCentralizedDecider.class);
 
     @Override
     public synchronized void handleMessage(JSONObject message, Socket sock) {
-	log.info("DeadlockCentralizedDecider's handleMessage is called");
+        log.info("DeadlockCentralizedDecider's handleMessage is called");
         DeadlockInfoMessage dm = null;
         try {
             dm = (DeadlockInfoMessage) JSON2MessageConverter.parseJSON(message, DeadlockInfoMessage.class);
@@ -50,10 +50,10 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
 
         }
         log.info("Received messsage from " + info.getLocalHash());
-        for (Integer active: info.getActiveTransactions()) {
-            log.info("Activetransaction: "+active);
+        for (Integer active : info.getActiveTransactions()) {
+            log.info("Activetransaction: " + active);
         }
-	log.info("\n"+info.getGraph());
+        log.info("\n" + info.getGraph());
         graphs.put(info.getLocalHash(), info.getGraph());
         activeTransactions.put(info.getLocalHash(), info.getActiveTransactions());
     }
@@ -70,8 +70,8 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
     @Override
     public synchronized void performDecision() {
         log.info("perform decision");
-	DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
-	log.info("\n"+mergedGraph);
+        DeadlockGraph mergedGraph = new DeadlockGraph(graphs.values());
+        log.info("\n" + mergedGraph);
         Set<Integer> transactionsToBeKilled = mergedGraph.checkForCycles();
 
         for (Integer tid : transactionsToBeKilled)
@@ -89,7 +89,7 @@ public class DeadlockCentralizedDecider implements ICentralizedDecider {
                         AppMaster.sendMessageToTM(tm, abortRequest, false);
                     } catch (IOException e) {
                         // TODO Auto-generated catch block
-                        log.error("Cant send Abort "+ e);
+                        log.error("Cant send Abort " + e);
                     }
                 }
             }

@@ -101,7 +101,7 @@ public enum LockingUnit {
                 waitOn(transactionID, key, lockType);
                 if (transactionsToBeKilled.contains(transactionID)) {
                     transactionsToBeKilled.remove(transactionID);
-                    releaseAll(transactionID, null);    
+                    releaseAll(transactionID, null);
                     throw new DeadlockException();
                 }
             }
@@ -227,7 +227,7 @@ public enum LockingUnit {
     public void releaseAll(int transactionID, HashMap<Serializable, List<LockType>> heldLocks) {
         internalLock.lock();
         try {
-            if (heldLocks!=null) {
+            if (heldLocks != null) {
                 for (Serializable key : heldLocks.keySet()) {
                     for (LockType lockType : heldLocks.get(key)) {
                         removeLock(transactionID, key, lockType);
@@ -237,11 +237,11 @@ public enum LockingUnit {
             }
             for (Serializable key : new HashSet<Serializable>(locks.keySet())) {
                 for (LockType lockType : lct.getLockTypes()) {
-                    if (locks.get(key)!=null && locks.get(key).containsKey(lockType)) {
-                    	if (locks.get(key).get(lockType).contains(transactionID)) {
-                    		removeLock(transactionID, key, lockType);
+                    if (locks.get(key) != null && locks.get(key).containsKey(lockType)) {
+                        if (locks.get(key).get(lockType).contains(transactionID)) {
+                            removeLock(transactionID, key, lockType);
                             signalOn(key, lockType);
-                    	}
+                        }
                     }
                 }
             }
