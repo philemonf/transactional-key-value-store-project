@@ -17,11 +17,7 @@ configFile="./config/algorithm"
 benchmarkFile="./benchmarks/results/benchmark.bm"
 algorithmNames="simple_2pl mvcc2pl mvto"
 
-<<<<<<< HEAD
-if [ $# -eq 2 ];
-=======
 if [ $# -eq 2 ]; 
->>>>>>> 09307e371d82837b474a4167469923917b156f71
 then
 	algorithmNames=$2
 fi
