@@ -162,7 +162,7 @@ public class Client {
             String input = ":exit"; // Default REPL command is :exit.
             Thread.sleep(500); // Useful for batch commands.
 
-            System.out.println("> ");
+            System.out.print("> ");
             if (scanner.hasNextLine()) {
                 input = scanner.nextLine();
             }
