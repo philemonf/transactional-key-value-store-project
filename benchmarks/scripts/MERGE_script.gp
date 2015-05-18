@@ -1,3 +1,5 @@
+set terminal pdfcairo font "Gill Sans,9" linewidth 4 rounded fontscale 1.0
+
 set style line 80 lt rgb "#808080"
 set style line 81 lt 0  # dashed
 set style line 81 lt rgb "#808080"  # grey
@@ -16,7 +18,7 @@ set output "../results/graphs/Merge_Latency.pdf"
 set title "Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
-plot col=9 "MVTO_parsed.bm" using 2:col title "MVTO" with lines, col=9 "MVCC2PL_parsed.bm" using 2:col title "MVCC2PL" with lines, col=9 "2PL_parsed.bm" using 2:col title "2PL" with lines
+plot "MVTO_parsed.bm" using 2:9 title "MVTO" with lines, "MVCC2PL_parsed.bm" using 2:9 title "MVCC2PL" with lines, "2PL_parsed.bm" using 2:9 title "2PL" with lines
 
 ########################################################################
 
@@ -26,7 +28,7 @@ set title "Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
 
-plot col=8 "MVTO_parsed.bm" using 2:col title "MVTO" with lines, col=8 "MVCC2PL_parsed.bm" using 2:col title "MVCC2PL" with lines, col=8 "2PL_parsed.bm" using 2:col title "2PL" with lines
+plot "MVTO_parsed.bm" using 2:8 title "MVTO" with lines, "MVCC2PL_parsed.bm" using 2:8 title "MVCC2PL" with lines, "2PL_parsed.bm" using 2:8 title "2PL" with lines
 
 ########################################################################
 
@@ -34,4 +36,4 @@ set output "../results/graphs/Merge_AbortRate.pdf"
 set title "Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"
-plot col=10 "MVTO_parsed.bm" using 2:col title "MVTO" with lines, col=10 "MVCC2PL_parsed.bm" using 2:col title "MVCC2PL" with lines, col=10 "2PL_parsed.bm" using 2:col title "2PL" with lines
+plot "MVTO_parsed.bm" using 2:10 title "MVTO" with lines, "MVCC2PL_parsed.bm" using 2:10 title "MVCC2PL" with lines, "2PL_parsed.bm" using 2:10 title "2PL" with lines

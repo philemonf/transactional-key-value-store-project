@@ -1,31 +1,15 @@
-# read shell input
-# the echo prints the variable, which is then piped to gnuplot
 fname = system("read filename; echo $filename")
-
-#	users 	keys 	ratio 	nbReadTotal 	nbReadAbortsTotal 	nbWriteTotal 	nbWriteAbortsTotal 	nbCommitTotal 	nbAbortTotal 	latency	throughput 	abortRate localityPercentage
-#	1	2	3	4		5			6		7			8		9		10	11		12		13
-
 set terminal pdfcairo font "Gill Sans,9" linewidth 4 rounded fontscale 1.0
 
-# Line style for axes
 set style line 80 lt rgb "#808080"
-
-# Line style for grid
 set style line 81 lt 0  # dashed
 set style line 81 lt rgb "#808080"  # grey
 
 set grid back linestyle 81
-set border 3 back linestyle 80 # Remove border on top and right.  These
-             # borders are useless and make it harder
-             # to see plotted lines near the border.
-    # Also, put it in grey; no need for so much emphasis on a border.
+set border 3 back linestyle 80
 set xtics nomirror
 set ytics nomirror
 
-# Line styles: try to pick pleasing colors, rather
-# than strictly primary colors or hard-to-see colors
-# like gnuplot's default yellow.  Make the lines thick
-# so they're easy to see in small plots in papers.
 set style line 1 lt rgb "#A00000" lw 2 pt 1
 set style line 2 lt rgb "#00A000" lw 2 pt 6
 set style line 3 lt rgb "#5060D0" lw 2 pt 2
@@ -35,7 +19,7 @@ set output "../results/graphs/MVTO_Latency.pdf"
 set title "MVTO Latency"
 set xlabel "#Transactions"
 set ylabel "ms/transaction"
-plot col=9 fname using 3:col title columnheader(col) with lines
+plot col=9 fname using 2:col title columnheader(col) with lines
 
 ########################################################################
 
@@ -43,7 +27,7 @@ set output "../results/graphs/MVTO_Thoughput.pdf"
 set title "MVTO Throughput"
 set xlabel "#Transactions"
 set ylabel "transactions/s"
-plot col=8 fname using 3:col title columnheader(col) with lines
+plot col=8 fname using 2:col title columnheader(col) with lines
 
 ########################################################################
 
@@ -51,4 +35,4 @@ set output "../results/graphs/MVTO_AbortRate.pdf"
 set title "MVTO Abort Rate"
 set xlabel "#Transactions"
 set ylabel "aborts/s"
-plot col=10 fname using 3:col title columnheader(col) with lines
+plot col=10 fname using 2:col title columnheader(col) with lines
