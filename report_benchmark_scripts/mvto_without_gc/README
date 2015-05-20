@@ -1,0 +1,1 @@
+To disable the garbage collector in MVTO, comment the content of the `checkpoint` method in the MVTO.java file
